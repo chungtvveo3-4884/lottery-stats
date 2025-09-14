@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống tính điểm XSMB</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .nav-item .nav-link {
+            font-weight: 500;
+            color: #495057;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            margin-right: 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 0.25rem;
+        }
+        .nav-item .nav-link:hover {
+            color: #007bff;
+            background-color: #e9ecef;
+        }
+        .nav-item .nav-link.active {
+            color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+            font-weight: 600;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .search-options {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+        }
+        .form-option {
+            margin-bottom: 1rem;
+        }
+        .checkbox-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            background-color: white;
+        }
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 0.5rem;
+        }
+        .duplicate-highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem 0;
+        }
+        .duplicate-number-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .duplicate-number-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .form-badge {
+            font-size: 0.75rem;
+            margin: 2px;
+        }
+        .table-responsive {
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+        .table th {
+            vertical-align: middle;
+            font-weight: 600;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        /* Highlight rows based on score */
+        .table-danger {
+            background-color: rgba(220, 53, 69, 0.1) !important;
+        }
+        .table-warning {
+            background-color: rgba(255, 193, 7, 0.1) !important;
+        }
+        .table-success {
+            background-color: rgba(25, 135, 84, 0.1) !important;
+        }
+        /* Score styling */
+        .fs-5 {
+            font-size: 1.25rem !important;
+        }
+        /* Cards styling */
+        .card {
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        /* Sort dropdown styling */
+        #sortOrder {
+            font-size: 0.9rem;
+        }
+        /* Highlight sorted column */
+        .table th.sorted {
+            background-color: #0d6efd !important;
+            color: white;
+        }
+        /* === CSS MỚI CHO BIỂU ĐỒ NHIỆT === */
+        .heatmap-container {
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 5px;
+            margin: 0 auto;
+            max-width: 600px;
+        }
+        .heatmap-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 1rem;
+        }
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .heatmap-legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 1rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border: 1px solid rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        /* Fix text color for certain backgrounds */
+        .heatmap-cell.bg-warning {
+            color: #333;
+        }
+        .legend-color.bg-warning {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Tính điểm XSMB</h1>
+        <div class="alert alert-info mt-4 mb-4">
+            <p id="dataUpdateNote">Dữ liệu XSMB được cập nhật từ ngày 1/10/2005 đến ngày <span id="lastUpdateDate">AA/BB/CCCC</span></p>
+            <button id="updateDataButton" class="btn btn-warning">Cập nhật dữ liệu</button>
+        </div>
+        <!-- Navigation Menu -->
+        <ul class="nav mb-4 justify-content-center" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="/" role="tab">Thống kê</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="/scoring" role="tab">Tính điểm</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="/simulation" role="tab">Giả Lập</a>
+            </li>
+        </ul>
+        <form id="scoringForm">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Ngày bắt đầu:</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" min="2005-10-01" required>
+                    <small class="text-muted">Tự động tính từ ngày kết thúc</small>
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Ngày kết thúc:</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" required>
+                    <small class="text-muted" id="dateRangeInfo">Chọn ngày để tính khoảng thời gian</small>
+                </div>
+                <div class="col-md-4">
+                    <label for="mode" class="form-label">Chế độ:</label>
+                    <select class="form-select" id="mode" name="mode" required>
+                        <option value="de">Đề (Giải đặc biệt)</option>
+                        <option value="lo">Lô (Tất cả các giải)</option>
+                        <option value="prize1">Giải nhất</option>
+                        <option value="prize2">Giải nhì</option>
+                        <option value="prize3">Giải ba</option>
+                        <option value="prize4">Giải tư</option>
+                        <option value="prize5">Giải năm</option>
+                        <option value="prize6">Giải sáu</option>
+                        <option value="prize7">Giải bảy</option>
+                        <option value="pos1">Vị trí 1 (Giải nhất)</option>
+                        <option value="pos2">Vị trí 2 (Giải nhì 1)</option>
+                        <option value="pos3">Vị trí 3 (Giải nhì 2)</option>
+                        <option value="pos4">Vị trí 4 (Giải ba 1)</option>
+                        <option value="pos5">Vị trí 5 (Giải ba 2)</option>
+                        <option value="pos6">Vị trí 6 (Giải ba 3)</option>
+                        <option value="pos7">Vị trí 7 (Giải ba 4)</option>
+                        <option value="pos8">Vị trí 8 (Giải ba 5)</option>
+                        <option value="pos9">Vị trí 9 (Giải ba 6)</option>
+                        <option value="pos10">Vị trí 10 (Giải tư 1)</option>
+                        <option value="pos11">Vị trí 11 (Giải tư 2)</option>
+                        <option value="pos12">Vị trí 12 (Giải tư 3)</option>
+                        <option value="pos13">Vị trí 13 (Giải tư 4)</option>
+                        <option value="pos14">Vị trí 14 (Giải năm 1)</option>
+                        <option value="pos15">Vị trí 15 (Giải năm 2)</option>
+                        <option value="pos16">Vị trí 16 (Giải năm 3)</option>
+                        <option value="pos17">Vị trí 17 (Giải năm 4)</option>
+                        <option value="pos18">Vị trí 18 (Giải năm 5)</option>
+                        <option value="pos19">Vị trí 19 (Giải năm 6)</option>
+                        <option value="pos20">Vị trí 20 (Giải sáu 1)</option>
+                        <option value="pos21">Vị trí 21 (Giải sáu 2)</option>
+                        <option value="pos22">Vị trí 22 (Giải sáu 3)</option>
+                        <option value="pos23">Vị trí 23 (Giải bảy 1)</option>
+                        <option value="pos24">Vị trí 24 (Giải bảy 2)</option>
+                        <option value="pos25">Vị trí 25 (Giải bảy 3)</option>
+                        <option value="pos26">Vị trí 26 (Giải bảy 4)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Search Options -->
+            <div class="search-options mb-3">
+                <label class="form-label fw-bold">Loại tìm kiếm:</label>
+                
+                <div class="form-option">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="searchType" id="searchByOccurrence" value="occurrence" checked>
+                        <label class="form-check-label" for="searchByOccurrence">
+                            Tìm theo số lần xuất hiện
+                        </label>
+                    </div>
+                    <div id="occurrenceInput" style="display: block; margin-top: 0.5rem;">
+                        <input type="number" class="form-control" id="occurrenceCount" name="occurrenceCount" placeholder="Nhập số lần xuất hiện" min="0">
+                    </div>
+                </div>
+
+                <div class="form-option">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="searchType" id="searchByForms" value="forms">
+                        <label class="form-check-label" for="searchByForms">
+                            Tìm theo dạng số cụ thể
+                        </label>
+                    </div>
+                    <div id="formsSelection" style="display: none; margin-top: 0.5rem;">
+                        <div class="checkbox-container">
+                            <div class="checkbox-grid" id="checkboxGrid">
+                                <!-- Checkboxes will be generated by JavaScript -->
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllForms">Chọn tất cả</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllForms">Bỏ chọn tất cả</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+                <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+            </div>
+            
+            <hr class="my-5" style="border-top: 3px solid #0d6efd;">
+
+            <% if (typeof aggregateResults !== 'undefined' && aggregateResults.length > 0) { %>
+                <div class="mt-5">
+                    <h2 class="text-center mb-3">Bảng Điểm Tổng Hợp Các Số (00-99)</h2>
+                    <div class="alert alert-primary text-center">
+                        Phân tích tự động dựa trên dữ liệu từ ngày <strong><%= aggStartDate %></strong> đến <strong><%= aggEndDate %></strong> ở chế độ <strong><%= aggMode %></strong>.
+                    </div>
+                    <div class="heatmap-container">
+                        <h4 class="text-center mb-4">Biểu đồ Nhiệt Điểm Tổng Hợp</h4>
+                        <div id="scoreHeatmap" class="score-grid">
+                            </div>
+                        <div id="heatmapLegend" class="heatmap-legend">
+                            </div>
+                    </div>
+                     <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="table-dark text-center">
+                                <tr>
+                                    <th>Số</th>
+                                    <th>Điểm Tổng Hợp</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Chi Tiết Điểm</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% aggregateResults.forEach(result => { %>
+                                    <tr>
+                                        <td class="text-center"><span class="badge bg-primary fs-5"><%= result.number %></span></td>
+                                        <td class="text-center"><span class="total-score <%= result.totalScore >= 0 ? 'score-positive' : 'score-negative' %>"><%= result.totalScore %></span></td>
+                                        <td class="text-center"><span class="badge <%= result.statusClass %> fs-6"><%= result.status %></span></td>
+                                        <td>
+                                            <div class="accordion accordion-flush" id="acc-<%= result.number %>">
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header">
+                                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#coll-<%= result.number %>">
+                                                            Xem <%= result.contributingForms.length %> dạng đóng góp
+                                                        </button>
+                                                    </h2>
+                                                    <div id="coll-<%= result.number %>" class="accordion-collapse collapse" data-bs-parent="#acc-<%= result.number %>">
+                                                        <div class="accordion-body p-2">
+                                                            <ul class="list-group list-group-flush">
+                                                                <% result.contributingForms.forEach(form => { %>
+                                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                        <div>
+                                                                            <small><%= form.formName %></small>
+                                                                            <small class="d-block text-muted">Xuất hiện: <%= form.occurrences %>, HS: <%= form.multiplier %></small>
+                                                                        </div>
+                                                                        <span class="badge <%= form.score >= 0 ? 'bg-success' : 'bg-danger' %>"><%= Math.round(form.score * 10) / 10 %></span>
+                                                                    </li>
+                                                                <% }) %>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="alert alert-danger text-center mt-5">Không thể tính toán Bảng Điểm Tổng Hợp.</div>
+            <% } %>
+            
+            <!-- Sort options dropdown - BACK TO ORIGINAL POSITION -->
+            <% if (typeof results !== 'undefined' && results && results.length > 0) { %>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label for="sortOrder" class="form-label fw-bold">📋 Sắp xếp kết quả:</label>
+                        <select class="form-select" id="sortOrder" onchange="sortResults()">
+                            <option value="score-asc" selected>Điểm: Thấp → Cao ⚠️</option>
+                            <option value="score-desc">Điểm: Cao → Thấp ✅</option>
+                            <option value="form-asc">Dạng số: A → Z</option>
+                            <option value="occurrences-desc">Lần xuất hiện: Nhiều → Ít</option>
+                            <option value="occurrences-asc">Lần xuất hiện: Ít → Nhiều</option>
+                        </select>
+                    </div>
+                </div>
+            <% } %>
+        </form>
+
+        <% if (typeof results !== 'undefined' && results && results.length > 0) { %>
+        <div class="mt-5">
+            <h3 class="text-center mb-4">Kết quả tính điểm</h3>
+            
+            <!-- Display search info and statistics -->
+            <% if (typeof searchType !== 'undefined') { %>
+                <% if (searchType === 'all') { %>
+                    <p>Hiển thị tất cả các dạng số | Tổng số dạng: <%= results.length %> | Điểm tối đa: 90</p>
+                <% } else if (searchType === 'occurrence') { %>
+                    <p>Tìm theo số lần xuất hiện: <%= occurrenceCount %> | Số dạng tìm thấy: <%= results.length %></p>
+                <% } else if (searchType === 'forms') { %>
+                    <p>Tìm theo dạng số đã chọn | Số dạng tìm thấy: <%= results.length %></p>
+                <% } %>
+            <% } else { %>
+                <p>Điểm tối đa: 90 | Công thức tính điểm: 90 - (Số lần xuất hiện × Hệ số nhân)</p>
+                <div class="alert alert-info">
+                    <h6>📊 Hệ số nhân theo dạng số:</h6>
+                    <div class="row small">
+                        <div class="col-md-6">
+                            <strong>Dạng chính (25 số):</strong> x1<br>
+                            <strong>Dạng con (4 số):</strong> x6.25<br>
+                            <strong>Dạng con (2 số):</strong> x12.5<br>
+                            <strong>Số đặc biệt (44,45,54,55):</strong> x30
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Nhóm đầu/đít (8 số):</strong> x1.25<br>
+                            <strong>Đầu/đít riêng lẻ (10 số):</strong> x2.5<br>
+                            <strong>Số cụ thể (00-99):</strong> x15<br>
+                            <strong>Đít = 4, Đít = 5:</strong> x1.25
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- Display scoring statistics -->
+            <% 
+            const positiveScores = results.filter(r => r.score > 0).length;
+            const zeroScores = results.filter(r => r.score === 0).length;
+            const negativeScores = results.filter(r => r.score < 0).length;
+            const maxScore = Math.max(...results.map(r => r.score));
+            const minScore = Math.min(...results.map(r => r.score));
+            %>
+            
+            <div class="alert alert-info">
+                <div class="row">
+                    <div class="col-md-3">
+                        <strong>Điểm dương:</strong> <span class="text-success"><%= positiveScores %></span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Điểm bằng 0:</strong> <span class="text-warning"><%= zeroScores %></span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Điểm âm:</strong> <span class="text-danger"><%= negativeScores %></span>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Khoảng điểm:</strong> <%= minScore %> ~ <%= maxScore %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Display duplicate numbers if available -->
+            <% if (typeof duplicates !== 'undefined' && duplicates && Object.keys(duplicates).length > 0) { %>
+                <div class="alert alert-warning">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Các số trùng giữa các dạng đã chọn:</h5>
+                    <p class="mb-3"><small class="text-muted">Những số này xuất hiện trong nhiều dạng số khác nhau, cần lưu ý khi phân tích.</small></p>
+                    
+                    <div class="row">
+                        <% Object.keys(duplicates).sort((a, b) => duplicates[b].length - duplicates[a].length).forEach((number, index) => { %>
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-warning duplicate-number-card">
+                                    <div class="card-body p-3">
+                                        <h6 class="card-title text-warning mb-2">
+                                            <strong>Số <%= number %></strong>
+                                            <span class="badge bg-warning text-dark ms-2"><%= duplicates[number].length %> dạng</span>
+                                        </h6>
+                                        <div class="card-text">
+                                            <% duplicates[number].forEach((form, formIndex) => { %>
+                                                <span class="badge bg-light text-dark me-1 mb-1 form-badge"><%= form %></span>
+                                            <% }) %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                    
+                    <!-- Summary statistics -->
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <strong class="text-primary"><%= Object.keys(duplicates).length %></strong>
+                                <br><small>Số trùng tổng cộng</small>
+                            </div>
+                            <div class="col-md-4">
+                                <strong class="text-warning"><%= Math.max(...Object.values(duplicates).map(forms => forms.length)) %></strong>
+                                <br><small>Dạng tối đa/1 số</small>
+                            </div>
+                            <div class="col-md-4">
+                                <strong class="text-info"><%= (Object.keys(duplicates).length / results.length * 100).toFixed(1) %>%</strong>
+                                <br><small>Tỷ lệ số trùng</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% } else if (typeof searchType !== 'undefined' && searchType === 'forms') { %>
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle"></i> Không có số trùng</h6>
+                    <p class="mb-0"><small>Các dạng số đã chọn không có số nào trùng nhau.</small></p>
+                </div>
+            <% } %>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Dạng số</th>
+                            <th>Ngày xuất hiện</th>
+                            <th>Hệ số nhân</th>
+                            <th>Số lần xuất hiện</th>
+                            <th>Điểm</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% results.forEach((result, index) => { %>
+                            <tr class="<% if (result.score < 0) { %>table-danger<% } else if (result.score === 0) { %>table-warning<% } else if (result.score >= 85) { %>table-success<% } %>">
+                                <td>
+                                    <strong><%= result.form %></strong>
+                                    <% if (result.score < 0) { %>
+                                        <br><small class="text-danger">⚠️ Xuất hiện quá nhiều</small>
+                                    <% } else if (result.score >= 85) { %>
+                                        <br><small class="text-success">✓ Ít xuất hiện</small>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (result.dates.length > 0) { %>
+                                        <div style="max-height: 120px; overflow-y: auto;">
+                                            <% result.dates.forEach((date, index) => { %>
+                                                <div class="mb-1">
+                                                    <small><%= date %>:</small>
+                                                    <% if (result.dateToNumbers && result.dateToNumbers[date]) { %>
+                                                        <span class="highlight"><%= result.dateToNumbers[date].join(', ') %></span>
+                                                    <% } else { %>
+                                                        <span class="highlight">N/A</span>
+                                                    <% } %>
+                                                </div>
+                                            <% }) %>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="text-muted">Không xuất hiện</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary"><%= result.multiplier %></span>
+                                </td>
+                                <td>
+                                    <span class="badge <% if (result.occurrences > 50) { %>bg-danger<% } else if (result.occurrences > 20) { %>bg-warning<% } else { %>bg-success<% } %>">
+                                        <%= result.occurrences %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if (result.score < 0) { %>
+                                        <span class="text-danger fw-bold fs-5"><%= result.score %></span>
+                                    <% } else if (result.score === 0) { %>
+                                        <span class="text-warning fw-bold fs-5"><%= result.score %></span>
+                                    <% } else if (result.score >= 85) { %>
+                                        <span class="text-success fw-bold fs-5"><%= result.score %></span>
+                                    <% } else { %>
+                                        <span class="text-primary fw-bold fs-5"><%= result.score %></span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (result.score < 0) { %>
+                                        <span class="badge bg-danger">Quá tần suất</span>
+                                    <% } else if (result.score === 0) { %>
+                                        <span class="badge bg-warning">Cân bằng</span>
+                                    <% } else if (result.score >= 85) { %>
+                                        <span class="badge bg-success">Tốt</span>
+                                    <% } else if (result.score >= 70) { %>
+                                        <span class="badge bg-info">Khá</span>
+                                    <% } else { %>
+                                        <span class="badge bg-secondary">Trung bình</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Score distribution chart -->
+            <div class="mt-4">
+                <h5>Phân bố điểm số</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center border-success">
+                            <div class="card-body">
+                                <h2 class="text-success"><%= positiveScores %></h2>
+                                <p class="card-text">Dạng có điểm dương<br><small class="text-muted">(Ít xuất hiện)</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center border-warning">
+                            <div class="card-body">
+                                <h2 class="text-warning"><%= zeroScores %></h2>
+                                <p class="card-text">Dạng có điểm bằng 0<br><small class="text-muted">(Xuất hiện đúng mức)</small></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center border-danger">
+                            <div class="card-body">
+                                <h2 class="text-danger"><%= negativeScores %></h2>
+                                <p class="card-text">Dạng có điểm âm<br><small class="text-muted">(Xuất hiện quá nhiều)</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations based on scores -->
+            <% if (negativeScores > 0 || positiveScores > 0) { %>
+                <div class="mt-4">
+                    <h5>Gợi ý dự đoán</h5>
+                    <div class="alert alert-light">
+                        <% if (negativeScores > 0) { %>
+                            <p><strong class="text-danger">⚠️ Các dạng số có điểm âm:</strong> Đã xuất hiện quá nhiều lần, có thể sẽ ít xuất hiện trong thời gian tới.</p>
+                        <% } %>
+                        <% if (positiveScores > 0) { %>
+                            <p><strong class="text-success">✓ Các dạng số có điểm cao:</strong> Xuất hiện ít, có thể có cơ hội xuất hiện nhiều hơn.</p>
+                        <% } %>
+                        <p><small class="text-muted">*Lưu ý: Đây chỉ là phân tích thống kê, không đảm bảo kết quả trong tương lai.</small></p>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+        <% } else if (typeof message !== 'undefined' && message) { %>
+        <div class="alert alert-info mt-4">
+            <%= message %>
+        </div>
+        <% } %>
+            
+        
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Define multiplier coefficients for each form type - CẬP NHẬT THEO YÊU CẦU
+        const formMultipliers = {
+            // Main categories (25 numbers each) - 1x multiplier
+            'even-even': 1,
+            'even-odd': 1, 
+            'odd-odd': 1,
+            'odd-even': 1,
+            
+            // Sub-categories (4 numbers each) - 6.25x multiplier
+            '0101': 6.25, // Đầu chẵn >4 Đít chẵn >4
+            '0000': 6.25, // Đầu chẵn <4 Đít chẵn <4
+            '0001': 6.25, // Đầu chẵn <4 Đít chẵn >4
+            '0100': 6.25, // Đầu chẵn >4 Đít chẵn <4
+            '0111': 6.25, // Đầu chẵn >4 Đít lẻ >5
+            '0010': 6.25, // Đầu chẵn <4 Đít lẻ <5
+            '0011': 6.25, // Đầu chẵn <4 Đít lẻ >5
+            '0110': 6.25, // Đầu chẵn >4 Đít lẻ <5
+            '1111': 6.25, // Đầu lẻ >5 Đít lẻ >5
+            '1010': 6.25, // Đầu lẻ <5 Đít lẻ <5
+            '1011': 6.25, // Đầu lẻ <5 Đít lẻ >5
+            '1110': 6.25, // Đầu lẻ >5 Đít lẻ <5
+            '1101': 6.25, // Đầu lẻ >5 Đít chẵn >4
+            '1000': 6.25, // Đầu lẻ <5 Đít chẵn <4
+            '1001': 6.25, // Đầu lẻ <5 Đít chẵn >4
+            '1100': 6.25, // Đầu lẻ >5 Đít chẵn <4
+            
+            // Sub-categories (2 numbers each) - 12.5x multiplier
+            '400': 12.5,  // Đầu chẵn =4 Đít chẵn <4
+            '401': 12.5,  // Đầu chẵn =4 Đít chẵn >4
+            '004': 12.5,  // Đít chẵn =4 Đầu chẵn <4
+            '014': 12.5,  // Đít chẵn =4 Đầu chẵn >4
+            '410': 12.5,  // Đầu chẵn =4 Đít lẻ <5
+            '411': 12.5,  // Đầu chẵn =4 Đít lẻ >5
+            '015': 12.5,  // Đầu chẵn >4 Đít lẻ =5
+            '005': 12.5,  // Đầu chẵn <4 Đít lẻ =5
+            '510': 12.5,  // Đầu lẻ =5 Đít lẻ <5
+            '511': 12.5,  // Đầu lẻ =5 Đít lẻ >5
+            '105': 12.5,  // Đít lẻ =5 Đầu lẻ <5
+            '115': 12.5,  // Đít lẻ =5 Đầu lẻ >5
+            '500': 12.5,  // Đầu lẻ =5 Đít chẵn <4
+            '501': 12.5,  // Đầu lẻ =5 Đít chẵn >4
+            '114': 12.5,  // Đầu lẻ >5 Đít chẵn =4
+            '104': 12.5,  // Đầu lẻ <5 Đít chẵn =4
+            
+            // Specific combinations (1 number each) - 30x multiplier
+            '44': 30,     // Đầu chẵn =4, Đít chẵn =4
+            '45': 30,     // Đầu chẵn =4, Đít lẻ =5
+            '55': 30,     // Đầu lẻ =5, Đít lẻ =5
+            '54': 30,     // Đầu lẻ =5, Đít chẵn =4
+            
+            // Head/Tail categories (8 numbers each) - 1.25x multiplier
+            'head-even-gt4': 1.25, // Đầu chẵn >4
+            'tail-even-gt4': 1.25, // Đít chẵn >4
+            'head-even-lt4': 1.25, // Đầu chẵn <4
+            'tail-even-lt4': 1.25, // Đít chẵn <4
+            'head-odd-lt5': 1.25,  // Đầu lẻ <5
+            'tail-odd-lt5': 1.25,  // Đít lẻ <5
+            'head-odd-gt5': 1.25,  // Đầu lẻ >5
+            'tail-odd-gt5': 1.25,  // Đít lẻ >5
+            'tail-4': 1.25,        // Đít chẵn = 4
+            'tail-5': 1.25,        // Đít lẻ = 5
+            
+            // Specific head/tail values (10 numbers each) - 2.5x multiplier
+            'head-4': 2.5,  // Đầu =4
+            'head-5': 2.5,  // Đầu =5
+        };
+
+        // Apply 2.5x multiplier to all individual heads and tails (0-9)
+        for (let i = 0; i < 10; i++) {
+            formMultipliers[`head-${i}`] = 2.5;
+            formMultipliers[`tail-${i}`] = 2.5;
+        }
+
+        // Apply 15x multiplier to all individual numbers (00-99)
+        for (let i = 0; i < 100; i++) {
+            const numStr = String(i).padStart(2, '0');
+            formMultipliers[numStr] = 15;
+        }
+
+        // Function to get number count for each form type
+        function getFormNumberCount(formValue) {
+            const countMap = {
+                // Main categories
+                'even-even': 25, 'even-odd': 25, 'odd-odd': 25, 'odd-even': 25,
+                
+                // Sub-categories (4 numbers each)
+                '0101': 4, '0000': 4, '0001': 4, '0100': 4,
+                '0111': 4, '0010': 4, '0011': 4, '0110': 4,
+                '1111': 4, '1010': 4, '1011': 4, '1110': 4,
+                '1101': 4, '1000': 4, '1001': 4, '1100': 4,
+                
+                // Sub-categories (2 numbers each)
+                '400': 2, '401': 2, '004': 2, '014': 2,
+                '410': 2, '411': 2, '015': 2, '005': 2,
+                '510': 2, '511': 2, '105': 2, '115': 2,
+                '500': 2, '501': 2, '114': 2, '104': 2,
+                
+                // Specific combinations (1 number each)
+                '44': 1, '45': 1, '55': 1, '54': 1,
+                
+                // Head/Tail categories
+                'head-even-gt4': 8, 'tail-even-gt4': 8, 
+                'head-even-lt4': 8, 'tail-even-lt4': 8,
+                'head-odd-lt5': 8, 'tail-odd-lt5': 8,
+                'head-odd-gt5': 8, 'tail-odd-gt5': 8,
+                'head-4': 10, 'head-5': 10
+            };
+            
+            // Individual heads and tails (10 each)
+            for (let i = 0; i < 10; i++) {
+                countMap[`head-${i}`] = 10;
+                countMap[`tail-${i}`] = 10;
+            }
+            
+            // Individual numbers (1 each)
+            for (let i = 0; i < 100; i++) {
+                const numStr = String(i).padStart(2, '0');
+                countMap[numStr] = 1;
+            }
+            
+            return countMap[formValue] || 1;
+        }
+
+        // Function to get multiplier for a form
+        function getFormMultiplier(formValue) {
+            return formMultipliers[formValue] || 1;
+        }
+        const formTypes = [
+            // Basic patterns
+            { value: 'even-even', description: 'Dạng chẵn chẵn' },
+            { value: '0101', description: 'Đầu chẵn >4 Đít chẵn >4' },
+            { value: '0000', description: 'Đầu chẵn <4 Đít chẵn <4' },
+            { value: '0001', description: 'Đầu chẵn <4 Đít chẵn >4' },
+            { value: '0100', description: 'Đầu chẵn >4 Đít chẵn <4' },
+            { value: '400', description: 'Đầu chẵn =4 Đít chẵn <4' },
+            { value: '401', description: 'Đầu chẵn =4 Đít chẵn >4' },
+            { value: '004', description: 'Đít chẵn =4 Đầu chẵn <4' },
+            { value: '014', description: 'Đít chẵn =4 Đầu chẵn >4' },
+            { value: '44', description: 'Đầu chẵn =4, Đít chẵn =4' },
+            
+            { value: 'even-odd', description: 'Dạng chẵn lẻ' },
+            { value: '0111', description: 'Đầu chẵn >4 Đít lẻ >5' },
+            { value: '0010', description: 'Đầu chẵn <4 Đít lẻ <5' },
+            { value: '0011', description: 'Đầu chẵn <4 Đít lẻ >5' },
+            { value: '0110', description: 'Đầu chẵn >4 Đít lẻ <5' },
+            { value: '410', description: 'Đầu chẵn =4 Đít lẻ <5' },
+            { value: '411', description: 'Đầu chẵn =4 Đít lẻ >5' },
+            { value: '015', description: 'Đầu chẵn >4 Đít lẻ =5' },
+            { value: '005', description: 'Đầu chẵn <4 Đít lẻ =5' },
+            { value: '45', description: 'Đầu chẵn =4, Đít lẻ =5' },
+            
+            { value: 'odd-odd', description: 'Dạng lẻ lẻ' },
+            { value: '1111', description: 'Đầu lẻ >5 Đít lẻ >5' },
+            { value: '1010', description: 'Đầu lẻ <5 Đít lẻ <5' },
+            { value: '1011', description: 'Đầu lẻ <5 Đít lẻ >5' },
+            { value: '1110', description: 'Đầu lẻ >5 Đít lẻ <5' },
+            { value: '510', description: 'Đầu lẻ =5 Đít lẻ <5' },
+            { value: '511', description: 'Đầu lẻ =5 Đít lẻ >5' },
+            { value: '105', description: 'Đít lẻ =5 Đầu lẻ <5' },
+            { value: '115', description: 'Đít lẻ =5 Đầu lẻ >5' },
+            { value: '55', description: 'Đầu lẻ =5, Đít lẻ =5' },
+            
+            { value: 'odd-even', description: 'Dạng lẻ chẵn' },
+            { value: '1101', description: 'Đầu lẻ >5 Đít chẵn >4' },
+            { value: '1000', description: 'Đầu lẻ <5 Đít chẵn <4' },
+            { value: '1001', description: 'Đầu lẻ <5 Đít chẵn >4' },
+            { value: '1100', description: 'Đầu lẻ >5 Đít chẵn <4' },
+            { value: '500', description: 'Đầu lẻ =5 Đít chẵn <4' },
+            { value: '501', description: 'Đầu lẻ =5 Đít chẵn >4' },
+            { value: '114', description: 'Đầu lẻ >5 Đít chẵn =4' },
+            { value: '104', description: 'Đầu lẻ <5 Đít chẵn =4' },
+            { value: '54', description: 'Đầu lẻ =5, Đít chẵn =4' },
+            
+            // Categories (excluding individual numbers that are already defined above)
+            { value: 'head-even-gt4', description: 'Đầu chẵn lớn hơn 4' },
+            { value: 'tail-even-gt4', description: 'Đít chẵn lớn hơn 4' },
+            { value: 'head-even-lt4', description: 'Đầu chẵn bé hơn 4' },
+            { value: 'tail-even-lt4', description: 'Đít chẵn bé hơn 4' },
+            { value: 'head-4', description: 'Đầu = 4' },
+            { value: 'head-5', description: 'Đầu = 5' },
+            { value: 'head-odd-lt5', description: 'Đầu lẻ bé hơn 5' },
+            { value: 'tail-odd-lt5', description: 'Đít lẻ bé hơn 5' },
+            { value: 'head-odd-gt5', description: 'Đầu lẻ lớn hơn 5' },
+            { value: 'tail-odd-gt5', description: 'Đít lẻ lớn hơn 5' },
+        ];
+
+        // Add individual heads (0-9) - excluding 4 and 5 to avoid duplication
+        for (let i = 0; i < 10; i++) {
+            if (i !== 4 && i !== 5) {
+                formTypes.push({ value: `head-${i}`, description: `Đầu ${i}` });
+            }
+        }
+
+        // Add individual tails (0-9) - excluding 4 and 5 to avoid duplication
+        for (let i = 0; i < 10; i++) {
+            if (i !== 4 && i !== 5) {
+                formTypes.push({ value: `tail-${i}`, description: `Đít ${i}` });
+            }
+        }
+
+        // Add individual numbers (00-99) - excluding those already defined as specific combinations
+        const excludeNumbers = ['44', '45', '54', '55']; // These are already defined above
+        for (let i = 0; i < 100; i++) {
+            const numStr = String(i).padStart(2, '0');
+            if (!excludeNumbers.includes(numStr)) {
+                formTypes.push({ value: numStr, description: `Số ${numStr}` });
+            }
+        }
+
+        // Function to generate checkboxes
+        function generateCheckboxes() {
+            const grid = document.getElementById('checkboxGrid');
+            if (!grid) return;
+            
+            grid.innerHTML = ''; // Clear existing content
+            
+            // Sort formTypes for better organization
+            const sortedFormTypes = [...formTypes].sort((a, b) => {
+                // Prioritize main categories first
+                const mainCategories = ['even-even', 'even-odd', 'odd-odd', 'odd-even'];
+                const aIsMain = mainCategories.includes(a.value);
+                const bIsMain = mainCategories.includes(b.value);
+                
+                if (aIsMain && !bIsMain) return -1;
+                if (!aIsMain && bIsMain) return 1;
+                
+                // Then sort by description
+                return a.description.localeCompare(b.description, 'vi');
+            });
+            
+            sortedFormTypes.forEach((form, index) => {
+                const div = document.createElement('div');
+                div.className = 'form-check';
+                
+                // Create safe ID by replacing special characters and adding index to ensure uniqueness
+                const safeId = `form_${form.value.replace(/[^a-zA-Z0-9]/g, '_')}_${index}`;
+                
+                div.innerHTML = `
+                    <input class="form-check-input" type="checkbox" value="${form.value}" id="${safeId}" data-form-value="${form.value}">
+                    <label class="form-check-label" for="${safeId}">${form.description}</label>
+                `;
+                
+                grid.appendChild(div);
+            });
+            
+            console.log(`Generated ${sortedFormTypes.length} checkboxes total`);
+        }
+
+        // Enhanced restore function with better logging and reliability
+        function restoreCheckboxState(selectedFormsParam) {
+            if (!selectedFormsParam) {
+                console.log('No selected forms to restore');
+                return;
+            }
+            
+            const selectedForms = selectedFormsParam.split(',').map(form => form.trim());
+            console.log('Restoring checkboxes for:', selectedForms);
+            
+            let restoredCount = 0;
+            let notFoundCount = 0;
+            
+            selectedForms.forEach(form => {
+                // Try multiple methods to find the checkbox
+                let checkbox = null;
+                
+                // Method 1: Find by data-form-value attribute (most reliable)
+                checkbox = document.querySelector(`#checkboxGrid input[data-form-value="${form}"]`);
+                
+                // Method 2: Find by value attribute as fallback
+                if (!checkbox) {
+                    checkbox = document.querySelector(`#checkboxGrid input[value="${form}"]`);
+                }
+                
+                // Method 3: Find by checking all checkboxes manually
+                if (!checkbox) {
+                    const allCheckboxes = document.querySelectorAll('#checkboxGrid input[type="checkbox"]');
+                    for (let cb of allCheckboxes) {
+                        if (cb.value === form || cb.getAttribute('data-form-value') === form) {
+                            checkbox = cb;
+                            break;
+                        }
+                    }
+                }
+                
+                if (checkbox) {
+                    checkbox.checked = true;
+                    restoredCount++;
+                    console.log(`✓ Restored: ${form}`);
+                } else {
+                    notFoundCount++;
+                    console.warn(`✗ Checkbox not found for form: ${form}`);
+                    
+                    // Debug: List all available form values
+                    const availableForms = Array.from(document.querySelectorAll('#checkboxGrid input[type="checkbox"]'))
+                        .map(cb => cb.value || cb.getAttribute('data-form-value'))
+                        .filter(Boolean);
+                    console.log('Available forms:', availableForms.slice(0, 10)); // Show first 10 for debugging
+                }
+            });
+            
+            console.log(`Restore summary: ${restoredCount} restored, ${notFoundCount} not found out of ${selectedForms.length} total`);
+            
+            // Update the forms selection display if any checkboxes were restored
+            if (restoredCount > 0) {
+                const searchTypeRadio = document.querySelector('input[name="searchType"][value="forms"]');
+                if (searchTypeRadio && !searchTypeRadio.checked) {
+                    searchTypeRadio.checked = true;
+                    document.getElementById('formsSelection').style.display = 'block';
+                }
+            }
+        }
+
+        // Search type change handlers
+        document.querySelectorAll('input[name="searchType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const occurrenceInput = document.getElementById('occurrenceInput');
+                const formsSelection = document.getElementById('formsSelection');
+                
+                // Hide all option-specific inputs
+                occurrenceInput.style.display = 'none';
+                formsSelection.style.display = 'none';
+                
+                // Show relevant input based on selection
+                if (this.value === 'occurrence') {
+                    occurrenceInput.style.display = 'block';
+                } else if (this.value === 'forms') {
+                    formsSelection.style.display = 'block';
+                }
+            });
+        });
+
+        // Select/Clear all forms functions
+        function setupFormButtons() {
+            const selectAllBtn = document.getElementById('selectAllForms');
+            const clearAllBtn = document.getElementById('clearAllForms');
+            
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener('click', function() {
+                    document.querySelectorAll('#checkboxGrid input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.checked = true;
+                    });
+                });
+            }
+
+            if (clearAllBtn) {
+                clearAllBtn.addEventListener('click', function() {
+                    document.querySelectorAll('#checkboxGrid input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                });
+            }
+        }
+
+        // Function to sort results table - SỬA LẠI LOGIC SẮP XẾP
+        function sortResults() {
+            const sortOrder = document.getElementById('sortOrder').value;
+            const tableBody = document.querySelector('table tbody');
+            
+            if (!tableBody) return; // No results table found
+            
+            const rows = Array.from(tableBody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                switch (sortOrder) {
+                    case 'score-asc':
+                        // Sort by score: Low to High - SỬA: cột điểm là cột thứ 4 (index 4)
+                        const scoreTextA = a.cells[4].querySelector('span').textContent.trim();
+                        const scoreTextB = b.cells[4].querySelector('span').textContent.trim();
+                        const scoreA = parseFloat(scoreTextA);
+                        const scoreB = parseFloat(scoreTextB);
+                        return scoreA - scoreB;
+                        
+                    case 'score-desc':
+                        // Sort by score: High to Low - SỬA: cột điểm là cột thứ 4 (index 4)
+                        const scoreTextA2 = a.cells[4].querySelector('span').textContent.trim();
+                        const scoreTextB2 = b.cells[4].querySelector('span').textContent.trim();
+                        const scoreA2 = parseFloat(scoreTextA2);
+                        const scoreB2 = parseFloat(scoreTextB2);
+                        return scoreB2 - scoreA2;
+                        
+                    case 'form-asc':
+                        // Sort by form name: A to Z - SỬA: cột dạng số là cột đầu tiên (index 0)
+                        const formA = a.cells[0].querySelector('strong').textContent.trim();
+                        const formB = b.cells[0].querySelector('strong').textContent.trim();
+                        return formA.localeCompare(formB, 'vi');
+                        
+                    case 'occurrences-desc':
+                        // Sort by occurrences: High to Low - SỬA: cột số lần xuất hiện là cột thứ 3 (index 3)
+                        const occTextA = a.cells[3].querySelector('span.badge').textContent.trim();
+                        const occTextB = b.cells[3].querySelector('span.badge').textContent.trim();
+                        const occA = parseInt(occTextA);
+                        const occB = parseInt(occTextB);
+                        return occB - occA;
+                        
+                    case 'occurrences-asc':
+                        // Sort by occurrences: Low to High - SỬA: cột số lần xuất hiện là cột thứ 3 (index 3)
+                        const occTextA2 = a.cells[3].querySelector('span.badge').textContent.trim();
+                        const occTextB2 = b.cells[3].querySelector('span.badge').textContent.trim();
+                        const occA2 = parseInt(occTextA2);
+                        const occB2 = parseInt(occTextB2);
+                        return occA2 - occB2;
+                        
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Clear table body and append sorted rows
+            tableBody.innerHTML = '';
+            rows.forEach((row) => {
+                tableBody.appendChild(row);
+            });
+            
+            // Update row highlighting after sorting
+            updateRowHighlighting();
+            
+            // Update URL with current sort order
+            updateURLWithSortOrder(sortOrder);
+        }
+        
+        // Function to update URL with sort order without reloading page
+        function updateURLWithSortOrder(sortOrder) {
+            const currentUrl = new URL(window.location);
+            currentUrl.searchParams.set('sortOrder', sortOrder);
+            
+            // Update URL without reloading the page
+            window.history.replaceState({}, '', currentUrl);
+        }
+        
+        // Function to update row highlighting based on scores
+        function updateRowHighlighting() {
+            const rows = document.querySelectorAll('table tbody tr');
+            rows.forEach(row => {
+                // SỬA: cột điểm là cột thứ 4 (index 4)
+                const scoreText = row.cells[4].querySelector('span').textContent.trim();
+                const score = parseFloat(scoreText);
+                
+                // Remove existing classes
+                row.classList.remove('table-danger', 'table-warning', 'table-success');
+                
+                // Add appropriate class based on score
+                if (score < 0) {
+                    row.classList.add('table-danger');
+                } else if (score === 0) {
+                    row.classList.add('table-warning');
+                } else if (score >= 85) {
+                    row.classList.add('table-success');
+                }
+            });
+        }
+        
+        // Form submission handler
+        document.getElementById('scoringForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const searchType = formData.get('searchType');
+            
+            let url = '/scoring?';
+            const params = new URLSearchParams();
+            
+            // Add basic parameters
+            params.append('startDate', formData.get('startDate'));
+            params.append('endDate', formData.get('endDate'));
+            params.append('mode', formData.get('mode'));
+            params.append('searchType', searchType);
+            
+            // Add sort order parameter if there are results
+            const sortOrderElement = document.getElementById('sortOrder');
+            if (sortOrderElement) {
+                params.append('sortOrder', sortOrderElement.value);
+            }
+            
+            if (searchType === 'occurrence') {
+                const occurrenceCount = formData.get('occurrenceCount');
+                if (!occurrenceCount || occurrenceCount.trim() === '') {
+                    alert('Vui lòng nhập số lần xuất hiện');
+                    return;
+                }
+                if (parseInt(occurrenceCount) < 0) {
+                    alert('Số lần xuất hiện phải lớn hơn hoặc bằng 0');
+                    return;
+                }
+                params.append('occurrenceCount', occurrenceCount);
+            } else if (searchType === 'forms') {
+                const selectedForms = [];
+                document.querySelectorAll('#checkboxGrid input[type="checkbox"]:checked').forEach(checkbox => {
+                    selectedForms.push(checkbox.getAttribute('data-form-value') || checkbox.value);
+                });
+                
+                if (selectedForms.length === 0) {
+                    alert('Vui lòng chọn ít nhất một dạng số');
+                    return;
+                }
+                
+                params.append('selectedForms', selectedForms.join(','));
+            }
+            
+            window.location.href = url + params.toString();
+        });
+
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function getUrlParameter(name) {
+            name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+            var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+            var results = regex.exec(location.search);
+            return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+        }
+
+        // Update end date handler - auto calculate start date (UPDATED LOGIC FROM INDEX.HTML)
+        document.getElementById('endDate').addEventListener('change', function () {
+            const endDateValue = this.value;
+            if (endDateValue) {
+                const endDate = new Date(endDateValue);
+                const startDate = new Date(endDate);
+                startDate.setDate(endDate.getDate() - 359); // Changed from 360 to 359
+                
+                // Check if start date is before the minimum allowed date
+                const today = new Date();
+                const todayFormatted = today.toISOString().split('T')[0];
+                const startDateFormatted = startDate.toISOString().split('T')[0];
+                
+                document.getElementById('startDate').value = startDateFormatted;
+                
+                // If start date is in the future, set it to today
+                if (startDate > today) {
+                    document.getElementById('startDate').value = todayFormatted;
+                }
+                
+                // Update date range info
+                updateDateRangeInfo();
+            }
+        });
+
+        // Date range info update function
+        function updateDateRangeInfo() {
+            const startDateValue = document.getElementById('startDate').value;
+            const endDateValue = document.getElementById('endDate').value;
+            const dateRangeInfo = document.getElementById('dateRangeInfo');
+            
+            if (startDateValue && endDateValue) {
+                const startDate = new Date(startDateValue);
+                const endDate = new Date(endDateValue);
+                const daysDifference = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                
+                if (daysDifference > 0) {
+                    dateRangeInfo.textContent = `Khoảng: ${daysDifference} ngày`;
+                    dateRangeInfo.className = 'text-success';
+                    
+                    if (daysDifference > 1000) {
+                        dateRangeInfo.textContent += ' (nhiều dữ liệu)';
+                        dateRangeInfo.className = 'text-warning';
+                    }
+                } else {
+                    dateRangeInfo.textContent = 'Ngày không hợp lệ';
+                    dateRangeInfo.className = 'text-danger';
+                }
+            } else {
+                dateRangeInfo.textContent = 'Chọn ngày để tính khoảng thời gian';
+                dateRangeInfo.className = 'text-muted';
+            }
+        }
+
+        // Update last update date
+        function updateLastUpdateDate() {
+            fetch('/api/last-update-date')
+                .then(response => response.json())
+                .then(data => {
+                    const lastUpdateDateElement = document.getElementById('lastUpdateDate');
+                    if (data.lastUpdateDate) {
+                        const formattedDate = formatDate(data.lastUpdateDate);
+                        lastUpdateDateElement.textContent = formattedDate;
+                    } else {
+                        lastUpdateDateElement.textContent = 'Không có dữ liệu';
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi khi lấy ngày cập nhật:', error);
+                });
+        }
+
+        // Update data
+        function updateData() {
+            fetch('/api/update-data', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Dữ liệu đã được cập nhật thành công!');
+                    updateLastUpdateDate();
+                } else {
+                    alert('Có lỗi xảy ra khi cập nhật dữ liệu.');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi cập nhật dữ liệu:', error);
+                alert('Có lỗi xảy ra khi cập nhật dữ liệu.');
+            });
+        }
+
+        // DOM Content Loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate checkboxes first
+            generateCheckboxes();
+            
+            // Setup form buttons
+            setupFormButtons();
+            
+            // Update last update date
+            updateLastUpdateDate();
+            
+            // Update data button handler
+            document.getElementById('updateDataButton').addEventListener('click', function () {
+                updateData();
+            });
+
+            // Set default dates (UPDATED LOGIC FROM INDEX.HTML)
+            const today = new Date().toISOString().split('T')[0];
+            const defaultStartDate = new Date();
+            defaultStartDate.setDate(defaultStartDate.getDate() - 359); // Changed from 360 to 359
+            const formattedStartDate = defaultStartDate.toISOString().split('T')[0];
+            
+            // Get URL parameters
+            const startDateParam = getUrlParameter('startDate');
+            const endDateParam = getUrlParameter('endDate');
+            const modeParam = getUrlParameter('mode');
+            const searchTypeParam = getUrlParameter('searchType');
+            const occurrenceCountParam = getUrlParameter('occurrenceCount');
+            const selectedFormsParam = getUrlParameter('selectedForms');
+            const sortOrderParam = getUrlParameter('sortOrder'); // Thêm parameter sort order
+            
+            // Set form values from URL parameters or defaults
+            if (!document.getElementById('startDate').value) {
+                document.getElementById('startDate').value = startDateParam || formattedStartDate;
+            }
+            
+            if (!document.getElementById('endDate').value) {
+                document.getElementById('endDate').value = endDateParam || today;
+            }
+            
+            if (modeParam) {
+                document.getElementById('mode').value = modeParam;
+            }
+            
+            // Set search type and restore form state
+            if (searchTypeParam) {
+                const radioButton = document.querySelector(`input[name="searchType"][value="${searchTypeParam}"]`);
+                if (radioButton) {
+                    radioButton.checked = true;
+                    
+                    if (searchTypeParam === 'occurrence') {
+                        document.getElementById('occurrenceInput').style.display = 'block';
+                        document.getElementById('formsSelection').style.display = 'none';
+                        if (occurrenceCountParam) {
+                            document.getElementById('occurrenceCount').value = occurrenceCountParam;
+                        }
+                    } else if (searchTypeParam === 'forms') {
+                        document.getElementById('formsSelection').style.display = 'block';
+                        document.getElementById('occurrenceInput').style.display = 'none';
+                        
+                        // Restore checkbox state with multiple attempts and longer delays
+                        if (selectedFormsParam) {
+                            console.log('Starting checkbox restoration process...');
+                            
+                            // Try immediately
+                            restoreCheckboxState(selectedFormsParam);
+                            
+                            // Try again after 100ms (DOM might not be fully ready)
+                            setTimeout(() => {
+                                console.log('Retry 1: Attempting checkbox restoration...');
+                                restoreCheckboxState(selectedFormsParam);
+                            }, 100);
+                            
+                            // Final attempt after 500ms
+                            setTimeout(() => {
+                                console.log('Retry 2: Final attempt at checkbox restoration...');
+                                restoreCheckboxState(selectedFormsParam);
+                            }, 500);
+                        }
+                    }
+                }
+            } else {
+                // Default state: show occurrence input, hide forms selection
+                document.getElementById('occurrenceInput').style.display = 'block';
+                document.getElementById('formsSelection').style.display = 'none';
+            }
+
+            // Set active tab based on current path
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+            
+            // Initial date range info update
+            updateDateRangeInfo();
+            
+            // Auto-sort results by score (low to high) if results table exists
+            const resultsTable = document.querySelector('table tbody');
+            if (resultsTable && resultsTable.children.length > 0) {
+                const sortOrderDropdown = document.getElementById('sortOrder');
+                if (sortOrderDropdown) {
+                    // Set sort order from URL parameter or default to score ascending
+                    if (sortOrderParam && sortOrderParam !== '') {
+                        sortOrderDropdown.value = sortOrderParam;
+                    } else {
+                        sortOrderDropdown.value = 'score-asc';
+                    }
+                    
+                    // Apply the sorting
+                    setTimeout(() => {
+                        sortResults();
+                    }, 100);
+                }
+            }
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Dữ liệu được nhúng từ controller
+            const aggregateData = <%- JSON.stringify(aggregateResults || []) %>;
+
+            if (aggregateData && aggregateData.length > 0) {
+                const heatmapContainer = document.getElementById('scoreHeatmap');
+                const legendContainer = document.getElementById('heatmapLegend');
+
+                // Tạo một map để tra cứu nhanh thông tin của số
+                const resultsMap = new Map(aggregateData.map(item => [item.number, {
+                    class: item.statusClass,
+                    score: item.totalScore
+                }]));
+                
+                // Tạo lưới 10x10
+                for (let i = 0; i < 100; i++) {
+                    const numberStr = String(i).padStart(2, '0');
+                    const cell = document.createElement('div');
+                    const result = resultsMap.get(numberStr);
+                    
+                    cell.textContent = numberStr;
+                    cell.classList.add('heatmap-cell');
+
+                    if (result) {
+                        // Áp dụng class màu từ dữ liệu (ví dụ: 'bg-success', 'bg-danger')
+                        cell.classList.add(...result.class.split(' '));
+                        // Thêm tooltip hiển thị điểm số chi tiết
+                        cell.title = `Số ${numberStr} | Điểm: ${result.score}`;
+                    } else {
+                        cell.classList.add('bg-light', 'text-muted');
+                        cell.title = `Số ${numberStr} | Không có dữ liệu`;
+                    }
+                    heatmapContainer.appendChild(cell);
+                }
+
+                // Tạo chú giải (legend)
+                const legendData = [
+                    { label: 'Khá', class: 'bg-success' },
+                    { label: 'Trung Bình', class: 'bg-info' },
+                    { label: 'Cân Bằng', class: 'bg-secondary' },
+                    { label: 'Kém', class: 'bg-warning text-dark' },
+                    { label: 'Rất Kém', class: 'bg-danger' }
+                ];
+
+                legendData.forEach(item => {
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+
+                    const colorBox = document.createElement('div');
+                    colorBox.className = 'legend-color';
+                    colorBox.classList.add(...item.class.split(' '));
+                    
+                    const label = document.createElement('span');
+                    label.textContent = item.label;
+
+                    legendItem.appendChild(colorBox);
+                    legendItem.appendChild(label);
+                    legendContainer.appendChild(legendItem);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê Xổ số Miền Bắc</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .nav-item .nav-link { font-weight: 500; color: #495057; background-color: #f8f9fa; border: 1px solid #dee2e6; margin-right: 5px; padding: 0.5rem 1rem; border-radius: 0.25rem; }
+        .nav-item .nav-link:hover { color: #007bff; background-color: #e9ecef; }
+        .nav-item .nav-link.active { color: #fff; background-color: #007bff; border-color: #007bff; font-weight: 600; }
+        .loading-spinner { display: none; z-index: 1000; }
+        .list-group-item h6 { font-size: 0.9rem; }
+        .result-sequence { font-family: monospace; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Thống kê XSMB</h1>
+        <div class="alert alert-info mt-4 mb-4">
+            <p id="dataUpdateNote">Dữ liệu XSMB được cập nhật từ ngày 1/10/2005 đến ngày <span id="lastUpdateDate">AA/BB/CCCC</span></p>
+            <button id="updateDataButton" class="btn btn-warning">Cập nhật dữ liệu</button>
+        </div>
+        
+        <ul class="nav mb-4 justify-content-center" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="/" role="tab">Thống kê</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="/scoring" role="tab">Tính điểm</a>
+            </li>
+             <li class="nav-item" role="presentation">
+                <a class="nav-link" href="/simulation" role="tab">Giả Lập</a>
+            </li>
+        </ul>
+        
+        <form id="statForm" class="mb-4">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Ngày bắt đầu:</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate">
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Ngày kết thúc:</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate">
+                </div>
+                <div class="col-md-4">
+                    <label for="mode" class="form-label">Chế độ:</label>
+                    <select class="form-select" id="mode" name="mode">
+                        <option value="de">Đề (Giải đặc biệt)</option>
+                        <option value="lo">Lô (Tất cả các giải)</option>
+                        <option value="prize1">Giải nhất</option>
+                        <option value="prize2">Giải nhì</option>
+                        <option value="prize3">Giải ba</option>
+                        <option value="prize4">Giải tư</option>
+                        <option value="prize5">Giải năm</option>
+                        <option value="prize6">Giải sáu</option>
+                        <option value="prize7">Giải bảy</option>
+                        <option value="pos1">Vị trí 1 (Giải nhất)</option>
+                        <option value="pos2">Vị trí 2 (Giải nhì 1)</option>
+                        <option value="pos3">Vị trí 3 (Giải nhì 2)</option>
+                        <option value="pos4">Vị trí 4 (Giải ba 1)</option>
+                        <option value="pos5">Vị trí 5 (Giải ba 2)</option>
+                        <option value="pos6">Vị trí 6 (Giải ba 3)</option>
+                        <option value="pos7">Vị trí 7 (Giải ba 4)</option>
+                        <option value="pos8">Vị trí 8 (Giải ba 5)</option>
+                        <option value="pos9">Vị trí 9 (Giải ba 6)</option>
+                        <option value="pos10">Vị trí 10 (Giải tư 1)</option>
+                        <option value="pos11">Vị trí 11 (Giải tư 2)</option>
+                        <option value="pos12">Vị trí 12 (Giải tư 3)</option>
+                        <option value="pos13">Vị trí 13 (Giải tư 4)</option>
+                        <option value="pos14">Vị trí 14 (Giải năm 1)</option>
+                        <option value="pos15">Vị trí 15 (Giải năm 2)</option>
+                        <option value="pos16">Vị trí 16 (Giải năm 3)</option>
+                        <option value="pos17">Vị trí 17 (Giải năm 4)</option>
+                        <option value="pos18">Vị trí 18 (Giải năm 5)</option>
+                        <option value="pos19">Vị trí 19 (Giải năm 6)</option>
+                        <option value="pos20">Vị trí 20 (Giải sáu 1)</option>
+                        <option value="pos21">Vị trí 21 (Giải sáu 2)</option>
+                        <option value="pos22">Vị trí 22 (Giải sáu 3)</option>
+                        <option value="pos23">Vị trí 23 (Giải bảy 1)</option>
+                        <option value="pos24">Vị trí 24 (Giải bảy 2)</option>
+                        <option value="pos25">Vị trí 25 (Giải bảy 3)</option>
+                        <option value="pos26">Vị trí 26 (Giải bảy 4)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="statFunction" class="form-label">Chức năng thống kê:</label>
+                    <select class="form-select" id="statFunction" name="statFunction">
+                        <optgroup label="--- CÁC DẠNG SỐ, ĐẦU, ĐÍT ---">
+                            <option value="/consecutive-pairs">Số về liên tiếp</option>
+                            <option value="/consecutive-heads">1 đầu về liên tiếp</option>
+                            <option value="/consecutive-tails">1 đít về liên tiếp</option>
+                            <option value="/alternating-heads">Các đầu về so le liên tiếp</option>
+                            <option value="/alternating-tails">Các đít về so le liên tiếp</option>
+                            <option value="/alternating-number-pairs">Số về so le theo cặp</option>
+                            <option value="/increasing-heads">Các đầu số tiến liên tiếp</option>
+                            <option value="/decreasing-heads">Các đầu số lùi liên tiếp</option>
+                            <option value="/increasing-tails">Các đít số tiến liên tiếp</option>
+                            <option value="/decreasing-tails">Các đít số lùi liên tiếp</option>
+                            <option value="/consecutive-increasing-numbers">Các số tiến liên tiếp</option>
+                            <option value="/consecutive-decreasing-numbers">Các số lùi liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=even-odd&order=asc">Các số chẵn lẻ tiến liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=even-odd&order=desc">Các số chẵn lẻ lùi liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=odd-even&order=asc">Các số lẻ chẵn tiến liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=odd-even&order=desc">Các số lẻ chẵn lùi liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=even-even&order=asc">Các số chẵn chẵn tiến liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=even-even&order=desc">Các số chẵn chẵn lùi liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=odd-odd&order=asc">Các số lẻ lẻ tiến liên tiếp</option>
+                            <option value="/parity-sequence-numbers?parityType=odd-odd&order=desc">Các số lẻ lẻ lùi liên tiếp</option>
+                            <option value="/odd-consecutive-heads">Các đầu lẻ tiến đều về liên tiếp</option>
+                            <option value="/odd-consecutive-tails">Các đít lẻ tiến đều về liên tiếp</option>
+                            <option value="/odd-decreasing-heads">Các đầu lẻ lùi đều về liên tiếp</option>
+                            <option value="/odd-decreasing-tails">Các đít lẻ lùi đều về liên tiếp</option>
+                            <option value="/even-increasing-heads">Các đầu chẵn tiến đều về liên tiếp</option>
+                            <option value="/even-increasing-tails">Các đít chẵn tiến đều về liên tiếp</option>
+                            <option value="/even-decreasing-heads">Các đầu chẵn lùi đều về liên tiếp</option>
+                            <option value="/even-decreasing-tails">Các đít chẵn lùi đều về liên tiếp</option>
+                            <option value="/consecutive-double-numbers">Dạng số kép về liên tiếp</option>
+                            <option value="/consecutive-offset-double-numbers">Dạng số kép lệch về liên tiếp</option>
+                            <option value="/even-heads-greater-than-4">Dạng đầu chẵn > 4 về liên tiếp</option>
+                            <option value="/even-heads-less-than-4">Dạng đầu chẵn < 4 về liên tiếp</option>
+                            <option value="/even-tails-greater-than-4">Dạng đít chẵn > 4 về liên tiếp</option>
+                            <option value="/even-tails-less-than-4">Dạng đít chẵn < 4 về liên tiếp</option>
+                            <option value="/odd-heads-greater-than-5">Dạng đầu lẻ > 5 về liên tiếp</option>
+                            <option value="/odd-heads-less-than-5">Dạng đầu lẻ < 5 về liên tiếp</option>
+                            <option value="/odd-tails-greater-than-5">Dạng đít lẻ > 5 về liên tiếp</option>
+                            <option value="/odd-tails-less-than-5">Dạng đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0101">Dạng đầu chẵn > 4 và đít chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0100">Dạng đầu chẵn > 4 và đít chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0111">Dạng đầu chẵn > 4 và đít lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0110">Dạng đầu chẵn > 4 và đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0001">Dạng đầu chẵn < 4 và đít chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0000">Dạng đầu chẵn < 4 và đít chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0011">Dạng đầu chẵn < 4 và đít lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=0010">Dạng đầu chẵn < 4 và đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1101">Dạng đầu lẻ > 5 và đít chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1100">Dạng đầu lẻ > 5 và đít chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1111">Dạng đầu lẻ > 5 và đít lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1110">Dạng đầu lẻ > 5 và đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1001">Dạng đầu lẻ < 5 và đít chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1000">Dạng đầu lẻ < 5 và đít chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1011">Dạng đầu lẻ < 5 và đít lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=1010">Dạng đầu lẻ < 5 và đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=401">Dạng đầu 4 và đít chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=400">Dạng đầu 4 và đít chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=411">Dạng đầu 4 và đít lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=410">Dạng đầu 4 và đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=501">Dạng đầu 5 và đít chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=500">Dạng đầu 5 và đít chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=511">Dạng đầu 5 và đít lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=510">Dạng đầu 5 và đít lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=014">Dạng đít 4 và đầu chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=004">Dạng đít 4 và đầu chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=114">Dạng đít 4 và đầu lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=104">Dạng đít 4 và đầu lẻ < 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=015">Dạng đít 5 và đầu chẵn > 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=005">Dạng đít 5 và đầu chẵn < 4 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=115">Dạng đít 5 và đầu lẻ > 5 về liên tiếp</option>
+                            <option value="/head-and-tail-stats?n=105">Dạng đít 5 và đầu lẻ < 5 về liên tiếp</option>
+                        </optgroup>    
+                            <optgroup label="--- TỔNG TT, TỔNG MỚI ---">
+                            <option value="/consecutive-sum-increasing-numbers?sumType=traditional">[Tổng TT] Các số cùng tổng tiến liên tiếp</option>
+                            <option value="/consecutive-sum-decreasing-numbers?sumType=traditional">[Tổng TT] Các số cùng tổng lùi liên tiếp</option>
+                            <option value="/consecutive-sum-increasing-numbers?sumType=new">[Tổng Mới] Các số cùng tổng tiến liên tiếp</option>
+                            <option value="/consecutive-sum-decreasing-numbers?sumType=new">[Tổng Mới] Các số cùng tổng lùi liên tiếp</option>
+                            <option value="/consecutive-sum-sequences?sumType=traditional&order=asc">[Tổng TT] Các tổng tiến liên tiếp</option>
+                            <option value="/consecutive-sum-sequences?sumType=traditional&order=desc">[Tổng TT] Các tổng lùi liên tiếp</option>
+                            <option value="/consecutive-sum-sequences?sumType=new&order=asc">[Tổng Mới] Các tổng tiến liên tiếp</option>
+                            <option value="/consecutive-sum-sequences?sumType=new&order=desc">[Tổng Mới] Các tổng lùi liên tiếp</option>
+                            <option value="/consecutive-sum?sumType=traditional">[Tổng TT] 1 Tổng về liên tiếp</option>
+                            <option value="/consecutive-sum?sumType=new">[Tổng Mới] 1 Tổng về liên tiếp</option>
+                            <option value="/traditionalSumRangeSequences?sumRange=1-2">[Tổng TT] Thống kê tổng (1,2) về liên tiếp</option>
+                            <option value="/traditionalSumRangeSequences?sumRange=3-4">[Tổng TT] Thống kê tổng (3,4) về liên tiếp</option>
+                            <option value="/traditionalSumRangeSequences?sumRange=5-6">[Tổng TT] Thống kê tổng (5,6) về liên tiếp</option>
+                            <option value="/traditionalSumRangeSequences?sumRange=7-8">[Tổng TT] Thống kê tổng (7,8) về liên tiếp </option>
+                            <option value="/traditionalSumRangeSequences?sumRange=9-10">[Tổng TT] Thống kê tổng (9,10) về liên tiếp</option>
+                            <option value="/specificSumRangeSequences?sumRange=0-3">[Tổng Mới] Thống kê tổng (0-3) về liên tiếp</option>
+                            <option value="/specificSumRangeSequences?sumRange=4-6">[Tổng Mới] Thống kê tổng (4-6) về liên tiếp</option>
+                            <option value="/specificSumRangeSequences?sumRange=7-9">[Tổng Mới] Thống kê tổng (7-9) về liên tiếp</option>
+                            <option value="/specificSumRangeSequences?sumRange=10-12">[Tổng Mới] Thống kê tổng (10-12) về liên tiếp</option>
+                            <option value="/specificSumRangeSequences?sumRange=13-15">[Tổng Mới] Thống kê tổng (13-15) về liên tiếp</option>
+                            <option value="/specificSumRangeSequences?sumRange=16-18">[Tổng Mới] Thống kê tổng (16-18) về liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=traditional&sequenceType=even&pattern=ascending">[Tổng TT] Thống kê chuỗi tổng chẵn tiến liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=traditional&sequenceType=even&pattern=descending">[Tổng TT] Thống kê chuỗi tổng chẵn lùi liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=traditional&sequenceType=odd&pattern=ascending">[Tổng TT] Thống kê chuỗi tổng lẻ tiến liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=traditional&sequenceType=odd&pattern=descending">[Tổng TT] Thống kê chuỗi tổng lẻ lùi liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=new&sequenceType=even&pattern=ascending">[Tổng Mới] Thống kê chuỗi tổng chẵn tiến liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=new&sequenceType=even&pattern=descending">[Tổng Mới] Thống kê chuỗi tổng chẵn lùi liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=new&sequenceType=odd&pattern=ascending">[Tổng Mới] Thống kê chuỗi tổng lẻ tiến liên tiếp</option>
+                            <option value="/evenOddSumSequences?sumType=new&sequenceType=odd&pattern=descending">[Tổng Mới] Thống kê chuỗi tổng lẻ lùi liên tiếp</option>
+                            <option value="/soleSumSequences?sumType=traditional">[Tổng TT] Thống kê chuỗi tổng sole liên tiếp</option>
+                            <option value="/soleSumSequences?sumType=new">[Tổng Mới] Thống kê chuỗi tổng sole liên tiếp</option>
+                            <option value="/new-sum-sole-pairs">[Tổng Mới] Các tổng kiểu mới về sole theo cặp</option>
+                        </optgroup>
+                        <optgroup label="--- TỔNG CHẴN, LẺ (TRUYỀN THỐNG) ---">
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=even&pattern=monotonic_increasing">[Tổng TT] Tổng Chẵn - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=even&pattern=arithmetic_increasing">[Tổng TT] Tổng Chẵn - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=even&pattern=monotonic_decreasing">[Tổng TT] Tổng Chẵn - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=even&pattern=arithmetic_decreasing">[Tổng TT] Tổng Chẵn - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=even&pattern=consecutive_occurrence">[Tổng TT] Tổng Chẵn - Về liên tiếp</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=odd&pattern=monotonic_increasing">[Tổng TT] Tổng Lẻ - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=odd&pattern=arithmetic_increasing">[Tổng TT] Tổng Lẻ - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=odd&pattern=monotonic_decreasing">[Tổng TT] Tổng Lẻ - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=odd&pattern=arithmetic_decreasing">[Tổng TT] Tổng Lẻ - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=traditional&sumParity=odd&pattern=consecutive_occurrence">[Tổng TT] Tổng Lẻ - Về liên tiếp</option>
+                        </optgroup>
+
+                        <optgroup label="--- TỔNG CHẴN, LẺ (KIỂU MỚI) ---">
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=even&pattern=monotonic_increasing">[Tổng Mới]Tổng Chẵn - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=even&pattern=arithmetic_increasing">[Tổng Mới] Tổng Chẵn - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=even&pattern=monotonic_decreasing">[Tổng Mới] Tổng Chẵn - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=even&pattern=arithmetic_decreasing">[Tổng Mới] Tổng Chẵn - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=even&pattern=consecutive_occurrence">[Tổng Mới] Tổng Chẵn - Về liên tiếp</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=odd&pattern=monotonic_increasing">[Tổng Mới] Tổng Lẻ - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=odd&pattern=arithmetic_increasing">[Tổng Mới] Tổng Lẻ - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=odd&pattern=monotonic_decreasing">[Tổng Mới] Tổng Lẻ - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=odd&pattern=arithmetic_decreasing">[Tổng Mới] Tổng Lẻ - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum&sumType=new&sumParity=odd&pattern=consecutive_occurrence">[Tổng Mới] Tổng Lẻ - Về liên tiếp</option>
+                        </optgroup>
+                        
+                        <optgroup label="--- TỎNG DẠNG (0-18, KIỂU MỚI) ---">
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-even&amp;pattern=monotonic_increasing">[Tổng Mới] Tổng dạng Chẵn-Chẵn - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-even&amp;pattern=arithmetic_increasing">[Tổng Mới] Tổng dạng Chẵn-Chẵn - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-even&amp;pattern=monotonic_decreasing">[Tổng Mới] Tổng dạng Chẵn-Chẵn - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-even&amp;pattern=arithmetic_decreasing">[Tổng Mới] Tổng dạng Chẵn-Chẵn - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-even&amp;pattern=consecutive_occurrence">[Tổng Mới] Tổng dạng Chẵn-Chẵn - Về liên tiếp</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-odd&amp;pattern=monotonic_increasing">[Tổng Mới] Tổng dạng Chẵn-Lẻ - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-odd&amp;pattern=arithmetic_increasing">[Tổng Mới] Tổng dạng Chẵn-Lẻ - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-odd&amp;pattern=monotonic_decreasing">[Tổng Mới] Tổng dạng Chẵn-Lẻ - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-odd&amp;pattern=arithmetic_decreasing">[Tổng Mới] Tổng dạng Chẵn-Lẻ - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=even-odd&amp;pattern=consecutive_occurrence">[Tổng Mới] Tổng dạng Chẵn-Lẻ - Về liên tiếp</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-even&amp;pattern=monotonic_increasing">[Tổng Mới] Tổng dạng Lẻ-Chẵn - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-even&amp;pattern=arithmetic_increasing">[Tổng Mới] Tổng dạng Lẻ-Chẵn - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-even&amp;pattern=monotonic_decreasing">[Tổng Mới] Tổng dạng Lẻ-Chẵn - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-even&amp;pattern=arithmetic_decreasing">[Tổng Mới] Tổng dạng Lẻ-Chẵn - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-even&amp;pattern=consecutive_occurrence">[Tổng Mới] Tổng dạng Lẻ-Chẵn - Về liên tiếp</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-odd&amp;pattern=monotonic_increasing">[Tổng Mới] Tổng dạng Lẻ-Lẻ - Tăng dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-odd&amp;pattern=arithmetic_increasing">[Tổng Mới] Tổng dạng Lẻ-Lẻ - Tăng dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-odd&amp;pattern=monotonic_decreasing">[Tổng Mới] Tổng dạng Lẻ-Lẻ - Giảm dần</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-odd&amp;pattern=arithmetic_decreasing">[Tổng Mới] Tổng dạng Lẻ-Lẻ - Giảm dần ĐỀU</option>
+                            <option value="/advanced-sequences?analysisType=sum_parity_pattern&amp;numberParity=odd-odd&amp;pattern=consecutive_occurrence">[Tổng Mới] Tổng dạng Lẻ-Lẻ - Về liên tiếp</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="consecutiveDays" class="form-label">Số ngày về liên tiếp:</label>
+                    <select class="form-select" id="consecutiveDays" name="consecutiveDays">
+                        <option value="2">2 ngày</option>
+                        <option value="3">3 ngày</option>
+                        <option value="4">4 ngày</option>
+                        <option value="5">5 ngày</option>
+                        <option value="6">6 ngày</option>
+                        <option value="7">7 ngày</option>
+                        <option value="8">8 ngày</option>
+                        <option value="9">9 ngày</option>
+                        <option value="10">10 ngày</option>
+                        <option value="11">11 ngày</option>
+                        <option value="12">12 ngày</option>
+                        <option value="13">13 ngày</option>
+                        <option value="14">14 ngày</option>
+                        <option value="15">15 ngày</option>
+                        <option value="16">16 ngày</option>
+                        <option value="17">17 ngày</option>
+                        <option value="18">18 ngày</option>
+                        <option value="19">19 ngày</option>
+                        <option value="20">20 ngày</option>
+                    </select>        
+                </div>
+            </div> 
+            <div class="row g-3 mt-3">
+                <button type="submit" class="btn btn-primary">Thống kê</button>
+            </div>   
+        </form>
+
+        <hr class="my-5">
+
+        <div id="overall-stats-section">
+            <h2 class="text-center mb-4">Thống kê Tổng hợp Nhanh</h2>
+            <div id="loading-spinner" class="loading-spinner text-center my-4">
+                 <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Đang tải...</span></div>
+            </div>
+            <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+            <div id="dashboard-content" style="display: none;">
+                <!-- Phần Phân tích chuỗi nóng -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">Phân tích Chuỗi nóng (Kết thúc ngày <span id="latest-date-overall"></span>)</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Các dạng thống kê đang xuất hiện trong các ngày gần nhất (chỉ xét Đề):</p>
+                        <div class="accordion" id="recent-streaks-accordion"></div>
+                        <div id="no-streaks-message" class="alert alert-secondary mt-3" style="display: none;">
+                            Không có chuỗi nóng nào đang chạy trong các ngày gần đây.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phần Bảng kỷ lục (giữ nguyên cấu trúc) -->
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">Chuỗi về liên tiếp dài nhất (Chỉ xét Đề)</h4>
+                    </div>
+                    <div class="card-body">
+                         <div class="table-responsive">
+                            <table class="table table-striped table-bordered table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 20%;">Loại Thống Kê</th>
+                                        <th style="width: 40%;">Chuỗi Kỷ Lục</th>
+                                        <th style="width: 40%;">Chuỗi Dài Thứ 2</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="longest-run-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.getElementById('statForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const mode = document.getElementById('mode').value;
+            const statFunction = document.getElementById('statFunction').value;
+            const consecutiveDays = document.getElementById('consecutiveDays').value;
+            const [baseUrl, queryString] = statFunction.split('?');
+            let newUrl;
+            if (queryString) {
+                const params = new URLSearchParams(queryString);
+                const n = params.get('n');
+                const order = params.get('order');
+                const parityType = params.get('parityType');
+                const sumType = params.get('sumType');
+                const sequenceType = params.get('sequenceType');
+                const pattern = params.get('pattern');
+                const sumRange = params.get('sumRange');
+                const analysisType = params.get('analysisType');
+                if (n) {
+                    newUrl = `${baseUrl}?n=${n}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else if (analysisType) {
+                    newUrl = `${baseUrl}?${queryString}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else if (parityType && order) {
+                    newUrl = `${baseUrl}?parityType=${parityType}&order=${order}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else if (sumType && sequenceType && pattern) {
+                    newUrl = `${baseUrl}?sumType=${sumType}&sequenceType=${sequenceType}&pattern=${pattern}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else if (sumType && order) {
+                    newUrl = `${baseUrl}?sumType=${sumType}&order=${order}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else if (sumType) {
+                    newUrl = `${baseUrl}?sumType=${sumType}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;  
+                } else if (order) {
+                    newUrl = `${baseUrl}?order=${order}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else if (sumRange) {
+                    newUrl = `${baseUrl}?sumRange=${sumRange}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                } else {
+                    newUrl = `${baseUrl}?${queryString}&startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+                }
+            } else {
+                newUrl = `${baseUrl}?startDate=${startDate}&endDate=${endDate}&mode=${mode}&consecutiveDays=${consecutiveDays}`;
+            }
+            window.location.href = newUrl;
+        });
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        document.getElementById('endDate').addEventListener('change', function () {
+            const endDateValue = this.value;
+            if (endDateValue) {
+                const endDate = new Date(endDateValue);
+                const startDate = new Date(endDate);
+                startDate.setDate(endDate.getDate() - 360);
+                const today = new Date();
+                const todayFormatted = today.toISOString().split('T')[0];
+                const startDateFormatted = startDate.toISOString().split('T')[0];
+                document.getElementById('startDate').value = startDateFormatted;
+                if (startDate > today) {
+                    document.getElementById('startDate').value = todayFormatted;
+                }
+            }
+        });
+
+        document.getElementById('statFunction').addEventListener('change', function () {
+            const consecutiveDaysDropdown = document.getElementById('consecutiveDays');
+            const selectedOption = this.value;
+
+            const limitedTo5DaysFunctions = [
+                '/odd-consecutive-heads',
+                '/odd-consecutive-tails',
+                '/odd-decreasing-heads',
+                '/odd-decreasing-tails',
+                '/even-increasing-heads',
+                '/even-increasing-tails',
+                '/even-decreasing-heads',
+                '/even-decreasing-tails'
+            ];
+
+            const limitedTo10DaysFunctions = [
+                '/increasing-heads',
+                '/decreasing-heads',
+                '/increasing-tails',
+                '/decreasing-tails',
+                '/consecutive-sum-increasing-numbers',
+                '/consecutive-sum-decreasing-numbers',
+                '/consecutive-sum-sequences?order=asc',
+                '/consecutive-sum-sequences?order=desc'
+            ];
+
+            consecutiveDaysDropdown.innerHTML = '';
+
+            if (limitedTo5DaysFunctions.includes(selectedOption)) {
+                for (let i = 2; i <= 5; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${i} ngày`;
+                    consecutiveDaysDropdown.appendChild(option);
+                }
+            } else if (limitedTo10DaysFunctions.includes(selectedOption)) {
+                for (let i = 2; i <= 10; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${i} ngày`;
+                    consecutiveDaysDropdown.appendChild(option);
+                }
+            } else if (selectedOption === '/alternating-heads' || selectedOption === '/alternating-tails' || selectedOption ==='/alternating-number-pairs' || selectedOption === '/soleSumSequences?sumType=traditional' || selectedOption === '/soleSumSequences?sumType=new') {
+                for (let i = 3; i <= 20; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${i} ngày`;
+                    consecutiveDaysDropdown.appendChild(option);
+                }
+            } else {
+                for (let i = 2; i <= 20; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${i} ngày`;
+                    consecutiveDaysDropdown.appendChild(option);
+                }
+            }
+        });
+
+        function updateLastUpdateDate() {
+            fetch('/api/last-update-date')
+                .then(response => response.json())
+                .then(data => {
+                    const lastUpdateDateElement = document.getElementById('lastUpdateDate');
+                    if (data.lastUpdateDate) {
+                        const formattedDate = formatDate(data.lastUpdateDate);
+                        lastUpdateDateElement.textContent = formattedDate;
+                    } else {
+                        lastUpdateDateElement.textContent = 'Không có dữ liệu';
+                    }
+                })
+                .catch(error => {
+                    console.error('Lỗi khi lấy ngày cập nhật:', error);
+                });
+        }
+
+        function updateData() {
+            fetch('/api/update-data', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Dữ liệu đã được cập nhật thành công!');
+                    updateLastUpdateDate();
+                } else {
+                    alert('Có lỗi xảy ra khi cập nhật dữ liệu.');
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi khi cập nhật dữ liệu:', error);
+                alert('Có lỗi xảy ra khi cập nhật dữ liệu.');
+            });
+        }
+        
+        // Listener này sẽ chạy các logic cũ của bạn
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLastUpdateDate();
+            document.getElementById('updateDataButton').addEventListener('click', function () {
+                updateData();
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            const defaultStartDate = new Date();
+            defaultStartDate.setDate(defaultStartDate.getDate() - 360);
+            const formattedStartDate = defaultStartDate.toISOString().split('T')[0];
+            document.getElementById('startDate').value = formattedStartDate;
+            document.getElementById('endDate').value = today;
+
+            // Set active tab based on current path
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
+    <script>
+        const statDisplayNames = {
+            'consecutivePairs': 'Số về liên tiếp',
+            'consecutiveHeads': '1 đầu về liên tiếp',
+            'consecutiveTails': '1 đít về liên tiếp',
+            'alternatingNumberPairs': 'Số về so le theo cặp',
+            'alternatingHeads': 'Các đầu về so le liên tiếp',
+            'alternatingTails': 'Các đít về so le liên tiếp',
+            'increasingHeads': 'Các đầu số tiến liên tiếp',
+            'decreasingHeads': 'Các đầu số lùi liên tiếp',
+            'increasingTails': 'Các đít số tiến liên tiếp',
+            'decreasingTails': 'Các đít số lùi liên tiếp',
+            'consecutiveIncreasingNumbers': 'Các số tiến liên tiếp',
+            'consecutiveDecreasingNumbers': 'Các số lùi liên tiếp',
+            'parity_even-odd_asc': 'Các số chẵn lẻ tiến liên tiếp',
+            'parity_even-odd_desc': 'Các số chẵn lẻ lùi liên tiếp',
+            'parity_odd-even_asc': 'Các số lẻ chẵn tiến liên tiếp',
+            'parity_odd-even_desc': 'Các số lẻ chẵn lùi liên tiếp',
+            'parity_even-even_asc': 'Các số chẵn chẵn tiến liên tiếp',
+            'parity_even-even_desc': 'Các số chẵn chẵn lùi liên tiếp',
+            'parity_odd-odd_asc': 'Các số lẻ lẻ tiến liên tiếp',
+            'parity_odd-odd_desc': 'Các số lẻ lẻ lùi liên tiếp',
+            'oddConsecutiveHeads': 'Các đầu lẻ tiến đều về liên tiếp',
+            'oddConsecutiveTails': 'Các đít lẻ tiến đều về liên tiếp',
+            'oddDecreasingHeads': 'Các đầu lẻ lùi đều về liên tiếp',
+            'oddDecreasingTails': 'Các đít lẻ lùi đều về liên tiếp',
+            'evenIncreasingHeads': 'Các đầu chẵn tiến đều về liên tiếp',
+            'evenIncreasingTails': 'Các đít chẵn tiến đều về liên tiếp',
+            'evenDecreasingHeads': 'Các đầu chẵn lùi đều về liên tiếp',
+            'evenDecreasingTails': 'Các đít chẵn lùi đều về liên tiếp',
+            'consecutiveDoubleNumbers': 'Dạng số kép về liên tiếp',
+            'consecutiveOffsetDoubleNumbers': 'Dạng số kép lệch về liên tiếp',
+            'evenHeadsGreaterThan4': 'Dạng đầu chẵn > 4 về liên tiếp',
+            'evenHeadsLessThan4': 'Dạng đầu chẵn < 4 về liên tiếp',
+            'evenTailsGreaterThan4': 'Dạng đít chẵn > 4 về liên tiếp',
+            'evenTailsLessThan4': 'Dạng đít chẵn < 4 về liên tiếp',
+            'oddHeadsGreaterThan5': 'Dạng đầu lẻ > 5 về liên tiếp',
+            'oddHeadsLessThan5': 'Dạng đầu lẻ < 5 về liên tiếp',
+            'oddTailsGreaterThan5': 'Dạng đít lẻ > 5 về liên tiếp',
+            'oddTailsLessThan5': 'Dạng đít lẻ < 5 về liên tiếp',
+            'headTail_0101': 'Dạng đầu chẵn > 4 và đít chẵn > 4',
+            'headTail_0100': 'Dạng đầu chẵn > 4 và đít chẵn < 4',
+            'headTail_0111': 'Dạng đầu chẵn > 4 và đít lẻ > 5',
+            'headTail_0110': 'Dạng đầu chẵn > 4 và đít lẻ < 5',
+            'headTail_0001': 'Dạng đầu chẵn < 4 và đít chẵn > 4',
+            'headTail_0000': 'Dạng đầu chẵn < 4 và đít chẵn < 4',
+            'headTail_0011': 'Dạng đầu chẵn < 4 và đít lẻ > 5',
+            'headTail_0010': 'Dạng đầu chẵn < 4 và đít lẻ < 5',
+            'headTail_1101': 'Dạng đầu lẻ > 5 và đít chẵn > 4',
+            'headTail_1100': 'Dạng đầu lẻ > 5 và đít chẵn < 4',
+            'headTail_1111': 'Dạng đầu lẻ > 5 và đít lẻ > 5',
+            'headTail_1110': 'Dạng đầu lẻ > 5 và đít lẻ < 5',
+            'headTail_1001': 'Dạng đầu lẻ < 5 và đít chẵn > 4',
+            'headTail_1000': 'Dạng đầu lẻ < 5 và đít chẵn < 4',
+            'headTail_1011': 'Dạng đầu lẻ < 5 và đít lẻ > 5',
+            'headTail_1010': 'Dạng đầu lẻ < 5 và đít lẻ < 5',
+            'headTail_401': 'Dạng đầu 4 và đít chẵn > 4',
+            'headTail_400': 'Dạng đầu 4 và đít chẵn < 4',
+            'headTail_411': 'Dạng đầu 4 và đít lẻ > 5',
+            'headTail_410': 'Dạng đầu 4 và đít lẻ < 5',
+            'headTail_501': 'Dạng đầu 5 và đít chẵn > 4',
+            'headTail_500': 'Dạng đầu 5 và đít chẵn < 4',
+            'headTail_511': 'Dạng đầu 5 và đít lẻ > 5',
+            'headTail_510': 'Dạng đầu 5 và đít lẻ < 5',
+            'headTail_014': 'Dạng đít 4 và đầu chẵn > 4',
+            'headTail_004': 'Dạng đít 4 và đầu chẵn < 4',
+            'headTail_114': 'Dạng đít 4 và đầu lẻ > 5',
+            'headTail_104': 'Dạng đít 4 và đầu lẻ < 5',
+            'headTail_015': 'Dạng đít 5 và đầu chẵn > 4',
+            'headTail_005': 'Dạng đít 5 và đầu chẵn < 4',
+            'headTail_115': 'Dạng đít 5 và đầu lẻ > 5',
+            'headTail_105': 'Dạng đít 5 và đầu lẻ < 5',
+            'sum_inc_trad': '[Tổng TT] Các số cùng tổng tiến liên tiếp',
+            'sum_dec_trad': '[Tổng TT] Các số cùng tổng lùi liên tiếp',
+            'sum_inc_new': '[Tổng Mới] Các số cùng tổng tiến liên tiếp',
+            'sum_dec_new': '[Tổng Mới] Các số cùng tổng lùi liên tiếp',
+            'sum_seq_asc_trad': '[Tổng TT] Các tổng tiến liên tiếp',
+            'sum_seq_desc_trad': '[Tổng TT] Các tổng lùi liên tiếp',
+            'sum_seq_asc_new': '[Tổng Mới] Các tổng tiến liên tiếp(Kiểu mới)',
+            'sum_seq_desc_new': '[Tổng Mới] Các tổng lùi liên tiếp(Kiểu mới)',
+            'sum_consecutive_trad': '[Tổng TT] 1 Tổng về liên tiếp',
+            'sum_consecutive_new': '[Tổng] 1 Tổng về liên tiếp (Kiểu mới)',
+            'sum_range_trad_1-2': '[Tổng TT] Thống kê tổng (1,2) về liên tiếp',
+            'sum_range_trad_3-4': '[Tổng TT] Thống kê tổng (3,4) về liên tiếp',
+            'sum_range_trad_5-6': '[Tổng TT] Thống kê tổng (5,6) về liên tiếp',
+            'sum_range_trad_7-8': '[Tổng TT] Thống kê tổng (7,8) về liên tiếp',
+            'sum_range_trad_9-10': '[Tổng TT] Thống kê tổng (9,10) về liên tiếp',
+            'sum_range_new_0-3': '[Tổng Mới] Thống kê tổng (0-3) về liên tiếp',
+            'sum_range_new_4-6': '[Tổng Mới] Thống kê tổng (4-6) về liên tiếp',
+            'sum_range_new_7-9': '[Tổng Mới] Thống kê tổng (7-9) về liên tiếp ',
+            'sum_range_new_10-12': '[Tổng Mới] Thống kê tổng (10-12) về liên tiếp',
+            'sum_range_new_13-15': '[Tổng Mới] Thống kê tổng (13-15) về liên tiếp',
+            'sum_range_new_16-18': '[Tổng Mới] Thống kê tổng (16-18) về liên tiếp',
+            'sum_even_odd_trad_even_asc': '[Tổng TT] Thống kê chuỗi tổng chẵn tiến liên tiếp',
+            'sum_even_odd_trad_even_desc': '[Tổng TT] Thống kê chuỗi tổng chẵn lùi liên tiếp',
+            'sum_even_odd_trad_odd_asc': '[Tổng TT] Thống kê chuỗi tổng lẻ tiến liên tiếp',
+            'sum_even_odd_trad_odd_desc': '[Tổng TT] Thống kê chuỗi tổng lẻ lùi liên tiếp',
+            'sum_even_odd_new_even_asc': '[Tổng Mới] Thống kê chuỗi tổng chẵn tiến liên tiếp (Kiểu mới)',
+            'sum_even_odd_new_even_desc': '[Tổng Mới] Thống kê chuỗi tổng chẵn lùi liên tiếp (Kiểu mới)',
+            'sum_even_odd_new_odd_asc': '[Tổng Mới] Thống kê chuỗi tổng lẻ tiến liên tiếp (Kiểu mới)',
+            'sum_even_odd_new_odd_desc': '[Tổng Mới] Thống kê chuỗi tổng lẻ lùi liên tiếp (Kiểu mới)',
+            'sum_sole_trad': '[Tổng TT] Thống kê chuỗi tổng sole liên tiếp',
+            'sum_sole_new': '[Tổng Mới] Thống kê chuỗi tổng sole liên tiếp',
+            'sum_sole_pairs_new': '[Tổng Mới] Các tổng kiểu mới về sole theo cặp',
+            // --- TỔNG CHẴN/LẺ (TRUYỀN THỐNG) ---
+            'adv_sum_trad_even_mono_inc': '[Tổng TT] Chẵn - Tăng dần',
+            'adv_sum_trad_even_arith_inc': '[Tổng TT] Chẵn - Tăng dần ĐỀU',
+            'adv_sum_trad_even_mono_dec': '[Tổng TT] Chẵn - Giảm dần',
+            'adv_sum_trad_even_arith_dec': '[Tổng TT] Chẵn - Giảm dần ĐỀU',
+            'adv_sum_trad_even_occur': '[Tổng TT] Chẵn - Về liên tiếp',
+            'adv_sum_trad_odd_mono_inc': '[Tổng TT] Lẻ - Tăng dần',
+            'adv_sum_trad_odd_arith_inc': '[Tổng TT] Lẻ - Tăng dần ĐỀU',
+            'adv_sum_trad_odd_mono_dec': '[Tổng TT] Lẻ - Giảm dần',
+            'adv_sum_trad_odd_arith_dec': '[Tổng TT] Lẻ - Giảm dần ĐỀU',
+            'adv_sum_trad_odd_occur': '[Tổng TT] Lẻ - Về liên tiếp',
+
+            // --- TỔNG CHẴN/LẺ (KIỂU MỚI) ---
+            'adv_sum_new_even_mono_inc': '[Tổng Mới] Chẵn - Tăng dần',
+            'adv_sum_new_even_arith_inc': '[Tổng Mới] Chẵn - Tăng dần ĐỀU',
+            'adv_sum_new_even_mono_dec': '[Tổng Mới] Chẵn - Giảm dần',
+            'adv_sum_new_even_arith_dec': '[Tổng Mới] Chẵn - Giảm dần ĐỀU',
+            'adv_sum_new_even_occur': '[Tổng Mới] Chẵn - Về liên tiếp',
+            'adv_sum_new_odd_mono_inc': '[Tổng Mới] Lẻ - Tăng dần',
+            'adv_sum_new_odd_arith_inc': '[Tổng Mới] Lẻ - Tăng dần ĐỀU',
+            'adv_sum_new_odd_mono_dec': '[Tổng Mới] Lẻ - Giảm dần',
+            'adv_sum_new_odd_arith_dec': '[Tổng Mới] Lẻ - Giảm dần ĐỀU',
+            'adv_sum_new_odd_occur': '[Tổng Mới] Lẻ - Về liên tiếp',
+
+            // --- DẠNG CỦA TỔNG (0-18, KIỂU MỚI) ---
+            'adv_sumpatt_ee_mono_inc': '[Dạng Tổng] Chẵn-Chẵn - Tăng dần',
+            'adv_sumpatt_ee_arith_inc': '[Dạng Tổng] Chẵn-Chẵn - Tăng dần ĐỀU',
+            'adv_sumpatt_ee_mono_dec': '[Dạng Tổng] Chẵn-Chẵn - Giảm dần',
+            'adv_sumpatt_ee_arith_dec': '[Dạng Tổng] Chẵn-Chẵn - Giảm dần ĐỀU',
+            'adv_sumpatt_ee_occur': '[Dạng Tổng] Chẵn-Chẵn - Về liên tiếp',
+            'adv_sumpatt_eo_mono_inc': '[Dạng Tổng] Chẵn-Lẻ - Tăng dần',
+            'adv_sumpatt_eo_arith_inc': '[Dạng Tổng] Chẵn-Lẻ - Tăng dần ĐỀU',
+            'adv_sumpatt_eo_mono_dec': '[Dạng Tổng] Chẵn-Lẻ - Giảm dần',
+            'adv_sumpatt_eo_arith_dec': '[Dạng Tổng] Chẵn-Lẻ - Giảm dần ĐỀU',
+            'adv_sumpatt_eo_occur': '[Dạng Tổng] Chẵn-Lẻ - Về liên tiếp',
+            'adv_sumpatt_oe_mono_inc': '[Dạng Tổng] Lẻ-Chẵn - Tăng dần',
+            'adv_sumpatt_oe_arith_inc': '[Dạng Tổng] Lẻ-Chẵn - Tăng dần ĐỀU',
+            'adv_sumpatt_oe_mono_dec': '[Dạng Tổng] Lẻ-Chẵn - Giảm dần',
+            'adv_sumpatt_oe_arith_dec': '[Dạng Tổng] Lẻ-Chẵn - Giảm dần ĐỀU',
+            'adv_sumpatt_oe_occur': '[Dạng Tổng] Lẻ-Chẵn - Về liên tiếp',
+            'adv_sumpatt_oo_mono_inc': '[Dạng Tổng] Lẻ-Lẻ - Tăng dần',
+            'adv_sumpatt_oo_arith_inc': '[Dạng Tổng] Lẻ-Lẻ - Tăng dần ĐỀU',
+            'adv_sumpatt_oo_mono_dec': '[Dạng Tổng] Lẻ-Lẻ - Giảm dần',
+            'adv_sumpatt_oo_arith_dec': '[Dạng Tổng] Lẻ-Lẻ - Giảm dần ĐỀU',
+            'adv_sumpatt_oo_occur': '[Dạng Tổng] Lẻ-Lẻ - Về liên tiếp',
+        };
+
+        function formatStatName(name) {
+            return statDisplayNames[name] || name;
+        }
+
+        // HÀM RENDER BẢNG KỶ LỤC ĐÃ ĐƯỢC CẬP NHẬT
+        function renderLongestRuns(data) {
+            const tableBody = document.getElementById('longest-run-table-body');
+            tableBody.innerHTML = '';
+
+            if (!data || Object.keys(data).length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="3" class="text-center">Không có dữ liệu.</td></tr>';
+                return;
+            }
+
+            const formatRunsToHtml = (runs, length, statName, type) => {
+                if (!runs || runs.length === 0 || length === 0) {
+                    return '<span class="text-muted fst-italic">Không có</span>';
+                }
+                const uniqueId = `${statName}-${type}-${length}`.replace(/\W/g, '');
+
+                let html = `
+                    <p class="mb-1">
+                        <button class="btn btn-outline-primary btn-sm w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#${uniqueId}">
+                            <strong>${length} ngày</strong> &ndash; (${runs.length} chuỗi)
+                        </button>
+                    </p>
+                    <div class="collapse" id="${uniqueId}">
+                        <div class="list-group list-group-flush">
+                `;
+
+                runs.forEach((run) => {
+                    const sequence = run.results.map(dayResult => {
+                        const matchedNums = (dayResult.extracted && dayResult.extracted.length > 0) 
+                                            ? dayResult.extracted 
+                                            : (dayResult.matched && dayResult.matched.length > 0) 
+                                            ? dayResult.matched 
+                                            : dayResult.numbers;
+                        
+                        const displayNum = matchedNums[0]; 
+                        return `<span class="badge bg-danger">${String(displayNum).padStart(2, '0')}</span>`;
+                    }).join(' → ');
+                    
+                    // SỬA LẠI CÁCH HIỂN THỊ NGÀY
+                    const dateString = `Từ ${formatDate(run.dates[0])} đến ${formatDate(run.dates[run.dates.length - 1])}`;
+
+                    html += `
+                        <div class="list-group-item px-1 py-2">
+                            <div class="result-sequence">${sequence}</div>
+                            <small class="text-muted">${dateString}</small>
+                        </div>`;
+                });
+
+                html += `</div></div>`;
+                return html;
+            };
+
+            for (const [statName, statData] of Object.entries(data)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="align-top"><strong>${formatStatName(statName)}</strong></td>
+                    <td class="align-top">${formatRunsToHtml(statData.recordRuns, statData.recordLength, statName, 'record')}</td>
+                    <td class="align-top">${formatRunsToHtml(statData.secondPlaceRuns, statData.secondPlaceLength, statName, 'second')}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+        }
+
+        // HÀM RENDER CHUỖI NÓNG ĐÃ ĐƯỢC CẬP NHẬT
+        function renderRecentStreaks(data, overallStats) { // Nhận thêm dữ liệu lịch sử
+            const accordionContainer = document.getElementById('recent-streaks-accordion');
+            const noStreaksMessage = document.getElementById('no-streaks-message');
+            const latestDateEl = document.getElementById('latest-date-overall');
+            accordionContainer.innerHTML = '';
+
+            if (!data || !data.latestDate || Object.keys(data.streaks).length === 0) {
+                latestDateEl.textContent = data.latestDate ? new Date(data.latestDate).toLocaleDateString('vi-VN') : 'N/A';
+                noStreaksMessage.style.display = 'block';
+                accordionContainer.style.display = 'none';
+                return;
+            }
+            
+            latestDateEl.textContent = new Date(data.latestDate).toLocaleDateString('vi-VN');
+            noStreaksMessage.style.display = 'none';
+            accordionContainer.style.display = 'block';
+
+            const sortedLengths = Object.keys(data.streaks).sort((a, b) => b - a);
+
+            sortedLengths.forEach(length => {
+                const streaks = data.streaks[length];
+                const headerId = `header-${length}`;
+                const collapseId = `collapse-${length}`;
+                
+                let listContent = '';
+                streaks.forEach(streak => {
+                    const statName = formatStatName(streak.statName);
+                    const historicalRecordLength = overallStats[streak.statName]?.recordLength || 0;
+                    
+                    streak.details.forEach(detail => {
+                        const sequenceResults = detail.results.map(dayResult => {
+                            const matchedNum = (dayResult.extracted && dayResult.extracted[0]) || 
+                                             (dayResult.matched && dayResult.matched[0]) || 
+                                             dayResult.numbers[0];
+                            return String(matchedNum).padStart(2, '0');
+                        });
+                        
+                        const resultSpans = sequenceResults.map(n => `<span class="badge bg-danger">${n}</span>`).join(' → ');
+
+                        // SỬA LẠI PHẦN HIỂN THỊ TIÊU ĐỀ
+                        const titleHtml = `
+                            <div>
+                                <strong>${statName}</strong>
+                                <span class="historical-record ms-2">[Kỷ lục: ${historicalRecordLength} ngày]</span>
+                            </div>`;
+
+                        listContent += `
+                            <li class="list-group-item">
+                                ${titleHtml}
+                                <div class="result-sequence">${resultSpans}</div>
+                            </li>`;
+                    });
+                });
+
+                if(listContent){
+                    const accordionItem = document.createElement('div');
+                    accordionItem.className = 'accordion-item';
+                    accordionItem.innerHTML = `
+                        <h2 class="accordion-header" id="${headerId}">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+                                Đang có chuỗi ${length} ngày
+                            </button>
+                        </h2>
+                        <div id="${collapseId}" class="accordion-collapse collapse show" data-bs-parent="#recent-streaks-accordion">
+                            <div class="accordion-body p-2">
+                                <ul class="list-group list-group-flush">
+                                    ${listContent}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    accordionContainer.appendChild(accordionItem);
+                }
+            });
+        }
+
+        // Fetch dữ liệu khi trang tải xong
+        document.addEventListener('DOMContentLoaded', function() {
+            const spinner = document.getElementById('loading-spinner');
+            const content = document.getElementById('dashboard-content');
+            const errorEl = document.getElementById('error-message');
+
+            spinner.style.display = 'block';
+
+            fetch('/overall-stats')
+                .then(response => response.ok ? response.json() : Promise.reject(response))
+                .then(data => {
+                    renderLongestRuns(data.overallStats);
+                    // SỬA LẠI LỆNH GỌI, TRUYỀN THÊM DỮ LIỆU LỊCH SỬ
+                    renderRecentStreaks(data.recentStreaks, data.overallStats);
+                    content.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Lỗi khi fetch dữ liệu dashboard:', error);
+                    errorEl.textContent = `Không thể tải dữ liệu tổng hợp. Vui lòng thử lại sau.`;
+                    errorEl.style.display = 'block';
+                })
+                .finally(() => {
+                    spinner.style.display = 'none';
+                });
+        });
+    </script>
+</body>
+</html>

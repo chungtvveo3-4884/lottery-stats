@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center"><%= title %></h1>
+        <a href="/" class="btn btn-primary mt-3">Quay lại trang chủ</a>
+        <form id="dateForm" class="mb-4 mt-4">
+             <input type="hidden" name="pattern" value="<%= pattern %>">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Ngày bắt đầu:</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" value="<%= startDate %>">
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">Ngày kết thúc:</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" value="<%= endDate %>">
+                </div>
+                <div class="col-md-4">
+                    <label for="sortOrder" class="form-label">Sắp xếp:</label>
+                    <select class="form-select" id="sortOrder" name="sortOrder">
+                        <option value="asc" <%= sortOrder === 'asc' ? 'selected' : '' %>>Từ ngày bắt đầu đến ngày kết thúc</option>
+                        <option value="desc" <%= sortOrder === 'desc' ? 'selected' : '' %>>Từ ngày kết thúc đến ngày bắt đầu</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="mode" class="form-label">Chế độ:</label>
+                    <select class="form-select" id="mode" name="mode">
+                        <option value="de" <%= mode === 'de' ? 'selected' : '' %>>Đề</option>
+                        <option value="lo" <%= mode === 'lo' ? 'selected' : '' %>>Lô</option>
+                        <option value="prize1" <%= mode === 'prize1' ? 'selected' : '' %>>Giải nhất</option>
+                        <option value="prize2" <%= mode === 'prize2' ? 'selected' : '' %>>Giải nhì</option>
+                        <option value="prize3" <%= mode === 'prize3' ? 'selected' : '' %>>Giải ba</option>
+                        <option value="prize4" <%= mode === 'prize4' ? 'selected' : '' %>>Giải tư</option>
+                        <option value="prize5" <%= mode === 'prize5' ? 'selected' : '' %>>Giải năm</option>
+                        <option value="prize6" <%= mode === 'prize6' ? 'selected' : '' %>>Giải sáu</option>
+                        <option value="prize7" <%= mode === 'prize7' ? 'selected' : '' %>>Giải bảy</option>
+                        <option value="pos1" <%= mode === 'pos1' ? 'selected' : '' %>>Vị trí 1 (Giải nhất)</option>
+                        <option value="pos2" <%= mode === 'pos2' ? 'selected' : '' %>>Vị trí 2 (Giải nhì 1)</option>
+                        <option value="pos3" <%= mode === 'pos3' ? 'selected' : '' %>>Vị trí 3 (Giải nhì 2)</option>
+                        <option value="pos4" <%= mode === 'pos4' ? 'selected' : '' %>>Vị trí 4 (Giải ba 1)</option>
+                        <option value="pos5" <%= mode === 'pos5' ? 'selected' : '' %>>Vị trí 5 (Giải ba 2)</option>
+                        <option value="pos6" <%= mode === 'pos6' ? 'selected' : '' %>>Vị trí 6 (Giải ba 3)</option>
+                        <option value="pos7" <%= mode === 'pos7' ? 'selected' : '' %>>Vị trí 7 (Giải ba 4)</option>
+                        <option value="pos8" <%= mode === 'pos8' ? 'selected' : '' %>>Vị trí 8 (Giải ba 5)</option>
+                        <option value="pos9" <%= mode === 'pos9' ? 'selected' : '' %>>Vị trí 9 (Giải ba 6)</option>
+                        <option value="pos10" <%= mode === 'pos10' ? 'selected' : '' %>>Vị trí 10 (Giải tư 1)</option>
+                        <option value="pos11" <%= mode === 'pos11' ? 'selected' : '' %>>Vị trí 11 (Giải tư 2)</option>
+                        <option value="pos12" <%= mode === 'pos12' ? 'selected' : '' %>>Vị trí 12 (Giải tư 3)</option>
+                        <option value="pos13" <%= mode === 'pos13' ? 'selected' : '' %>>Vị trí 13 (Giải tư 4)</option>
+                        <option value="pos14" <%= mode === 'pos14' ? 'selected' : '' %>>Vị trí 14 (Giải năm 1)</option>
+                        <option value="pos15" <%= mode === 'pos15' ? 'selected' : '' %>>Vị trí 15 (Giải năm 2)</option>
+                        <option value="pos16" <%= mode === 'pos16' ? 'selected' : '' %>>Vị trí 16 (Giải năm 3)</option>
+                        <option value="pos17" <%= mode === 'pos17' ? 'selected' : '' %>>Vị trí 17 (Giải năm 4)</option>
+                        <option value="pos18" <%= mode === 'pos18' ? 'selected' : '' %>>Vị trí 18 (Giải năm 5)</option>
+                        <option value="pos19" <%= mode === 'pos19' ? 'selected' : '' %>>Vị trí 19 (Giải năm 6)</option>
+                        <option value="pos20" <%= mode === 'pos20' ? 'selected' : '' %>>Vị trí 20 (Giải sáu 1)</option>
+                        <option value="pos21" <%= mode === 'pos21' ? 'selected' : '' %>>Vị trí 21 (Giải sáu 2)</option>
+                        <option value="pos22" <%= mode === 'pos22' ? 'selected' : '' %>>Vị trí 22 (Giải sáu 3)</option>
+                        <option value="pos23" <%= mode === 'pos23' ? 'selected' : '' %>>Vị trí 23 (Giải bảy 1)</option>
+                        <option value="pos24" <%= mode === 'pos24' ? 'selected' : '' %>>Vị trí 24 (Giải bảy 2)</option>
+                        <option value="pos25" <%= mode === 'pos25' ? 'selected' : '' %>>Vị trí 25 (Giải bảy 3)</option>
+                        <option value="pos26" <%= mode === 'pos26' ? 'selected' : '' %>>Vị trí 26 (Giải bảy 4)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                   <label for="consecutiveDays" class="form-label">Số ngày liên tiếp:</label>
+                        <select class="form-select" id="consecutiveDays" name="consecutiveDays">
+                            <% for(let i = 2; i <= 10; i++) { %>
+                                <option value="<%= i %>" <%= consecutiveDays == i ? 'selected' : '' %>><%= i %> ngày</option>
+                            <% } %>
+                        </select>
+                </div>
+               
+                <button type="submit" class="btn btn-primary">Thống kê</button>
+               
+            </div>
+        </form>
+
+        <% if (results && results.length > 0) { %>
+            <p class="mt-4 form-label highlight">Tổng số trường hợp: <%= total %></p>
+            <% if (message) { %>
+                <p class="text-danger"><%= message %></p>
+            <% } %>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Chuỗi số</th>
+                        <th>Kết quả xổ số <%= consecutiveDays %> ngày</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% results.forEach(result => { %>
+                        <tr>
+                            <td><span class="highlight fs-5"><%= result.numbers.join(', ') %></span></td>
+                            <td>
+                                <% result.results.forEach(day => { %>
+                                    <p>
+                                        <%= formatDate(day.date) %>: 
+                                        <% day.numbers.forEach(num => { %>
+                                            <% const formattedNum = String(num).padStart(2, '0'); %>
+                                            <% if (day.extracted.includes(num)) { %>
+                                                <span class="highlight"><%= formattedNum %></span>
+                                            <% } else { %>
+                                                <span><%= formattedNum %></span>
+                                            <% } %>
+                                        <% }) %>
+                                    </p>
+                                <% }) %>
+                            </td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <p class="mt-4">Không có kết quả nào được tìm thấy.</p>
+        <% } %>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('endDate').addEventListener('change', function () {
+            const endDateValue = this.value;
+            if (endDateValue) {
+                const endDate = new Date(endDateValue);
+                const startDate = new Date(endDate);
+                startDate.setDate(endDate.getDate() - 360);
+                const today = new Date();
+                const todayFormatted = today.toISOString().split('T')[0];
+                const startDateFormatted = startDate.toISOString().split('T')[0];
+                document.getElementById('startDate').value = startDateFormatted;
+                if (startDate > today) {
+                    document.getElementById('startDate').value = todayFormatted;
+                }
+            }
+        });
+        <script>
+        document.getElementById('dateForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            const mode = document.getElementById('mode').value;
+            const consecutiveDays = document.getElementById('consecutiveDays').value;
+            const pattern = '<%= pattern %>'; 
+            const baseUrl = window.location.pathname;
+            
+            window.location.href = `${baseUrl}?startDate=${startDate}&endDate=${endDate}&sortOrder=${sortOrder}&mode=${mode}&consecutiveDays=${consecutiveDays}&pattern=${pattern}`;
+        });
+    </script>
+    </script>
+</body>
+</html>
