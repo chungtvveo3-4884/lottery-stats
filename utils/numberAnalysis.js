@@ -1,123 +1,156 @@
 /**
- * File này định nghĩa tất cả các bộ số và các hàm tiện ích để phân tích.
- * Đây là "bộ não" trung tâm cho các module thống kê.
+ * file này định nghĩa tất cả các bộ số cần thiết cho việc phân tích thống kê.
+ * Nó là "bộ não" cung cấp dữ liệu nền cho các file generator.
  */
 
-// --- BỘ SỐ CƠ BẢN ---
+// Tạo mảng số từ "00" đến "99"
 const ALL_NUMBERS = Array.from({ length: 100 }, (_, i) => i.toString().padStart(2, '0'));
-const ALL_HEADS = Array.from({ length: 10 }, (_, i) => i.toString());
-const ALL_TAILS = Array.from({ length: 10 }, (_, i) => i.toString());
 
-// --- BỘ SỐ THEO TÍNH CHẤT ---
-const CHAN_CHAN_NUMBERS = ALL_NUMBERS.filter(n => n[0] % 2 === 0 && n[1] % 2 === 0);
-const CHAN_LE_NUMBERS = ALL_NUMBERS.filter(n => n[0] % 2 === 0 && n[1] % 2 !== 0);
-const LE_CHAN_NUMBERS = ALL_NUMBERS.filter(n => n[0] % 2 !== 0 && n[1] % 2 === 0);
-const LE_LE_NUMBERS = ALL_NUMBERS.filter(n => n[0] % 2 !== 0 && n[1] % 2 !== 0);
+// --- BỘ SỐ CHO ĐẦU VÀ ĐÍT (0-9) ---
+const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const CHAN_DIGITS = ['0', '2', '4', '6', '8'];
+const LE_DIGITS = ['1', '3', '5', '7', '9'];
+const NHO_DIGITS = ['0', '1', '2', '3', '4'];
+const TO_DIGITS = ['5', '6', '7', '8', '9'];
+const CHAN_LON_HON_4_DIGITS = ['6', '8'];
+const CHAN_NHO_HON_4_DIGITS = ['0', '2']; // Bỏ số 4 vì là < 4
+const LE_LON_HON_5_DIGITS = ['7', '9'];
+const LE_NHO_HON_5_DIGITS = ['1', '3']; // Bỏ số 5 vì là < 5
 
-// Đầu / Đít
-const DAU_CHAN = ['0', '2', '4', '6', '8'];
-const DAU_LE = ['1', '3', '5', '7', '9'];
-const DIT_CHAN = ['0', '2', '4', '6', '8'];
-const DIT_LE = ['1', '3', '5', '7', '9'];
+// --- PHÂN LOẠI CƠ BẢN ---
+const DAU_CHAN = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0);
+const DAU_LE = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0);
+const DIT_CHAN = ALL_NUMBERS.filter(n => parseInt(n[1]) % 2 === 0);
+const DIT_LE = ALL_NUMBERS.filter(n => parseInt(n[1]) % 2 !== 0);
 
-// To / Nhỏ
-const DAU_TO = ['5', '6', '7', '8', '9'];
-const DAU_NHO = ['0', '1', '2', '3', '4'];
-const DIT_TO = ['5', '6', '7', '8', '9'];
-const DIT_NHO = ['0', '1', '2', '3', '4'];
+const DAU_TO = ALL_NUMBERS.filter(n => parseInt(n[0]) >= 5);
+const DAU_NHO = ALL_NUMBERS.filter(n => parseInt(n[0]) < 5);
+const DIT_TO = ALL_NUMBERS.filter(n => parseInt(n[1]) >= 5);
+const DIT_NHO = ALL_NUMBERS.filter(n => parseInt(n[1]) < 5);
 
-// --- BỘ SỐ KẾT HỢP ---
-const DAU_TO_DIT_TO = ALL_NUMBERS.filter(n => DAU_TO.includes(n[0]) && DIT_TO.includes(n[1]));
-const DAU_TO_DIT_NHO = ALL_NUMBERS.filter(n => DAU_TO.includes(n[0]) && DIT_NHO.includes(n[1]));
-const DAU_NHO_DIT_TO = ALL_NUMBERS.filter(n => DAU_NHO.includes(n[0]) && DIT_TO.includes(n[1]));
-const DAU_NHO_DIT_NHO = ALL_NUMBERS.filter(n => DAU_NHO.includes(n[0]) && DIT_NHO.includes(n[1]));
+// --- PHÂN LOẠI THEO DẠNG SỐ ---
+const CHAN_CHAN = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[1]) % 2 === 0);
+const CHAN_LE = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[1]) % 2 !== 0);
+const LE_CHAN = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[1]) % 2 === 0);
+const LE_LE = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[1]) % 2 !== 0);
 
-// Đầu Chẵn/Lẻ kết hợp To/Nhỏ
-const DAU_CHAN_LON_4 = ['6', '8'];
-const DAU_CHAN_NHO_4 = ['0', '2', '4'];
-const DAU_LE_LON_5 = ['7', '9'];
-const DAU_LE_NHO_5 = ['1', '3', '5'];
+// --- PHÂN LOẠI KẾT HỢP ĐẦU - ĐÍT ---
+const DAU_TO_DIT_TO = ALL_NUMBERS.filter(n => parseInt(n[0]) >= 5 && parseInt(n[1]) >= 5);
+const DAU_TO_DIT_NHO = ALL_NUMBERS.filter(n => parseInt(n[0]) >= 5 && parseInt(n[1]) < 5);
+const DAU_NHO_DIT_TO = ALL_NUMBERS.filter(n => parseInt(n[0]) < 5 && parseInt(n[1]) >= 5);
+const DAU_NHO_DIT_NHO = ALL_NUMBERS.filter(n => parseInt(n[0]) < 5 && parseInt(n[1]) < 5);
 
-// Đít Chẵn/Lẻ kết hợp To/Nhỏ
-const DIT_CHAN_LON_4 = ['6', '8'];
-const DIT_CHAN_NHO_4 = ['0', '2', '4'];
-const DIT_LE_LON_5 = ['7', '9'];
-const DIT_LE_NHO_5 = ['1', '3', '5'];
+// --- PHÂN LOẠI ĐẦU/ĐÍT CHẴN/LẺ KÈM ĐIỀU KIỆN LỚN/NHỎ ---
+const DAU_CHAN_LON_HON_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4); // {6, 8}
+const DAU_CHAN_NHO_HON_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4); // {0, 2}
+const DIT_CHAN_LON_HON_4 = ALL_NUMBERS.filter(n => parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4); // {6, 8}
+const DIT_CHAN_NHO_HON_4 = ALL_NUMBERS.filter(n => parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4); // {0, 2}
 
-// Bộ số kết hợp phức tạp
-const DAU_4_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => n[0] === '4' && DIT_CHAN_LON_4.includes(n[1]));
-const DAU_4_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => n[0] === '4' && DIT_CHAN_NHO_4.includes(n[1]));
-// ... và tiếp tục định nghĩa các bộ số phức tạp còn lại theo quy tắc tương tự ...
+const DAU_LE_LON_HON_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5); // {7, 9}
+const DAU_LE_NHO_HON_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5); // {1, 3}
+const DIT_LE_LON_HON_5 = ALL_NUMBERS.filter(n => parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5); // {7, 9}
+const DIT_LE_NHO_HON_5 = ALL_NUMBERS.filter(n => parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5); // {1, 3}
 
-// TỔNG HỢP TẤT CẢ CÁC BỘ DỮ LIỆU DẠNG MẢNG (ARRAY)
+// --- PHÂN LOẠI KẾT HỢP PHỨC TẠP ---
+const DAU_CHAN_LON_4_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4);
+const DAU_CHAN_LON_4_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4);
+const DAU_CHAN_NHO_4_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4);
+const DAU_CHAN_NHO_4_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4);
+
+const DAU_CHAN_LON_4_DIT_LE_LON_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5);
+const DAU_CHAN_LON_4_DIT_LE_NHO_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5);
+const DAU_CHAN_NHO_4_DIT_LE_LON_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5);
+const DAU_CHAN_NHO_4_DIT_LE_NHO_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5);
+
+const DAU_LE_LON_5_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4);
+const DAU_LE_LON_5_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4);
+const DAU_LE_NHO_5_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4);
+const DAU_LE_NHO_5_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5 && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4);
+
+const DAU_LE_LON_5_DIT_LE_LON_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5);
+const DAU_LE_LON_5_DIT_LE_NHO_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5);
+const DAU_LE_NHO_5_DIT_LE_LON_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5);
+const DAU_LE_NHO_5_DIT_LE_NHO_5 = ALL_NUMBERS.filter(n => parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5 && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5);
+
+// --- Dạng Đầu/Đít cụ thể ---
+const DAU_4_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => n.startsWith('4') && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4);
+const DAU_4_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => n.startsWith('4') && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4);
+const DAU_4_DIT_LE_LON_5 = ALL_NUMBERS.filter(n => n.startsWith('4') && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5);
+const DAU_4_DIT_LE_NHO_5 = ALL_NUMBERS.filter(n => n.startsWith('4') && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5);
+
+const DAU_5_DIT_CHAN_LON_4 = ALL_NUMBERS.filter(n => n.startsWith('5') && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) > 4);
+const DAU_5_DIT_CHAN_NHO_4 = ALL_NUMBERS.filter(n => n.startsWith('5') && parseInt(n[1]) % 2 === 0 && parseInt(n[1]) < 4);
+const DAU_5_DIT_LE_LON_5 = ALL_NUMBERS.filter(n => n.startsWith('5') && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) > 5);
+const DAU_5_DIT_LE_NHO_5 = ALL_NUMBERS.filter(n => n.startsWith('5') && parseInt(n[1]) % 2 !== 0 && parseInt(n[1]) < 5);
+
+const DIT_4_DAU_CHAN_LON_4 = ALL_NUMBERS.filter(n => n.endsWith('4') && parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4);
+const DIT_4_DAU_CHAN_NHO_4 = ALL_NUMBERS.filter(n => n.endsWith('4') && parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4);
+const DIT_4_DAU_LE_LON_5 = ALL_NUMBERS.filter(n => n.endsWith('4') && parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5);
+const DIT_4_DAU_LE_NHO_5 = ALL_NUMBERS.filter(n => n.endsWith('4') && parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5);
+
+const DIT_5_DAU_CHAN_LON_4 = ALL_NUMBERS.filter(n => n.endsWith('5') && parseInt(n[0]) % 2 === 0 && parseInt(n[0]) > 4);
+const DIT_5_DAU_CHAN_NHO_4 = ALL_NUMBERS.filter(n => n.endsWith('5') && parseInt(n[0]) % 2 === 0 && parseInt(n[0]) < 4);
+const DIT_5_DAU_LE_LON_5 = ALL_NUMBERS.filter(n => n.endsWith('5') && parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) > 5);
+const DIT_5_DAU_LE_NHO_5 = ALL_NUMBERS.filter(n => n.endsWith('5') && parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5);
+
+
+// --- EXPORTS ---
+
 const SETS = {
-    ALL: ALL_NUMBERS,
-    ALL_HEADS,
-    ALL_TAILS,
-    CHAN_CHAN: CHAN_CHAN_NUMBERS,
-    CHAN_LE: CHAN_LE_NUMBERS,
-    LE_CHAN: LE_CHAN_NUMBERS,
-    LE_LE: LE_LE_NUMBERS,
+    ALL: ALL_NUMBERS, CHAN_CHAN, CHAN_LE, LE_CHAN, LE_LE,
     DAU_CHAN, DAU_LE, DIT_CHAN, DIT_LE,
     DAU_TO, DAU_NHO, DIT_TO, DIT_NHO,
     DAU_TO_DIT_TO, DAU_TO_DIT_NHO, DAU_NHO_DIT_TO, DAU_NHO_DIT_NHO,
-    DAU_CHAN_LON_4_NUMS: ALL_NUMBERS.filter(n => DAU_CHAN_LON_4.includes(n[0])),
-    DAU_CHAN_NHO_4_NUMS: ALL_NUMBERS.filter(n => DAU_CHAN_NHO_4.includes(n[0])),
-    DAU_LE_LON_5_NUMS: ALL_NUMBERS.filter(n => DAU_LE_LON_5.includes(n[0])),
-    DAU_LE_NHO_5_NUMS: ALL_NUMBERS.filter(n => DAU_LE_NHO_5.includes(n[0])),
-    DIT_CHAN_LON_4_NUMS: ALL_NUMBERS.filter(n => DIT_CHAN_LON_4.includes(n[1])),
-    DIT_CHAN_NHO_4_NUMS: ALL_NUMBERS.filter(n => DIT_CHAN_NHO_4.includes(n[1])),
-    DIT_LE_LON_5_NUMS: ALL_NUMBERS.filter(n => DIT_LE_LON_5.includes(n[1])),
-    DIT_LE_NHO_5_NUMS: ALL_NUMBERS.filter(n => DIT_LE_NHO_5.includes(n[1])),
+    DAU_CHAN_LON_HON_4, DAU_CHAN_NHO_HON_4, DIT_CHAN_LON_HON_4, DIT_CHAN_NHO_HON_4,
+    DAU_LE_LON_HON_5, DAU_LE_NHO_HON_5, DIT_LE_LON_HON_5, DIT_LE_NHO_HON_5,
+    DAU_CHAN_LON_4_DIT_CHAN_LON_4, DAU_CHAN_LON_4_DIT_CHAN_NHO_4, DAU_CHAN_NHO_4_DIT_CHAN_LON_4, DAU_CHAN_NHO_4_DIT_CHAN_NHO_4,
+    DAU_CHAN_LON_4_DIT_LE_LON_5, DAU_CHAN_LON_4_DIT_LE_NHO_5, DAU_CHAN_NHO_4_DIT_LE_LON_5, DAU_CHAN_NHO_4_DIT_LE_NHO_5,
+    DAU_LE_LON_5_DIT_CHAN_LON_4, DAU_LE_LON_5_DIT_CHAN_NHO_4, DAU_LE_NHO_5_DIT_CHAN_LON_4, DAU_LE_NHO_5_DIT_CHAN_NHO_4,
+    DAU_LE_LON_5_DIT_LE_LON_5, DAU_LE_LON_5_DIT_LE_NHO_5, DAU_LE_NHO_5_DIT_LE_LON_5, DAU_LE_NHO_5_DIT_LE_NHO_5,
+    DAU_4_DIT_CHAN_LON_4, DAU_4_DIT_CHAN_NHO_4, DAU_4_DIT_LE_LON_5, DAU_4_DIT_LE_NHO_5,
+    DAU_5_DIT_CHAN_LON_4, DAU_5_DIT_CHAN_NHO_4, DAU_5_DIT_LE_LON_5, DAU_5_DIT_LE_NHO_5,
+    DIT_4_DAU_CHAN_LON_4, DIT_4_DAU_CHAN_NHO_4, DIT_4_DAU_LE_LON_5, DIT_4_DAU_LE_NHO_5,
+    DIT_5_DAU_CHAN_LON_4, DIT_5_DAU_CHAN_NHO_4, DIT_5_DAU_LE_LON_5, DIT_5_DAU_LE_NHO_5,
+    DIGITS, CHAN_DIGITS, LE_DIGITS, NHO_DIGITS, TO_DIGITS,
+    CHAN_LON_HON_4_DIGITS, CHAN_NHO_HON_4_DIGITS, LE_LON_HON_5_DIGITS, LE_NHO_HON_5_DIGITS
 };
 
-// TẠO CÁC CẤU TRÚC MAP ĐỂ TRA CỨU NHANH
-const MAPS = {}; // Dùng để kiểm tra sự tồn tại (giống Set)
-const INDEX_MAPS = {}; // Dùng để tra cứu chỉ số (index)
-
+const MAPS = {};
+const INDEX_MAPS = {}; 
 for (const key in SETS) {
-    MAPS[key] = new Map(SETS[key].map(val => [val, true]));
-    INDEX_MAPS[key] = new Map(SETS[key].map((val, i) => [val, i]));
+    MAPS[key] = new Map(SETS[key].map(item => [item, true]));
+    INDEX_MAPS[key] = new Map(SETS[key].map((item, index) => [item, index]));
 }
 
-/**
- * Tìm phần tử tiếp theo trong một bộ số đã được sắp xếp.
- * @param {string} value - Giá trị hiện tại.
- * @param {Array<string>} setArray - Mảng (bộ số) đã được sắp xếp.
- * @param {Map<string, number>} indexMap - Map tra cứu chỉ số của giá trị.
- * @returns {string|null} - Giá trị tiếp theo hoặc null.
- */
-function findNextInSet(value, setArray, indexMap) {
-    if (!indexMap.has(value)) return null;
-    const index = indexMap.get(value);
-    if (index === undefined || index >= setArray.length - 1) {
-        return null;
+const DIGIT_SETS = { DIGITS, CHAN_DIGITS, LE_DIGITS, NHO_DIGITS, TO_DIGITS, CHAN_LON_HON_4_DIGITS, CHAN_NHO_HON_4_DIGITS, LE_LON_HON_5_DIGITS, LE_NHO_HON_5_DIGITS };
+const DIGIT_MAPS = {};
+for (const key in DIGIT_SETS) {
+    DIGIT_MAPS[key] = new Map(DIGIT_SETS[key].map((num, index) => [num, index]));
+}
+
+function findNextInSet(currentNumber, numberSet, numberMap) {
+    const currentIndex = numberMap.get(currentNumber);
+    if (currentIndex !== undefined && currentIndex < numberSet.length - 1) {
+        return numberSet[currentIndex + 1];
     }
-    return setArray[index + 1];
+    return null;
 }
 
-/**
- * Tìm phần tử phía trước trong một bộ số đã được sắp xếp.
- * @param {string} value - Giá trị hiện tại.
- * @param {Array<string>} setArray - Mảng (bộ số) đã được sắp xếp.
- * @param {Map<string, number>} indexMap - Map tra cứu chỉ số của giá trị.
- * @returns {string|null} - Giá trị phía trước hoặc null.
- */
-function findPreviousInSet(value, setArray, indexMap) {
-    if (!indexMap.has(value)) return null;
-    const index = indexMap.get(value);
-    if (index === undefined || index <= 0) {
-        return null;
+function findPreviousInSet(currentNumber, numberSet, numberMap) {
+    const currentIndex = numberMap.get(currentNumber);
+    if (currentIndex !== undefined && currentIndex > 0) {
+        return numberSet[currentIndex - 1];
     }
-    return setArray[index - 1];
+    return null;
 }
-
 
 module.exports = {
     SETS,
     MAPS,
     INDEX_MAPS,
+    DIGITS, CHAN_DIGITS, LE_DIGITS,
+    DIGIT_SETS,
+    DIGIT_MAPS,
     findNextInSet,
     findPreviousInSet
 };
-
