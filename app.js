@@ -110,6 +110,7 @@ app.get('/api/last-update-date', (req, res) => {
 
 // Import các router hiện có của bạn (ĐẢM BẢO CÁC FILE NÀY TỒN TẠI VÀ CHÍNH XÁC)
 const indexRouter = require('./routes/index');
+const statisticsRouter = require('./routes/statistics'); // Routes mới
 const consecutivePairsRouter = require('./routes/consecutivePairs'); // Ví dụ
 const consecutiveHeadsRouter = require('./routes/consecutiveHeads'); // Ví dụ
 const consecutiveTailsRouter = require('./routes/consecutiveTails'); // Ví dụ
@@ -150,6 +151,7 @@ const differenceSequencesRouter = require('./routes/differenceSequences');
 
 // Sử dụng các router đã import
 app.use('/', indexRouter); // indexRouter sẽ xử lý '/' và '/overall-stats'
+app.use('/statistics', statisticsRouter); // Thêm routes mới, truy cập qua /statistics
 app.use('/consecutive-pairs', consecutivePairsRouter);
 app.use('/consecutive-heads', consecutiveHeadsRouter);
 app.use('/consecutive-tails', consecutiveTailsRouter);

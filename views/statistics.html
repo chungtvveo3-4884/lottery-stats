@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống Kê Xổ Số Nâng Cao</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .container { max-width: 1400px; }
+        .card { box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: none; }
+        .form-label { font-size: 0.9em; color: #555; }
+        
+        .highlight { background-color: #ffd; font-weight: bold; border-radius: 3px; border: 1px solid #f90; }
+        .result-cell { display: inline-block; text-align: center; margin: 2px; padding: 5px; min-width: 60px; border-radius: 4px; background-color: #e9ecef;}
+        .result-cell small { font-size: 0.75em; color: #6c757d; display: block; }
+
+        .current-streaks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        .current-streak-card { background: #fff; border-left: 5px solid #0d6efd; transition: transform 0.2s; }
+        .current-streak-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        .current-streak-card .card-body { padding: 1rem; }
+        .current-streak-card .record { font-size: 0.9em; color: #6c757d; }
+        
+        .accordion-button { display: flex; flex-wrap: wrap; justify-content: space-between; text-align: left; }
+        .accordion-button > div { padding: 0.2rem 0.5rem; }
+        .accordion-button:not(.collapsed) { background-color: #e7f1ff; color: #0056b3; box-shadow: none;}
+        .accordion-button:focus { box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); }
+        .accordion-body { padding: 0; }
+        .record-column { padding: 1rem; }
+        .record-column:first-child { border-right: 1px solid #dee2e6; }
+        @media (max-width: 767px) { .record-column:first-child { border-right: none; border-bottom: 1px solid #dee2e6; } }
+        .list-group-item { background-color: transparent; border: none; padding: 0.5rem 0; }
+        .full-sequence-display { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container my-4">
+        <header class="text-center mb-4">
+            <h1>Thống Kê Xổ Số Miền Bắc (V2)</h1>
+            <p class="text-muted">Phân tích hiệu suất cao dựa trên dữ liệu đã được tính toán trước.</p>
+        </header>
+
+        <!-- Filters Card -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="statsForm">
+                     <div class="row g-3">
+                        <div class="col-lg-4 col-md-12">
+                            <label for="statsType" class="form-label fw-bold">Loại thống kê:</label>
+                            <select id="statsType" name="statsType" class="form-select"></select>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <label for="minLength" class="form-label fw-bold">Số ngày liên tiếp:</label>
+                            <select id="minLength" class="form-select"></select>
+                        </div>
+                        <div class="col-lg-3 col-md-4">
+                            <label for="startDate" class="form-label fw-bold">Từ ngày:</label>
+                            <input type="date" id="startDate" name="startDate" class="form-control">
+                        </div>
+                        <div class="col-lg-3 col-md-4">
+                            <label for="endDate" class="form-label fw-bold">Đến ngày:</label>
+                            <input type="date" id="endDate" name="endDate" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                             <button type="submit" class="btn btn-primary w-100 py-2">Thống Kê</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Query Results Section -->
+        <div id="results" class="card mb-4">
+             <div class="card-body">
+                <h3 id="result-title" class="card-title">Kết Quả Truy Vấn</h3>
+                <div id="result-table-container">
+                    <p class="text-muted">Vui lòng chọn loại thống kê và nhấn nút "Thống Kê" để xem kết quả.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Current Streaks Section -->
+        <div id="current-streaks-section" class="mb-4 d-none">
+            <h3><i class="bi bi-fire text-danger"></i> Chuỗi Đang Diễn Ra</h3>
+             <div id="current-streaks-container" class="current-streaks-grid"></div>
+        </div>
+
+        <!-- Quick Stats Section -->
+        <div id="quickStats" class="mt-4">
+            <h3><i class="bi bi-trophy-fill text-warning"></i> Thống Kê Kỷ Lục</h3>
+            <div id="quick-stats-container" class="accordion">
+                <div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const STATS_OPTIONS = {
+            "Thống kê theo số": [
+                { text: "1 số về liên tiếp", category: "motSoVeLienTiep" }, { text: "1 số về so le", category: "motSoVeSole" }, { text: "Các số tiến liên tiếp", category: "cacSoTienLienTiep" }, { text: "Các số tiến ĐỀU liên tiếp", category: "cacSoTienDeuLienTiep" }, { text: "Các số lùi liên tiếp", category: "cacSoLuiLienTiep" }, { text: "Các số lùi ĐỀU liên tiếp", category: "cacSoLuiDeuLienTiep" }, { text: "Cặp số về so le", category: "capSoVeSoLe" },
+            ],
+            "Dạng Chẵn-Chẵn": [
+                { text: "Về liên tiếp", category: "chanChan", subcategory: "veLienTiep" }, { text: "Về so le", category: "chanChan", subcategory: "veSole" }, { text: "Tiến liên tiếp", category: "chanChan", subcategory: "tienLienTiep" }, { text: "Tiến ĐỀU liên tiếp", category: "chanChan", subcategory: "tienDeuLienTiep" }, { text: "Lùi liên tiếp", category: "chanChan", subcategory: "luiLienTiep" }, { text: "Lùi ĐỀU liên tiếp", category: "chanChan", subcategory: "luiDeuLienTiep" },
+            ],
+             "Dạng Chẵn-Lẻ": [
+                { text: "Về liên tiếp", category: "chanLe", subcategory: "veLienTiep" }, { text: "Về so le", category: "chanLe", subcategory: "veSole" }, { text: "Tiến liên tiếp", category: "chanLe", subcategory: "tienLienTiep" }, { text: "Tiến ĐỀU liên tiếp", category: "chanLe", subcategory: "tienDeuLienTiep" }, { text: "Lùi liên tiếp", category: "chanLe", subcategory: "luiLienTiep" }, { text: "Lùi ĐỀU liên tiếp", category: "chanLe", subcategory: "luiDeuLienTiep" },
+            ],
+            "Dạng Lẻ-Chẵn": [
+                 { text: "Về liên tiếp", category: "leChan", subcategory: "veLienTiep" }, { text: "Về so le", category: "leChan", subcategory: "veSole" }, { text: "Tiến liên tiếp", category: "leChan", subcategory: "tienLienTiep" }, { text: "Tiến ĐỀU liên tiếp", category: "leChan", subcategory: "tienDeuLienTiep" }, { text: "Lùi liên tiếp", category: "leChan", subcategory: "luiLienTiep" }, { text: "Lùi ĐỀU liên tiếp", category: "leChan", subcategory: "luiDeuLienTiep" },
+            ],
+             "Dạng Lẻ-Lẻ": [
+                { text: "Về liên tiếp", category: "leLe", subcategory: "veLienTiep" }, { text: "Về so le", category: "leLe", subcategory: "veSole" }, { text: "Tiến liên tiếp", category: "leLe", subcategory: "tienLienTiep" }, { text: "Tiến ĐỀU liên tiếp", category: "leLe", subcategory: "tienDeuLienTiep" }, { text: "Lùi liên tiếp", category: "leLe", subcategory: "luiLienTiep" }, { text: "Lùi ĐỀU liên tiếp", category: "leLe", subcategory: "luiDeuLienTiep" },
+            ]
+        };
+        const BASE_URL = window.location.origin;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('statsForm');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const minLengthSelect = document.getElementById('minLength');
+            const statsTypeSelect = document.getElementById('statsType');
+            const resultTitle = document.getElementById('result-title');
+            const resultContainer = document.getElementById('result-table-container');
+            const quickStatsContainer = document.getElementById('quick-stats-container');
+            const currentStreaksSection = document.getElementById('current-streaks-section');
+            const currentStreaksContainer = document.getElementById('current-streaks-container');
+
+            const initializePage = () => {
+                minLengthSelect.add(new Option('Tất cả', 'all'));
+                for (let i = 2; i <= 20; i++) minLengthSelect.add(new Option(i, i));
+                for (const groupName in STATS_OPTIONS) {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = groupName;
+                    STATS_OPTIONS[groupName].forEach(option => {
+                        const opt = document.createElement('option');
+                        opt.textContent = option.text;
+                        opt.value = `${option.category}${option.subcategory ? ':' + option.subcategory : ''}`;
+                        optgroup.appendChild(opt);
+                    });
+                    statsTypeSelect.appendChild(optgroup);
+                }
+                const today = new Date();
+                endDateInput.valueAsDate = today;
+                const pastDate = new Date();
+                pastDate.setDate(today.getDate() - 360);
+                startDateInput.valueAsDate = pastDate;
+                fetchQuickStats();
+            };
+
+            const fetchQuickStats = async () => {
+                try {
+                    const response = await fetch(`${BASE_URL}/statistics/api/v2/quick-stats`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+
+                    quickStatsContainer.innerHTML = '';
+                    currentStreaksContainer.innerHTML = '';
+                    const currentStreaksData = {};
+
+                    Object.keys(data).sort().forEach(key => {
+                        const stat = data[key];
+                        if (stat.current) {
+                            if (!currentStreaksData[stat.current.length]) {
+                                currentStreaksData[stat.current.length] = [];
+                            }
+                            const recordLength = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
+                            currentStreaksData[stat.current.length].push({ ...stat.current, description: stat.description, recordLength: recordLength });
+                        }
+                        renderRecordAccordionItem(key, stat);
+                    });
+                    
+                    renderCurrentStreaks(currentStreaksData);
+
+                } catch (error) {
+                    console.error("Lỗi khi tải thống kê nhanh:", error);
+                    quickStatsContainer.innerHTML = '<div class="alert alert-danger">Không thể tải dữ liệu thống kê nhanh.</div>';
+                }
+            };
+            
+            const renderCurrentStreaks = (streaksByLength) => {
+                 const sortedLengths = Object.keys(streaksByLength).sort((a, b) => b - a);
+                 if(sortedLengths.length > 0) {
+                     currentStreaksSection.classList.remove('d-none');
+                     sortedLengths.forEach(length => {
+                         streaksByLength[length].forEach(streak => {
+                            const card = document.createElement('div');
+                            card.className = 'card current-streak-card';
+                            card.innerHTML = `
+                                <div class="card-body">
+                                    <h5 class="card-title">${streak.description}</h5>
+                                    <p class="card-text mb-1">Đang trong chuỗi <b>${streak.length}</b> ngày (từ ${streak.startDate})</p>
+                                    <p class="record">Kỷ lục: ${streak.recordLength} ngày</p>
+                                    <div class="full-sequence-display">${renderFullSequence(streak, isHighlighted.bind(null, streak))}</div>
+                                </div>
+                            `;
+                            currentStreaksContainer.appendChild(card);
+                         });
+                     });
+                 }
+            };
+
+            const renderRecordAccordionItem = (key, stat) => {
+                const accordionId = `collapse-${key}`;
+                const longestInfo = stat.longest.length > 0 ? `Dài ${stat.longest[0].length} (${stat.longest.length} chuỗi)` : 'N/A';
+                const secondLongestInfo = stat.secondLongest.length > 0 ? `Dài ${stat.secondLongest[0].length} (${stat.secondLongest.length} chuỗi)` : 'N/A';
+                const avgIntervalInfo = stat.averageInterval !== null ? `${stat.averageInterval} ngày` : 'N/A';
+                const sinceLastInfo = stat.daysSinceLast !== null ? `${stat.daysSinceLast} ngày` : 'N/A';
+
+                const accordionItem = document.createElement('div');
+                accordionItem.className = 'accordion-item';
+                accordionItem.innerHTML = `
+                    <h2 class="accordion-header" id="heading-${key}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionId}">
+                            <div class="w-100 fw-bold">${stat.description}</div>
+                            <div class="text-nowrap"><i class="bi bi-trophy"></i> Kỷ lục: ${longestInfo}</div>
+                            <div class="text-nowrap"><i class="bi bi-award"></i> Dài nhì: ${secondLongestInfo}</div>
+                            <div class="text-nowrap"><i class="bi bi-arrow-repeat"></i> TB: ${avgIntervalInfo}</div>
+                            <div class="text-nowrap"><i class="bi bi-hourglass-split"></i> Lần cuối: ${sinceLastInfo}</div>
+                        </button>
+                    </h2>
+                    <div id="${accordionId}" class="accordion-collapse collapse" data-bs-parent="#quick-stats-container">
+                        <div class="accordion-body">
+                            <div class="row g-0">
+                                <div class="col-md-6 record-column">${renderStreakDetails('Kỷ lục', stat.longest)}</div>
+                                <div class="col-md-6 record-column">${renderStreakDetails('Dài nhì', stat.secondLongest)}</div>
+                            </div>
+                        </div>
+                    </div>`;
+                quickStatsContainer.appendChild(accordionItem);
+            };
+            
+            const renderStreakDetails = (title, streaks) => {
+                if (!streaks || streaks.length === 0) return `<h6 class="text-muted">${title}: Không có dữ liệu</h6>`;
+                const streakLength = streaks[0].length;
+                let detailsHtml = streaks.map(streak => `
+                    <li class="list-group-item">
+                        <b>Từ ${streak.startDate} đến ${streak.endDate}</b>
+                        <div class="full-sequence-display">${renderFullSequence(streak, isHighlighted.bind(null, streak))}</div>
+                    </li>`).join('');
+                return `<h6>${title} (Dài ${streakLength} ngày)</h6><ul class="list-group list-group-flush">${detailsHtml}</ul>`;
+            };
+
+            const handleStatsSubmit = async (event) => {
+                event.preventDefault();
+                resultTitle.textContent = 'Đang tải kết quả...';
+                resultContainer.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"></div></div>';
+                
+                const selectedValue = statsTypeSelect.value;
+                const [category, subcategory] = selectedValue.split(':');
+                
+                let url = `${BASE_URL}/statistics/api/v2/stats?category=${category}&exactLength=${minLengthSelect.value}`;
+                if (subcategory) url += `&subcategory=${subcategory}`;
+                if (startDateInput.value) url += `&startDate=${toApiDateFormat(startDateInput.value)}`;
+                if (endDateInput.value) url += `&endDate=${toApiDateFormat(endDateInput.value)}`;
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Lỗi mạng: ${response.statusText}`);
+                    const data = await response.json();
+                    
+                    resultTitle.innerHTML = `${data.description || 'Kết quả'} <span class="badge bg-secondary ms-2">${data.streaks.length} kết quả</span>`;
+                    renderResults(data.streaks);
+                } catch (error) {
+                    console.error('Lỗi khi fetch dữ liệu:', error);
+                    resultTitle.textContent = 'Có lỗi xảy ra khi tải dữ liệu.';
+                    resultContainer.innerHTML = '';
+                }
+            };
+            
+            const renderResults = (streaks) => {
+                if (!streaks || streaks.length === 0) {
+                    resultContainer.innerHTML = '<p class="text-muted">Không có chuỗi nào phù hợp với điều kiện lọc.</p>';
+                    return;
+                }
+                let content = streaks.map(streak => `
+                    <div class="mb-3">
+                        <b>Từ ${streak.startDate} đến ${streak.endDate} (${streak.length} ngày)</b>: ${formatStreakValue(streak)}
+                        <div class="full-sequence-display">${renderFullSequence(streak, isHighlighted.bind(null, streak))}</div>
+                    </div>`).join('<hr class="my-4">');
+                resultContainer.innerHTML = content;
+            };
+            
+            const renderFullSequence = (streak, highlightCheckFn) => {
+                if (!streak.fullSequence) return '<span>(Không có dữ liệu chuỗi)</span>';
+                return streak.fullSequence.map(day => `
+                    <div class="result-cell ${highlightCheckFn(day) ? 'highlight' : ''}">
+                        ${day.value}<small>${day.date.substring(0,5)}</small>
+                    </div>`).join('');
+            };
+            
+            const isHighlighted = (streak, day) => {
+                return streak.dates.includes(day.date);
+            };
+
+            const formatStreakValue = (streak) => {
+                if (streak.value) {
+                    return streak.value === "Theo dạng" ? `Theo dạng` : `Số <b>${streak.value}</b>`;
+                }
+                if (streak.pair) return `Cặp [<b>${streak.pair.join(', ')}</b>]`;
+                return streak.values.map(v => `<b>${v}</b>`).join(' → ');
+            };
+
+            const toApiDateFormat = (dateString) => {
+                if (!dateString) return '';
+                const [year, month, day] = dateString.split('-');
+                return `${day}/${month}/${year}`;
+            };
+            
+            endDateInput.addEventListener('change', () => {
+                const endDate = new Date(endDateInput.value);
+                const startDate = new Date(endDate);
+                startDate.setDate(endDate.getDate() - 360);
+                startDateInput.valueAsDate = startDate;
+            });
+
+            form.addEventListener('submit', handleStatsSubmit);
+            initializePage();
+        });
+    </script>
+</body>
+</html>

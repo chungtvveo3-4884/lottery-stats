@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const generateNumberStats = require('./services/statisticsGenerator');
 
 const DATA_FILE = path.join(__dirname, 'data', 'xsmb-2-digits.json');
 // --- 1. THAY ĐỔI URL API ---
@@ -25,6 +26,8 @@ const updateJsonFile = async () => {
             // Ghi file
             fs.writeFileSync(DATA_FILE, JSON.stringify(githubData, null, 2), 'utf8');
             console.log(`[DATA UPDATE] Đã cập nhật file ${DATA_FILE} thành công từ GitHub.`);
+            // Chạy lại tiến trình tạo thống kê số
+            generateNumberStats().catch(err => console.error("Lỗi khi tạo lại thống kê số:", err));
             return true; 
 
         } else {
