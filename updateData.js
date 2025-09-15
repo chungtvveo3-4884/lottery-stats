@@ -7,6 +7,7 @@ const generateNumberStats = require('./services/statisticsGenerator');
 const DATA_FILE = path.join(__dirname, 'data', 'xsmb-2-digits.json');
 // --- 1. THAY ĐỔI URL API ---
 const API_URL = 'https://raw.githubusercontent.com/khiemdoan/vietnam-lottery-xsmb-analysis/refs/heads/main/data/xsmb-2-digits.json';
+const generateHeadTailStats = require('./services/headTailStatsGenerator');
 
 const updateJsonFile = async () => {
     console.log(`[DATA UPDATE] Bắt đầu lấy dữ liệu từ GitHub: ${API_URL}...`);
@@ -27,7 +28,14 @@ const updateJsonFile = async () => {
             fs.writeFileSync(DATA_FILE, JSON.stringify(githubData, null, 2), 'utf8');
             console.log(`[DATA UPDATE] Đã cập nhật file ${DATA_FILE} thành công từ GitHub.`);
             // Chạy lại tiến trình tạo thống kê số
-            generateNumberStats().catch(err => console.error("Lỗi khi tạo lại thống kê số:", err));
+            Promise.all([
+                generateNumberStats(),
+                generateHeadTailStats()
+            ]).then(() => {
+                console.log('Tất cả các file thống kê đã được tạo lại thành công!');
+            }).catch(err => {
+                console.error('Đã xảy ra lỗi trong quá trình tạo lại file thống kê:', err);
+            });
             return true; 
 
         } else {
