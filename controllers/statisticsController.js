@@ -6,13 +6,15 @@ const statisticsService = require('../services/statisticsService');
 exports.getStats = async (req, res) => {
     try {
         // Lấy các tham số từ query string của URL
-        const { category, subcategory, startDate, endDate, minLength } = req.query;
+        // SỬA LỖI: Đổi tên 'minLength' thành 'exactLength' để khớp với yêu cầu từ client (HTML)
+        const { category, subcategory, startDate, endDate, exactLength } = req.query;
 
         if (!category) {
             return res.status(400).json({ message: 'Thiếu tham số "category"' });
         }
 
-        const filters = { startDate, endDate, minLength };
+        // Truyền đúng tham số 'exactLength' vào bộ lọc
+        const filters = { startDate, endDate, minLength: exactLength };
         
         const results = await statisticsService.getFilteredStreaks(category, subcategory, filters);
         
@@ -23,7 +25,9 @@ exports.getStats = async (req, res) => {
     }
 };
 
-// Thêm hàm mới này
+/**
+ * Handler để lấy dữ liệu cho phần "Thống kê kỷ lục"
+ */
 exports.getQuickStats = async (req, res) => {
     try {
         const results = await statisticsService.getQuickStats();

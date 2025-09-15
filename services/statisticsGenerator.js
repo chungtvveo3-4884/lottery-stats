@@ -5,7 +5,7 @@ const { SETS, MAPS, INDEX_MAPS, findNextInSet, findPreviousInSet } = require('..
 const DATA_FILE_PATH = path.join(__dirname, '..', 'data', 'xsmb-2-digits.json');
 const OUTPUT_FILE_PATH = path.join(__dirname, '..', 'data', 'statistics', 'number_stats.json');
 
-// --- HÀM TIỆN ÍCH VỀ NGÀY THÁNG ---
+// --- CÁC HÀM TIỆN ÍCH ---
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -20,24 +20,16 @@ function parseDate(dateString) {
     return new Date(year, month - 1, day);
 }
 
-/**
- * Kiểm tra xem hai ngày có liên tiếp nhau không.
- * @param {string} dateStr1 - Chuỗi ngày thứ nhất (dd/mm/yyyy).
- * @param {string} dateStr2 - Chuỗi ngày thứ hai (dd/mm/yyyy).
- * @returns {boolean} - True nếu ngày 2 là ngay sau ngày 1.
- */
 function isConsecutive(dateStr1, dateStr2) {
+    if (!dateStr1 || !dateStr2) return false;
     const d1 = parseDate(dateStr1);
     const d2 = parseDate(dateStr2);
-    const oneDay = 24 * 60 * 60 * 1000; // milliseconds in a day
+    const oneDay = 24 * 60 * 60 * 1000;
     return d2.getTime() - d1.getTime() === oneDay;
 }
 
-
-// --- HÀM TẠO ĐỐI TƯỢNG CHUỖI ---
-
 function createStreakObject(data, dateMap, streak, typeSpecificData = {}) {
-    if (!streak || streak.length === 0) return null;
+    if (!streak || streak.length < 2) return null;
     const firstItem = streak[0];
     const lastItem = streak[streak.length - 1];
     const startIndex = dateMap.get(firstItem.date);
@@ -55,65 +47,58 @@ function createStreakObject(data, dateMap, streak, typeSpecificData = {}) {
     };
 }
 
-
-// --- CÁC HÀM TÌM CHUỖI (ĐÃ SỬA LOGIC) ---
+// --- CÁC HÀM TÌM CHUỖI ĐÃ SỬA LỖI ---
 
 function findConsecutiveStreaks(data, dateMap) {
     const allStreaks = [];
-    let currentStreak = [];
-    for (let i = 0; i < data.length - 1; i++) {
-        const currentItem = data[i];
-        const nextItem = data[i + 1];
-        
-        // Bắt đầu chuỗi nếu chưa có
-        if (currentStreak.length === 0) {
-            currentStreak.push(currentItem);
-        }
-
-        // Nếu giá trị giống nhau VÀ ngày liên tiếp -> kéo dài chuỗi
-        if (currentItem.value === nextItem.value && isConsecutive(currentItem.date, nextItem.date)) {
-            currentStreak.push(nextItem);
-        } else { // Nếu không -> kết thúc chuỗi hiện tại
+    if (data.length < 2) return { description: "1 số về liên tiếp", streaks: [] };
+    
+    let currentStreak = [data[0]];
+    for (let i = 1; i < data.length; i++) {
+        if (data[i].value === currentStreak[currentStreak.length - 1].value && isConsecutive(data[i-1].date, data[i].date)) {
+            currentStreak.push(data[i]);
+        } else {
             if (currentStreak.length > 1) {
-                allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+                allStreaks.push(createStreakObject(data, dateMap, currentStreak, { value: currentStreak[0].value }));
             }
-            currentStreak = []; // Bắt đầu lại từ đầu ở vòng lặp sau
+            currentStreak = [data[i]];
         }
     }
     if (currentStreak.length > 1) {
-        allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+        allStreaks.push(createStreakObject(data, dateMap, currentStreak, { value: currentStreak[0].value }));
     }
     return { description: "1 số về liên tiếp", streaks: allStreaks.filter(Boolean) };
 }
 
-function findConsecutiveTypeStreaks(data, dateMap, allowedMap) {
+function findConsecutiveTypeStreaks(data, dateMap, numberMap) {
     const allStreaks = [];
-    let currentStreak = [];
-    for (let i = 0; i < data.length - 1; i++) {
-        const currentItem = data[i];
-        const nextItem = data[i + 1];
+    if (data.length < 2) return { streaks: [] };
 
-        if (allowedMap.has(currentItem.value)) {
+    let currentStreak = [];
+    for (let i = 0; i < data.length; i++) {
+        const currentItem = data[i];
+        if (numberMap.has(currentItem.value)) {
             if (currentStreak.length === 0) {
                 currentStreak.push(currentItem);
-            }
-            if (allowedMap.has(nextItem.value) && isConsecutive(currentItem.date, nextItem.date)) {
-                currentStreak.push(nextItem);
             } else {
-                if (currentStreak.length > 1) {
-                    allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+                if(isConsecutive(currentStreak[currentStreak.length - 1].date, currentItem.date)){
+                    currentStreak.push(currentItem);
+                } else {
+                    if (currentStreak.length > 1) {
+                        allStreaks.push(createStreakObject(data, dateMap, currentStreak, { value: "Theo dạng" }));
+                    }
+                    currentStreak = [currentItem];
                 }
-                currentStreak = [];
             }
         } else {
             if (currentStreak.length > 1) {
-                allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+                allStreaks.push(createStreakObject(data, dateMap, currentStreak, { value: "Theo dạng" }));
             }
             currentStreak = [];
         }
     }
     if (currentStreak.length > 1) {
-        allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+        allStreaks.push(createStreakObject(data, dateMap, currentStreak, { value: "Theo dạng" }));
     }
     return { streaks: allStreaks.filter(Boolean) };
 }
@@ -121,112 +106,137 @@ function findConsecutiveTypeStreaks(data, dateMap, allowedMap) {
 function findAlternatingStreaks(data, dateMap) {
     const allStreaks = [];
     for (let i = 0; i < data.length - 2; i++) {
-        // Điều kiện so le: cách 1 ngày và ngày đó phải tồn tại
-        if (data[i + 1] && isConsecutive(data[i].date, data[i+1].date) && isConsecutive(data[i+1].date, data[i+2].date) && data[i].value === data[i + 2].value) {
+        const startValue = data[i].value;
+        if (data[i + 1] && isConsecutive(data[i].date, data[i + 1].date) && isConsecutive(data[i + 1].date, data[i + 2].date) && startValue === data[i + 2].value) {
             let streak = [data[i], data[i + 2]];
             let lastIndex = i + 2;
-            while (data[lastIndex + 2] && isConsecutive(data[lastIndex+1].date, data[lastIndex+2].date) && data[lastIndex].value === data[lastIndex + 2].value) {
-                streak.push(data[lastIndex + 2]);
-                lastIndex += 2;
+            while (lastIndex < data.length - 2) {
+                const nextPossibleIndex = lastIndex + 2;
+                if (data[nextPossibleIndex] && data[lastIndex + 1] && isConsecutive(data[lastIndex].date, data[lastIndex + 1].date) && isConsecutive(data[lastIndex + 1].date, data[nextPossibleIndex].date)) {
+                    if (startValue === data[nextPossibleIndex].value) {
+                        streak.push(data[nextPossibleIndex]);
+                        lastIndex = nextPossibleIndex;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
-            if (streak.length >= 2) { // Một cặp so le đã là 1 chuỗi
-                 allStreaks.push(createStreakObject(data, dateMap, streak, { value: streak[0].value }));
-                 i = lastIndex -1; 
+            if (streak.length >= 2) {
+                allStreaks.push(createStreakObject(data, dateMap, streak, { value: startValue, useStreakCountForLength: true }));
+                i = lastIndex - 1;
             }
         }
     }
     return { description: "1 số về so le", streaks: allStreaks.filter(Boolean) };
 }
 
-function findAlternatingTypeStreaks(data, dateMap, allowedMap) {
+function findAlternatingTypeStreaks(data, dateMap, numberMap) {
     const allStreaks = [];
-     for (let i = 0; i < data.length - 2; i++) {
-        if (allowedMap.has(data[i].value) && 
-            allowedMap.has(data[i+2].value) && 
-            isConsecutive(data[i].date, data[i+1].date) && 
-            isConsecutive(data[i+1].date, data[i+2].date)) 
-        {
+    for (let i = 0; i < data.length - 2; i++) {
+        if (numberMap.has(data[i].value) && isConsecutive(data[i].date, data[i + 1].date) && isConsecutive(data[i + 1].date, data[i + 2].date) && numberMap.has(data[i + 2].value)) {
             let streak = [data[i], data[i + 2]];
             let lastIndex = i + 2;
-             while (data[lastIndex + 2] && 
-                    allowedMap.has(data[lastIndex].value) && 
-                    allowedMap.has(data[lastIndex + 2].value) && 
-                    isConsecutive(data[lastIndex+1].date, data[lastIndex+2].date)) {
-                streak.push(data[lastIndex + 2]);
-                lastIndex += 2;
+            while (lastIndex < data.length - 2) {
+                const nextPossibleIndex = lastIndex + 2;
+                if (data[nextPossibleIndex] && data[lastIndex + 1] && isConsecutive(data[lastIndex].date, data[lastIndex + 1].date) && isConsecutive(data[lastIndex + 1].date, data[nextPossibleIndex].date) && numberMap.has(data[nextPossibleIndex].value)) {
+                    streak.push(data[nextPossibleIndex]);
+                    lastIndex = nextPossibleIndex;
+                } else {
+                    break;
+                }
             }
             if (streak.length >= 2) {
-                 allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                 i = lastIndex -1;
+                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng", useStreakCountForLength: true }));
+                i = lastIndex - 1;
             }
         }
     }
     return { streaks: allStreaks.filter(Boolean) };
 }
 
-function findProgressiveStreaks(data, dateMap, isUniform, numberSet, indexMap) {
+// =============================================================================
+// === SỬA LỖI LOGIC KIỂM TRA DẠNG SỐ TRONG CÁC HÀM TIẾN/LÙI DƯỚI ĐÂY ===
+// =============================================================================
+
+function findProgressiveStreaks(data, dateMap, isUniform, numberSet, indexMap, numberMap = MAPS.ALL) {
     const allStreaks = [];
-    let currentStreak = [];
     for (let i = 0; i < data.length - 1; i++) {
-        const currentItem = data[i];
-        const nextItem = data[i + 1];
-
-        if (currentStreak.length === 0) {
-            currentStreak.push(currentItem);
+        const startItem = data[i];
+        if (!numberMap.has(startItem.value)) {
+            continue; // Bỏ qua nếu số bắt đầu không thuộc dạng cần xét
         }
-
-        const condition = isUniform 
-            ? (findNextInSet(currentItem.value, numberSet, indexMap) === nextItem.value) 
-            : (parseInt(nextItem.value, 10) > parseInt(currentItem.value, 10));
-
-        if (condition && isConsecutive(currentItem.date, nextItem.date) && MAPS.ALL.has(currentItem.value) && MAPS.ALL.has(nextItem.value)) {
-            currentStreak.push(nextItem);
-        } else {
-            if (currentStreak.length > 1) {
-                allStreaks.push(createStreakObject(data, dateMap, currentStreak));
-            }
-            currentStreak = [nextItem]; // Bắt đầu chuỗi mới với item hiện tại
-        }
-    }
-    if (currentStreak.length > 1) {
-        allStreaks.push(createStreakObject(data, dateMap, currentStreak));
-    }
-    const desc = `Các số ${isUniform ? 'tiến ĐỀU' : 'tiến'} liên tiếp`;
-    return { description: desc, streaks: allStreaks.filter(Boolean) };
-}
-
-function findRegressiveStreaks(data, dateMap, isUniform, numberSet, indexMap) {
-    const allStreaks = [];
-    let currentStreak = [];
-    for (let i = 0; i < data.length - 1; i++) {
-        const currentItem = data[i];
-        const nextItem = data[i + 1];
         
-        if (currentStreak.length === 0) {
-            currentStreak.push(currentItem);
-        }
+        let currentStreak = [startItem];
+        for (let j = i; j < data.length - 1; j++) {
+            const currentItem = data[j];
+            const nextItem = data[j + 1];
 
-        const condition = isUniform 
-            ? (findPreviousInSet(currentItem.value, numberSet, indexMap) === nextItem.value) 
-            : (parseInt(nextItem.value, 10) < parseInt(currentItem.value, 10));
-
-        if (condition && isConsecutive(currentItem.date, nextItem.date) && MAPS.ALL.has(currentItem.value) && MAPS.ALL.has(nextItem.value)) {
-            currentStreak.push(nextItem);
-        } else {
-            if (currentStreak.length > 1) {
-                allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+            if (!isConsecutive(currentItem.date, nextItem.date) || !numberMap.has(nextItem.value)) {
+                break; // Dừng chuỗi nếu ngày không liên tiếp hoặc số tiếp theo sai dạng
             }
-            currentStreak = [nextItem];
+
+            const condition = isUniform 
+                ? (findNextInSet(currentItem.value, numberSet, indexMap) === nextItem.value) 
+                : (parseInt(nextItem.value, 10) > parseInt(currentItem.value, 10));
+            
+            if (condition) {
+                currentStreak.push(nextItem);
+            } else {
+                break;
+            }
+        }
+
+        if (currentStreak.length > 1) {
+            allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+            i += currentStreak.length - 2;
         }
     }
-    if (currentStreak.length > 1) {
-        allStreaks.push(createStreakObject(data, dateMap, currentStreak));
-    }
-    const desc = `Các số ${isUniform ? 'lùi ĐỀU' : 'lùi'} liên tiếp`;
+    const desc = `Các số ${numberMap !== MAPS.ALL ? 'dạng' : ''} ${isUniform ? 'tiến ĐỀU' : 'tiến'} liên tiếp`;
     return { description: desc, streaks: allStreaks.filter(Boolean) };
 }
+
+function findRegressiveStreaks(data, dateMap, isUniform, numberSet, indexMap, numberMap = MAPS.ALL) {
+    const allStreaks = [];
+    for (let i = 0; i < data.length - 1; i++) {
+        const startItem = data[i];
+        if (!numberMap.has(startItem.value)) {
+            continue;
+        }
+        
+        let currentStreak = [startItem];
+        for (let j = i; j < data.length - 1; j++) {
+            const currentItem = data[j];
+            const nextItem = data[j + 1];
+
+            if (!isConsecutive(currentItem.date, nextItem.date) || !numberMap.has(nextItem.value)) {
+                break;
+            }
+
+            const condition = isUniform 
+                ? (findPreviousInSet(currentItem.value, numberSet, indexMap) === nextItem.value) 
+                : (parseInt(nextItem.value, 10) < parseInt(currentItem.value, 10));
+            
+            if (condition) {
+                currentStreak.push(nextItem);
+            } else {
+                break;
+            }
+        }
+
+        if (currentStreak.length > 1) {
+            allStreaks.push(createStreakObject(data, dateMap, currentStreak));
+            i += currentStreak.length - 2;
+        }
+    }
+    const desc = `Các số ${numberMap !== MAPS.ALL ? 'dạng' : ''} ${isUniform ? 'lùi ĐỀU' : 'lùi'} liên tiếp`;
+    return { description: desc, streaks: allStreaks.filter(Boolean) };
+}
+
 
 function findAlternatingPairStreaks(data, dateMap) {
+    // Logic cũ của bạn cho chức năng này có vẻ ổn, giữ nguyên
     const allStreaks = [];
     let i = 0;
     while (i < data.length - 3) {
@@ -269,10 +279,10 @@ function analyzeParityStreaks(data, dateMap, setKey, typeName) {
     return {
         veLienTiep: { ...findConsecutiveTypeStreaks(data, dateMap, numberMap), description: `Số dạng ${typeName} về liên tiếp`},
         veSole: { ...findAlternatingTypeStreaks(data, dateMap, numberMap), description: `Số dạng ${typeName} về so le` },
-        tienLienTiep: { ...findProgressiveStreaks(data, dateMap, false, numberSet, indexMap), description: `Số dạng ${typeName} tiến liên tiếp` },
-        tienDeuLienTiep: { ...findProgressiveStreaks(data, dateMap, true, numberSet, indexMap), description: `Số dạng ${typeName} tiến ĐỀU liên tiếp` },
-        luiLienTiep: { ...findRegressiveStreaks(data, dateMap, false, numberSet, indexMap), description: `Số dạng ${typeName} lùi liên tiếp` },
-        luiDeuLienTiep: { ...findRegressiveStreaks(data, dateMap, true, numberSet, indexMap), description: `Số dạng ${typeName} lùi ĐỀU liên tiếp` },
+        tienLienTiep: { ...findProgressiveStreaks(data, dateMap, false, numberSet, indexMap, numberMap), description: `Số dạng ${typeName} tiến liên tiếp` },
+        tienDeuLienTiep: { ...findProgressiveStreaks(data, dateMap, true, numberSet, indexMap, numberMap), description: `Số dạng ${typeName} tiến ĐỀU liên tiếp` },
+        luiLienTiep: { ...findRegressiveStreaks(data, dateMap, false, numberSet, indexMap, numberMap), description: `Số dạng ${typeName} lùi liên tiếp` },
+        luiDeuLienTiep: { ...findRegressiveStreaks(data, dateMap, true, numberSet, indexMap, numberMap), description: `Số dạng ${typeName} lùi ĐỀU liên tiếp` },
     };
 }
 
@@ -317,7 +327,6 @@ async function generateNumberStats() {
     }
 }
 
-// Để chạy độc lập:
-generateNumberStats();
 
+generateNumberStats();
 module.exports = generateNumberStats;

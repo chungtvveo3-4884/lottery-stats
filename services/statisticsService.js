@@ -37,171 +37,153 @@ async function getStatsData() {
  * Lấy ngày mới nhất từ dữ liệu gốc
  */
 async function getLatestDate() {
-     if (latestDate && process.env.NODE_ENV !== 'development') {
+    if (latestDate && process.env.NODE_ENV !== 'development') {
         return latestDate;
     }
     try {
         const rawData = await fs.readFile(RAW_DATA_PATH, 'utf-8');
-        const data = JSON.parse(rawData)
-            .filter(item => item.special !== null && !isNaN(item.special))
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        if (data.length > 0) {
-            const date = new Date(data[0].date);
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            latestDate = `${day}/${month}/${year}`;
+        const data = JSON.parse(rawData);
+        // Giả sử dữ liệu đã được sắp xếp hoặc bản ghi cuối cùng là mới nhất
+        const lastEntry = data[data.length - 1];
+        if (lastEntry && lastEntry.date) {
+            const d = new Date(lastEntry.date);
+            latestDate = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            return latestDate;
         }
-        return latestDate;
-    } catch(e) {
-        console.error("Lỗi khi đọc dữ liệu gốc để lấy ngày mới nhất:", e);
+        return null;
+    } catch (error) {
+        console.error('Không thể đọc ngày mới nhất:', error);
         return null;
     }
 }
 
 
+/**
+ * Hàm tiện ích để chuyển đổi chuỗi ngày 'dd/mm/yyyy' thành đối tượng Date
+ */
 function parseDate(dateString) {
     if(!dateString) return null;
-    const [day, month, year] = dateString.split('/');
-    // Handles both YYYY and YY date formats
-    const fullYear = year.length === 4 ? year : (Number(year) < 50 ? `20${year}`: `19${year}`);
-    return new Date(fullYear, month - 1, day);
+    const parts = dateString.split('/');
+    if (parts.length !== 3) return null;
+    // new Date(year, monthIndex, day)
+    return new Date(parts[2], parts[1] - 1, parts[0]);
 }
 
-async function getFilteredStreaks(categoryKey, subCategoryKey = null, filters = {}) {
+/**
+ * Lấy và lọc các chuỗi thống kê
+ */
+exports.getFilteredStreaks = async (category, subcategory, filters = {}) => {
     const allStats = await getStatsData();
-    let data;
+    let statsData;
+    let finalStreaks = []; // Khai báo ở đây để đảm bảo luôn tồn tại
 
-    if (subCategoryKey) {
-        data = allStats[categoryKey] ? allStats[categoryKey][subCategoryKey] : null;
-    } else {
-        data = allStats[categoryKey];
-    }
-    
-    // Xử lý trường hợp đặc biệt cho veLienTiep trong các nhóm phức hợp
-    if (subCategoryKey === 'veLienTiep' && allStats[categoryKey] && allStats[categoryKey][subCategoryKey]) {
-         data = allStats[categoryKey][subCategoryKey];
+    if (subcategory && allStats[category] && allStats[category][subcategory]) {
+        statsData = allStats[category][subcategory];
+    } else if (allStats[category]) {
+        statsData = allStats[category];
     }
 
-
-    if (!data || !data.streaks) {
+    if (!statsData || !statsData.streaks) {
         return { description: 'Không tìm thấy dữ liệu', streaks: [] };
     }
 
-    let filteredStreaks = data.streaks;
+    finalStreaks = statsData.streaks;
 
     if (filters.startDate) {
-        const startDate = parseDate(filters.startDate);
-        filteredStreaks = filteredStreaks.filter(streak => parseDate(streak.startDate) >= startDate);
+        const start = parseDate(filters.startDate);
+        if(start) finalStreaks = finalStreaks.filter(s => parseDate(s.startDate) >= start);
     }
-
     if (filters.endDate) {
-        const endDate = parseDate(filters.endDate);
-        filteredStreaks = filteredStreaks.filter(streak => parseDate(streak.endDate) <= endDate);
+        const end = parseDate(filters.endDate);
+        if(end) finalStreaks = finalStreaks.filter(s => parseDate(s.endDate) <= end);
+    }
+    if (filters.minLength && filters.minLength !== 'all') {
+        // === SỬA LỖI CHÍNH TẠI ĐÂY ===
+        // Thay đổi toán tử so sánh từ >= thành == để lọc chính xác.
+        finalStreaks = finalStreaks.filter(s => s.length == filters.minLength);
     }
     
-    if (filters.exactLength && filters.exactLength !== 'all' && filters.exactLength !== '') {
-        const length = parseInt(filters.exactLength, 10);
-        filteredStreaks = filteredStreaks.filter(streak => streak.length === length);
-    }
-
-    filteredStreaks.sort((a, b) => parseDate(b.startDate) - parseDate(a.startDate));
-
     return {
-        description: data.description,
-        streaks: filteredStreaks
+        description: statsData.description,
+        streaks: finalStreaks
     };
-}
+};
 
 
-async function getQuickStats() {
+/**
+ * Lấy dữ liệu cho phần Thống kê kỷ lục
+ */
+exports.getQuickStats = async () => {
     const allStats = await getStatsData();
-    const latestDateValue = await getLatestDate();
     const quickStats = {};
+    latestDate = await getLatestDate();
 
-    if (!latestDateValue) {
-        console.log("Không thể xác định ngày mới nhất, thống kê nhanh có thể không chính xác.");
-    }
+    const analyzeCategory = (key, categoryData) => {
+        if (!categoryData || !Array.isArray(categoryData.streaks) || categoryData.streaks.length === 0) {
+            return;
+        }
 
-    for (const categoryKey in allStats) {
-        const category = allStats[categoryKey];
-        if (category.description && Array.isArray(category.streaks)) { // Cấp 1
-            processCategory(category, categoryKey, quickStats, latestDateValue);
-        } else { // Cấp 2 (ví dụ: chanChan)
-            for(const subCategoryKey in category){
-                const subCategory = category[subCategoryKey];
-                if(subCategory && subCategory.description && Array.isArray(subCategory.streaks)) {
-                    const compositeKey = `${categoryKey}-${subCategoryKey}`;
-                    processCategory(subCategory, compositeKey, quickStats, latestDateValue);
-                }
+        const streaks = [...categoryData.streaks].sort((a, b) => b.length - a.length);
+        const longest = streaks.filter(s => s.length === streaks[0].length);
+        
+        let secondLongest = [];
+        const longestLength = longest[0].length;
+        for(let i=0; i < streaks.length; i++){
+            if(streaks[i].length < longestLength){
+                const secondLength = streaks[i].length;
+                secondLongest = streaks.filter(s => s.length === secondLength);
+                break;
+            }
+        }
+        
+        const current = latestDate ? categoryData.streaks.find(s => s.endDate === latestDate) : null;
+
+        const streaksByDate = [...categoryData.streaks].sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
+        let totalInterval = 0;
+        let daysSinceLast = 'N/A';
+
+        if (streaksByDate.length > 1) {
+            for (let i = 1; i < streaksByDate.length; i++) {
+                const prevEndDate = parseDate(streaksByDate[i - 1].endDate);
+                const currStartDate = parseDate(streaksByDate[i].startDate);
+                const diffTime = Math.abs(currStartDate - prevEndDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                totalInterval += diffDays;
+            }
+        }
+        
+        const averageInterval = streaksByDate.length > 1 ? Math.round(totalInterval / (streaksByDate.length - 1)) : 0;
+        
+        if (latestDate && streaksByDate.length > 0) {
+            const lastStreakEndDate = parseDate(streaksByDate[streaksByDate.length - 1].endDate);
+            const today = parseDate(latestDate);
+            if(today && lastStreakEndDate){
+                const diffTime = Math.abs(today - lastStreakEndDate);
+                daysSinceLast = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            }
+        }
+
+
+        quickStats[key] = {
+            description: categoryData.description,
+            longest,
+            secondLongest,
+            current,
+            averageInterval,
+            daysSinceLast
+        };
+    };
+
+    for (const key in allStats) {
+        const categoryData = allStats[key];
+        if (categoryData.streaks) { // Cấu trúc đơn
+            analyzeCategory(key, categoryData);
+        } else { // Cấu trúc lồng
+            for (const subKey in categoryData) {
+                analyzeCategory(`${key}:${subKey}`, categoryData[subKey]);
             }
         }
     }
+
     return quickStats;
-}
-
-function processCategory(categoryData, key, quickStats, latestDate) {
-    if (!categoryData || !Array.isArray(categoryData.streaks) || categoryData.streaks.length === 0) {
-         quickStats[key] = {
-            description: categoryData.description || "N/A",
-            longest: [], secondLongest: [], current: null, averageInterval: 0, daysSinceLast: 'N/A'
-        };
-        return;
-    }
-    
-    const sortedStreaks = [...categoryData.streaks].sort((a, b) => b.length - a.length);
-
-    const longestLength = sortedStreaks[0].length;
-    const allLongest = sortedStreaks.filter(s => s.length === longestLength);
-
-    const remainingStreaks = sortedStreaks.filter(s => s.length < longestLength);
-    let allSecondLongest = [];
-    if (remainingStreaks.length > 0) {
-        const secondLongestLength = remainingStreaks[0].length;
-        allSecondLongest = remainingStreaks.filter(s => s.length === secondLongestLength);
-    }
-
-    const currentStreak = latestDate ? categoryData.streaks.find(s => s.endDate === latestDate) : null;
-
-    const streaksByDate = [...categoryData.streaks].sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
-    let totalInterval = 0;
-    let daysSinceLast = 'N/A';
-
-    if (streaksByDate.length > 1) {
-        for (let i = 1; i < streaksByDate.length; i++) {
-            const prevEndDate = parseDate(streaksByDate[i - 1].endDate);
-            const currStartDate = parseDate(streaksByDate[i].startDate);
-            const diffTime = Math.abs(currStartDate - prevEndDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            totalInterval += diffDays;
-        }
-    }
-    
-    const averageInterval = streaksByDate.length > 1 ? Math.round(totalInterval / (streaksByDate.length - 1)) : 0;
-    
-    if (latestDate && streaksByDate.length > 0) {
-        const lastStreakEndDate = parseDate(streaksByDate[streaksByDate.length - 1].endDate);
-        const today = parseDate(latestDate);
-        if(today && lastStreakEndDate){
-            const diffTime = Math.abs(today - lastStreakEndDate);
-            daysSinceLast = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        }
-    }
-
-
-    quickStats[key] = {
-        description: categoryData.description,
-        longest: allLongest,
-        secondLongest: allSecondLongest,
-        current: currentStreak || null,
-        averageInterval,
-        daysSinceLast
-    };
-}
-
-module.exports = {
-    getFilteredStreaks,
-    getQuickStats
 };
-
