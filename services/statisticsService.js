@@ -3,6 +3,7 @@ const path = require('path');
 
 const NUMBER_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'number_stats.json');
 const HEAD_TAIL_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'head_tail_stats.json');
+const SUM_DIFFERENCE_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'sum_difference_stats.json');
 const RAW_DATA_PATH = path.join(__dirname, '..', 'data', 'xsmb-2-digits.json');
 
 let cachedStats = null;
@@ -16,15 +17,19 @@ async function getStatsData() {
         return cachedStats;
     }
     try {
-        const [numberStatsRaw, headTailStatsRaw] = await Promise.all([
-            fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'), // Trả về chuỗi JSON rỗng nếu lỗi
-            fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}')
+        // === SỬA LỖI: Thêm file mới vào Promise.all để đọc đồng thời ===
+        const [numberStatsRaw, headTailStatsRaw, sumDiffStatsRaw] = await Promise.all([
+            fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'),
+            fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
+            fs.readFile(SUM_DIFFERENCE_STATS_PATH, 'utf-8').catch(() => '{}')
         ]);
         
         const numberStats = JSON.parse(numberStatsRaw);
         const headTailStats = JSON.parse(headTailStatsRaw);
+        const sumDiffStats = JSON.parse(sumDiffStatsRaw);
 
-        cachedStats = { ...numberStats, ...headTailStats }; // Hợp nhất hai đối tượng
+        // === SỬA LỖI: Hợp nhất cả 3 file dữ liệu vào một đối tượng cache ===
+        cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
         return cachedStats;
     } catch (error) {
         console.error('Lỗi khi đọc hoặc phân tích file thống kê:', error);
