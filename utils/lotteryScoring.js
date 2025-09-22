@@ -561,154 +561,6 @@ const formatDate = (dateString) => {
     return `${day}/${month}/${year}`;
 };
 
-// Main scoring calculation function
-const calculateLotteryScores = (data, startDate, endDate, mode, formFilter = null) => {
-    try {
-        if (!Array.isArray(data)) {
-            return { results: [], total: 0, message: 'Dữ liệu không hợp lệ.' };
-        }
-
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (isNaN(start) || isNaN(end) || start > end) {
-            return { results: [], total: 0, message: 'Ngày không hợp lệ.' };
-        }
-
-        // Filter data by date range
-        const filteredData = data.filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= start && entryDate <= end;
-        });
-
-        if (filteredData.length === 0) {
-            return { results: [], total: 0, message: 'Không có dữ liệu trong khoảng thời gian đã chọn.' };
-        }
-
-        const results = [];
-        const formsToProcess = formFilter ? 
-            scoringForms.filter(form => form.n === formFilter) : 
-            scoringForms;
-
-        for (const form of formsToProcess) {
-            const formResult = {
-                form: form.description,
-                dates: [],
-                dateToNumbers: {},
-                occurrences: 0,
-                multiplier: form.multiplier,
-                score: 0
-            };
-
-            // Process each day
-            filteredData.forEach(entry => {
-                const numbers = lotteryService.getNumbersByMode(entry, mode);
-                const matchingNumbers = numbers.filter(num => {
-                    const normalizedNum = Number(num) % 100;
-                    return form.checkFunction(normalizedNum);
-                });
-
-                if (matchingNumbers.length > 0) {
-                    formResult.dates.push(formatDate(entry.date));
-                    formResult.dateToNumbers[formatDate(entry.date)] = matchingNumbers.map(num => 
-                        String(Number(num) % 100).padStart(2, '0')
-                    );
-                    formResult.occurrences++;
-                }
-            });
-
-            // Calculate score - ALLOW NEGATIVE VALUES
-            formResult.score = 90 - (formResult.occurrences * form.multiplier);
-            
-            // Only include forms that have occurrences or if showing all
-            if (formResult.occurrences > 0 || !formFilter) {
-                results.push(formResult);
-            }
-        }
-
-        // Sort by score descending
-        results.sort((a, b) => b.score - a.score);
-
-        const total = results.length;
-        const message = total === 0 ? 'Không tìm thấy kết quả phù hợp.' : '';
-
-        return { results, total, message };
-    } catch (error) {
-        console.error('Lỗi trong calculateLotteryScores:', error);
-        return { results: [], total: 0, message: 'Lỗi khi tính điểm: ' + error.message };
-    }
-};
-
-// Calculate all lottery scores
-const calculateAllLotteryScores = (data, startDate, endDate, mode) => {
-    try {
-        if (!Array.isArray(data)) {
-            return { results: [], total: 0, message: 'Dữ liệu không hợp lệ.' };
-        }
-
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (isNaN(start) || isNaN(end) || start > end) {
-            return { results: [], total: 0, message: 'Ngày không hợp lệ.' };
-        }
-
-        // Filter data by date range
-        const filteredData = data.filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= start && entryDate <= end;
-        });
-
-        if (filteredData.length === 0) {
-            return { results: [], total: 0, message: 'Không có dữ liệu trong khoảng thời gian đã chọn.' };
-        }
-
-        const results = [];
-
-        for (const form of scoringForms) {
-            const formResult = {
-                form: form.description,
-                dates: [],
-                dateToNumbers: {},
-                occurrences: 0,
-                multiplier: form.multiplier,
-                score: 0
-            };
-
-            // Process each day
-            filteredData.forEach(entry => {
-                const numbers = lotteryService.getNumbersByMode(entry, mode);
-                const matchingNumbers = numbers.filter(num => {
-                    const normalizedNum = Number(num) % 100;
-                    return form.checkFunction(normalizedNum);
-                });
-
-                if (matchingNumbers.length > 0) {
-                    formResult.dates.push(formatDate(entry.date));
-                    formResult.dateToNumbers[formatDate(entry.date)] = matchingNumbers.map(num => 
-                        String(Number(num) % 100).padStart(2, '0')
-                    );
-                    formResult.occurrences++;
-                }
-            });
-
-            // Calculate score - ALLOW NEGATIVE VALUES
-            formResult.score = 90 - (formResult.occurrences * form.multiplier);
-            
-            results.push(formResult);
-        }
-
-        // Sort by score descending (negative scores will be at the bottom)
-        results.sort((a, b) => b.score - a.score);
-
-        const total = results.length;
-        const message = total === 0 ? 'Không tìm thấy kết quả.' : `Tính toán hoàn tất cho ${total} dạng số.`;
-
-        return { results, total, message };
-    } catch (error) {
-        console.error('Lỗi trong calculateAllLotteryScores:', error);
-        return { results: [], total: 0, message: 'Lỗi khi tính điểm: ' + error.message };
-    }
-};
-
 // Helper functions for enhanced functionality
 const findFormsByOccurrence = (data, startDate, endDate, mode, targetOccurrence) => {
     const allResults = calculateAllLotteryScores(data, startDate, endDate, mode);
@@ -783,152 +635,118 @@ const getOccurrenceStatistics = (data, startDate, endDate, mode) => {
     };
 };
 
-const calculateAllLotteryScoresWithDuplicates = (data, startDate, endDate, mode) => {
-    const baseResults = calculateAllLotteryScores(data, startDate, endDate, mode);
-    const duplicateAnalysis = analyzeDuplicates(baseResults.results);
-    
-    return {
-        ...baseResults,
-        duplicates: duplicateAnalysis.duplicateNumbers,
-        duplicateStats: {
-            totalDuplicateNumbers: duplicateAnalysis.totalDuplicates,
-            formsWithDuplicates: Array.from(duplicateAnalysis.formsWithDuplicates),
-            duplicatePercentage: (duplicateAnalysis.totalDuplicates / baseResults.results.length * 100).toFixed(2)
-        }
-    };
-};
 
-const analyzeScoreDistribution = (results) => {
-    const distribution = {
-        positive: results.filter(r => r.score > 0),
-        zero: results.filter(r => r.score === 0),
-        negative: results.filter(r => r.score < 0),
-        statistics: {
-            max: Math.max(...results.map(r => r.score)),
-            min: Math.min(...results.map(r => r.score)),
-            average: results.reduce((sum, r) => sum + r.score, 0) / results.length,
-            median: getMedian(results.map(r => r.score).sort((a, b) => a - b))
-        }
-    };
-    
-    return distribution;
-};
-
-const getMedian = (sortedArray) => {
-    const mid = Math.floor(sortedArray.length / 2);
-    return sortedArray.length % 2 !== 0 
-        ? sortedArray[mid] 
-        : (sortedArray[mid - 1] + sortedArray[mid]) / 2;
-};
-
-const interpretScore = (score, occurrences) => {
-    if (score < 0) {
-        return {
-            level: 'negative',
-            description: 'Xuất hiện quá nhiều lần',
-            recommendation: 'Có thể sẽ ít xuất hiện trong thời gian tới',
-            color: 'danger'
-        };
-    } else if (score === 0) {
-        return {
-            level: 'neutral',
-            description: 'Xuất hiện đúng mức kỳ vọng',
-            recommendation: 'Tần suất xuất hiện bình thường',
-            color: 'warning'
-        };
-    } else if (score >= 85) {
-        return {
-            level: 'excellent',
-            description: 'Xuất hiện rất ít',
-            recommendation: 'Có thể có cơ hội xuất hiện cao',
-            color: 'success'
-        };
-    } else if (score >= 70) {
-        return {
-            level: 'good',
-            description: 'Xuất hiện ít',
-            recommendation: 'Có cơ hội xuất hiện tốt',
-            color: 'info'
-        };
-    } else {
-        return {
-            level: 'average',
-            description: 'Xuất hiện bình thường',
-            recommendation: 'Tần suất xuất hiện trung bình',
-            color: 'secondary'
-        };
-    }
-};
-
-const formatScore = (score) => {
-    if (score < 0) {
-        return `<span style="color: red; font-weight: bold;">${score}</span>`;
-    } else if (score === 0) {
-        return `<span style="color: orange; font-weight: bold;">${score}</span>`;
-    } else {
-        return `<span style="color: green; font-weight: bold;">${score}</span>`;
-    }
-};
-
-const getScoringStatistics = (results) => {
-    const stats = {
-        totalForms: results.length,
-        positiveScores: results.filter(r => r.score > 0).length,
-        zeroScores: results.filter(r => r.score === 0).length,
-        negativeScores: results.filter(r => r.score < 0).length,
-        maxScore: Math.max(...results.map(r => r.score)),
-        minScore: Math.min(...results.map(r => r.score)),
-        averageScore: results.reduce((sum, r) => sum + r.score, 0) / results.length
-    };
-
-    return stats;
-};
-
-// HÀM TÍNH ĐIỂM TỔNG HỢP - PHIÊN BẢN HOÀN THIỆN VỚI PHÂN LOẠI ĐỘNG
-const calculateAggregateScoreForAllNumbers = (data, startDate, endDate, mode) => {
+/**
+ * [ĐÃ CẬP NHẬT] - Hàm tính điểm không còn phụ thuộc vào service bên ngoài.
+ * @param {Array<Object>} processedData - Mảng dữ liệu đã được xử lý trước. Mỗi object có dạng { date: 'DD/MM/YYYY', numbers: [...] }
+ * @param {string | null} formFilter - Lọc theo mã dạng cụ thể (ví dụ: 'even-even').
+ * @returns {Object} - Kết quả tính điểm cho các dạng được xử lý.
+ */
+const calculateLotteryScores = (processedData, formFilter = null) => {
     try {
-        if (!Array.isArray(data)) {
-            return { results: [], message: 'Dữ liệu không hợp lệ.' };
+        if (!Array.isArray(processedData)) {
+            return { results: [], total: 0, message: 'Dữ liệu không hợp lệ.' };
+        }
+        if (processedData.length === 0) {
+            return { results: [], total: 0, message: 'Không có dữ liệu trong khoảng thời gian đã chọn.' };
         }
 
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (isNaN(start) || isNaN(end) || start > end) {
-            return { results: [], message: 'Ngày không hợp lệ.' };
+        const results = [];
+        const formsToProcess = formFilter ? 
+            scoringForms.filter(form => form.n === formFilter) : 
+            scoringForms;
+
+        for (const form of formsToProcess) {
+            const formResult = {
+                form: form.description,
+                formN: form.n, // Thêm mã dạng để dễ xử lý
+                dates: [],
+                dateToNumbers: {},
+                occurrences: 0,
+                multiplier: form.multiplier,
+                score: 0
+            };
+
+            processedData.forEach(entry => {
+                const matchingNumbers = entry.numbers.filter(num => {
+                    const normalizedNum = Number(num) % 100;
+                    return form.checkFunction(normalizedNum);
+                });
+
+                if (matchingNumbers.length > 0) {
+                    const formattedDate = entry.date; // Ngày đã được format sẵn từ generator
+                    formResult.dates.push(formattedDate);
+                    formResult.dateToNumbers[formattedDate] = matchingNumbers.map(num => 
+                        String(Number(num) % 100).padStart(2, '0')
+                    );
+                    formResult.occurrences++;
+                }
+            });
+
+            formResult.score = 90 - (formResult.occurrences * form.multiplier);
+            
+            // Luôn thêm kết quả nếu không có bộ lọc, hoặc chỉ thêm nếu có lần xuất hiện khi có bộ lọc
+            if (formResult.occurrences > 0 || !formFilter) {
+                results.push(formResult);
+            }
         }
 
-        const filteredData = data.filter(entry => {
-            const entryDate = new Date(entry.date);
-            return entryDate >= start && entryDate <= end;
-        });
+        results.sort((a, b) => b.score - a.score);
+        const total = results.length;
+        const message = total === 0 ? 'Không tìm thấy kết quả phù hợp.' : '';
 
-        if (filteredData.length === 0) {
-            return { results: [], message: 'Không có dữ liệu trong khoảng thời gian đã chọn.' };
+        return { results, total, message };
+    } catch (error) {
+        console.error('Lỗi trong calculateLotteryScores:', error);
+        return { results: [], total: 0, message: 'Lỗi khi tính điểm: ' + error.message };
+    }
+};
+
+/**
+ * [ĐÃ CẬP NHẬT] - Tính điểm cho TẤT CẢ các dạng.
+ * @param {Array<Object>} processedData - Mảng dữ liệu đã xử lý.
+ * @returns {Object}
+ */
+const calculateAllLotteryScores = (processedData) => {
+    // Hàm này thực chất là một trường hợp đặc biệt của hàm trên khi không có bộ lọc
+    return calculateLotteryScores(processedData, null);
+};
+
+
+/**
+ * [ĐÃ CẬP NHẬT] - Hàm tính điểm tổng hợp cho từng số từ 00-99.
+ * @param {Array<Object>} processedData - Mảng dữ liệu đã xử lý.
+ * @returns {Object}
+ */
+const calculateAggregateScoreForAllNumbers = (processedData) => {
+    try {
+        if (!Array.isArray(processedData) || processedData.length === 0) {
+            return { results: [], message: 'Không có dữ liệu để phân tích.' };
         }
         
         const allNumbersScores = [];
 
+        // Cache số lần xuất hiện của mỗi dạng để tăng tốc độ
         const formOccurrenceCache = new Map();
-        for (const form of scoringForms) {
+        scoringForms.forEach(form => {
             let occurrences = 0;
-            filteredData.forEach(entry => {
-                const numbers = lotteryService.getNumbersByMode(entry, mode);
-                const matchingNumbers = numbers.filter(num => form.checkFunction(Number(num) % 100));
-                if (matchingNumbers.length > 0) {
+            processedData.forEach(entry => {
+                const hasMatch = entry.numbers.some(num => form.checkFunction(Number(num) % 100));
+                if (hasMatch) {
                     occurrences++;
                 }
             });
             formOccurrenceCache.set(form.n, occurrences);
-        }
+        });
 
         for (let i = 0; i < 100; i++) {
             const currentNumber = i;
             let totalScore = 0;
             const contributingForms = [];
 
-            for (const form of scoringForms) {
+            scoringForms.forEach(form => {
                 if (form.checkFunction(currentNumber)) {
-                    const occurrences = formOccurrenceCache.get(form.n);
+                    const occurrences = formOccurrenceCache.get(form.n) || 0;
                     const individualScore = 90 - (occurrences * form.multiplier);
                     totalScore += individualScore;
                     contributingForms.push({
@@ -939,42 +757,24 @@ const calculateAggregateScoreForAllNumbers = (data, startDate, endDate, mode) =>
                         score: individualScore,
                     });
                 }
-            }
+            });
 
-            // === BƯỚC 3 MỚI: PHÂN LOẠI TRẠNG THÁI DỰA TRÊN TỶ LỆ % ===
-
-            // 3.1. Tính điểm tối đa lý thuyết
             const maxPossibleScore = contributingForms.length * 90;
-
-            // 3.2. Tính tỷ lệ điểm (để tránh chia cho 0)
             const scoreRatio = (maxPossibleScore > 0) ? (totalScore / maxPossibleScore) : 0;
             
-            // 3.3. Phân loại dựa trên tỷ lệ %
             let status = '';
             let statusClass = '';
-            
-            if (scoreRatio >= 0.8) { // >= 80%
-                status = 'Khá';
-                statusClass = 'bg-success';
-            } else if (scoreRatio >= 0.6) { // 60% - 80%
-                status = 'Trung Bình';
-                statusClass = 'bg-info';
-            } else if (scoreRatio >= 0.4) { // 40% - 60%
-                status = 'Cân Bằng';
-                statusClass = 'bg-secondary';
-            } else if (scoreRatio >= 0.2) { // 20% - 40%
-                status = 'Kém';
-                statusClass = 'bg-warning text-dark';
-            } else { // < 25%
-                status = 'Rất Kém';
-                statusClass = 'bg-danger';
-            }
+            if (scoreRatio >= 0.8) { status = 'Khá'; statusClass = 'bg-success'; }
+            else if (scoreRatio >= 0.6) { status = 'Trung Bình'; statusClass = 'bg-info'; }
+            else if (scoreRatio >= 0.4) { status = 'Cân Bằng'; statusClass = 'bg-secondary'; }
+            else if (scoreRatio >= 0.2) { status = 'Kém'; statusClass = 'bg-warning text-dark'; }
+            else { status = 'Rất Kém'; statusClass = 'bg-danger'; }
+
             allNumbersScores.push({
                 number: String(currentNumber).padStart(2, '0'),
                 totalScore: Math.round(totalScore * 10) / 10,
                 status: status,
                 statusClass: statusClass,
-                // Thêm scoreRatio để có thể hiển thị nếu muốn
                 scoreRatio: (scoreRatio * 100).toFixed(1) + '%', 
                 contributingForms: contributingForms.sort((a, b) => b.score - a.score),
             });
@@ -991,17 +791,8 @@ const calculateAggregateScoreForAllNumbers = (data, startDate, endDate, mode) =>
 };
 
 module.exports = {
+    scoringForms,
     calculateLotteryScores,
     calculateAllLotteryScores,
-    findFormsByOccurrence,
-    findFormsByTypes,
-    analyzeDuplicates,
-    getOccurrenceStatistics,
-    calculateAllLotteryScoresWithDuplicates,
-    analyzeScoreDistribution,
-    interpretScore,
-    formatScore,
-    getScoringStatistics,
-    scoringForms,
-    calculateAggregateScoreForAllNumbers 
+    calculateAggregateScoreForAllNumbers
 };
