@@ -343,6 +343,32 @@ SETS.HIEU_LE_SEQUENCE = ['1', '3', '5', '7', '9'];
 MAPS.HIEU_LE_SEQUENCE = new Map(SETS.HIEU_LE_SEQUENCE.map((item, index) => [item, index]));
 INDEX_MAPS.HIEU_LE_SEQUENCE = new Map(SETS.HIEU_LE_SEQUENCE.map((item, index) => [index, item]));
 
+// [ADDED] TẠO CÁC BỘ SỐ CHO DẠNG CHẴN/LẺ CỦA TỔNG
+const DANG_TYPES = ['CHAN_CHAN', 'CHAN_LE', 'LE_CHAN', 'LE_LE'];
+const TONG_TYPES = { TONG_MOI: getTongMoi, TONG_TT: getTongTT };
+
+Object.entries(TONG_TYPES).forEach(([tongType, getter]) => {
+    const categorizations = { CHAN_CHAN: [], CHAN_LE: [], LE_CHAN: [], LE_LE: [] };
+
+    ALL_NUMBERS.forEach(n => {
+        const tong = getter(n);
+        const tongStr = String(tong).padStart(2, '0');
+        const dauChan = parseInt(tongStr[0]) % 2 === 0;
+        const ditChan = parseInt(tongStr[1]) % 2 === 0;
+
+        if (dauChan && ditChan) categorizations.CHAN_CHAN.push(n);
+        else if (dauChan && !ditChan) categorizations.CHAN_LE.push(n);
+        else if (!dauChan && ditChan) categorizations.LE_CHAN.push(n);
+        else categorizations.LE_LE.push(n);
+    });
+
+    DANG_TYPES.forEach(dangType => {
+        const key = `${tongType}_${dangType}`;
+        SETS[key] = categorizations[dangType];
+        MAPS[key] = new Map(SETS[key].map(item => [item, true]));
+        INDEX_MAPS[key] = new Map(SETS[key].map((item, index) => [item, index]));
+    });
+});
 
 module.exports = {
     SETS, MAPS, INDEX_MAPS, DIGIT_SETS, DIGIT_MAPS,
