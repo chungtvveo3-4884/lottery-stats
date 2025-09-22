@@ -10,14 +10,14 @@ let cachedStats = null;
 let latestDate = null;
 
 /**
- * Đọc và hợp nhất dữ liệu từ tất cả các file thống kê
+ * Đọc và hợp nhất dữ liệu từ tất cả các file thống kê.
  */
 async function getStatsData() {
     if (cachedStats && process.env.NODE_ENV !== 'development') {
         return cachedStats;
     }
+    console.log('[CACHE] Dữ liệu cũ không có hoặc đang ở môi trường dev. Đọc lại file...');
     try {
-        // === SỬA LỖI: Thêm file mới vào Promise.all để đọc đồng thời ===
         const [numberStatsRaw, headTailStatsRaw, sumDiffStatsRaw] = await Promise.all([
             fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'),
             fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
@@ -28,8 +28,8 @@ async function getStatsData() {
         const headTailStats = JSON.parse(headTailStatsRaw);
         const sumDiffStats = JSON.parse(sumDiffStatsRaw);
 
-        // === SỬA LỖI: Hợp nhất cả 3 file dữ liệu vào một đối tượng cache ===
         cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
+        console.log('[CACHE] Đã nạp thành công dữ liệu mới vào cache.');
         return cachedStats;
     } catch (error) {
         console.error('Lỗi khi đọc hoặc phân tích file thống kê:', error);
@@ -37,6 +37,11 @@ async function getStatsData() {
     }
 }
 
+// === HÀM MỚI ĐỂ XÓA CACHE ===
+exports.clearCache = () => {
+    console.log('[CACHE] Xóa cache thống kê...');
+    cachedStats = null;
+};
 
 /**
  * Lấy ngày mới nhất từ dữ liệu gốc
