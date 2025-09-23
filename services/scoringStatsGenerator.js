@@ -1,12 +1,6 @@
-// services/scoringStatsGenerator.js
-const fs = require('fs').promises;
-const path = require('path');
+// services/scoringStatsGenerator.js (Đã tái cấu trúc để tìm kiếm từ cache)
+const lotteryService = require('./lotteryService'); // Sử dụng service để lấy dữ liệu thô
 const lotteryScoring = require('../utils/lotteryScoring');
-
-const RAW_DATA_PATH = path.join(__dirname, '..', 'data', 'xsmb-2-digits.json');
-const SCORING_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'scoring_stats.json');
-
-// --- Các hàm tiện ích nội bộ ---
 
 const _formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -17,66 +11,96 @@ const _formatDate = (dateString) => {
 
 const _getNumbersByMode = (dayData, mode = 'de') => {
     if (!dayData) return [];
-    if (mode === 'lo') return dayData.numbers;
-    if (mode === 'de') return dayData.de ? [dayData.de] : [];
+    if (mode === 'lo') {
+        const { date, special, ...prizes } = dayData;
+        return Object.values(prizes);
+    }
+    if (mode === 'de') {
+        return dayData.special !== undefined ? [dayData.special] : [];
+    }
     return [];
 };
 
-const _processRawData = async (startDate, endDate, mode) => {
-    const rawDataContent = await fs.readFile(RAW_DATA_PATH, 'utf-8');
-    const rawData = JSON.parse(rawDataContent);
+/**
+ * [ĐÃ TÁI CẤU TRÚC] - Thực hiện tìm kiếm tùy chỉnh trực tiếp từ dữ liệu thô trong cache.
+ * @param {object} options - Tùy chọn tìm kiếm từ request body
+ * @returns {Promise<object>} - Kết quả tìm kiếm
+ */
+const performCustomSearch = async (options) => {
+    const { startDate, endDate, mode, searchType, occurrenceCount, selectedForms } = options;
+
+    // 1. Lấy toàn bộ dữ liệu thô từ cache
+    let rawData = lotteryService.getRawData();
+    if (!rawData || rawData.length === 0) {
+        throw new Error("Dữ liệu thô chưa được nạp vào cache.");
+    }
+
+    // 2. Lọc dữ liệu theo khoảng ngày người dùng chọn
     const start = new Date(startDate);
     const end = new Date(endDate);
-
-    const filteredData = rawData.filter(entry => {
+    const filteredRawData = rawData.filter(entry => {
         const entryDate = new Date(entry.date);
         return entryDate >= start && entryDate <= end;
     });
 
-    return filteredData.map(day => ({
+    if (filteredRawData.length === 0) {
+        return {
+            results: [],
+            message: 'Không có dữ liệu trong khoảng thời gian đã chọn.'
+        };
+    }
+
+    // 3. Chuẩn hóa dữ liệu đã lọc để tính toán
+    const processedData = filteredRawData.map(day => ({
         date: _formatDate(day.date),
         numbers: _getNumbersByMode(day, mode)
     }));
+
+    let results = [];
+    let message = '';
+
+    // 4. Thực hiện tìm kiếm dựa trên loại đã chọn
+    if (searchType === 'occurrence') {
+        const targetOccurrence = parseInt(occurrenceCount, 10);
+        if (isNaN(targetOccurrence)) {
+            throw new Error('Số lần về không hợp lệ.');
+        }
+        
+        const allScores = lotteryScoring.calculateAllLotteryScores(processedData);
+        results = allScores.results.filter(r => r.occurrences === targetOccurrence);
+        message = `Tìm thấy ${results.length} dạng số có ${targetOccurrence} lần về.`;
+
+    } else if (searchType === 'forms') {
+        if (!selectedForms || selectedForms.length === 0) {
+            return { results: [], message: 'Vui lòng chọn ít nhất một dạng số.' };
+        }
+        
+        selectedForms.forEach(formN => {
+            const formResult = lotteryScoring.calculateLotteryScores(processedData, formN);
+            if (formResult && formResult.results.length > 0) {
+                results.push(...formResult.results);
+            }
+        });
+        message = `Kết quả cho ${selectedForms.length} dạng số đã chọn.`;
+    }
+
+    // 5. Sắp xếp kết quả theo điểm số
+    results.sort((a, b) => b.score - a.score);
+
+    return {
+        results,
+        total: results.length,
+        message,
+        searchType
+    };
 };
 
-// --- Logic chính của Generator ---
-
-/**
- * Tính toán và tạo file thống kê điểm tổng hợp.
- */
+// Hàm này không còn cần thiết trong luồng chính nữa, nhưng giữ lại để không gây lỗi nếu có nơi nào đó gọi đến.
 const generateScoringStats = async () => {
-    try {
-        console.log('🔄 Bắt đầu tạo file thống kê điểm tổng hợp...');
-        
-        const currentYear = new Date().getFullYear();
-        const startDate = `${currentYear}-01-01`;
-        const endDate = new Date().toISOString().split('T')[0];
-        const mode = 'de';
-
-        const processedData = await _processRawData(startDate, endDate, mode);
-        const { results } = lotteryScoring.calculateAggregateScoreForAllNumbers(processedData);
-
-        if (!results) {
-             throw new Error('Tính toán điểm tổng hợp không trả về kết quả.');
-        }
-
-        const stats = {
-            aggStartDate: _formatDate(startDate),
-            aggEndDate: _formatDate(endDate),
-            aggMode: mode.toUpperCase(),
-            results,
-            scoringForms: lotteryScoring.scoringForms,
-            lastUpdated: new Date().toISOString()
-        };
-
-        await fs.writeFile(SCORING_STATS_PATH, JSON.stringify(stats, null, 2));
-        console.log(`✅ Đã tạo file thống kê điểm tại: ${SCORING_STATS_PATH}`);
-        
-    } catch (error) {
-        console.error('❌ Lỗi nghiêm trọng khi tạo file thống kê điểm:', error);
-    }
+    console.log('[ScoringGenerator] Chức năng tạo file JSON đã được thay thế bằng logic tính toán trực tiếp.');
 };
 
 module.exports = {
-    generateScoringStats
+    generateScoringStats,
+    performCustomSearch
 };

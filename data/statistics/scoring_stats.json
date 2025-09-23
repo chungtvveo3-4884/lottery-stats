@@ -1,6 +1,6 @@
 {
   "aggStartDate": "01/01/2025",
-  "aggEndDate": "22/09/2025",
+  "aggEndDate": "23/09/2025",
   "aggMode": "DE",
   "results": [
     {
@@ -6666,5 +6666,5 @@
       "multiplier": 15
     }
   ],
-  "lastUpdated": "2025-09-22T15:52:58.362Z"
+  "lastUpdated": "2025-09-23T03:40:50.596Z"
 }

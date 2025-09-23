@@ -8,6 +8,7 @@ const { updateJsonFile } = require('./updateData');
 const statisticsRoutes = require('./routes/statistics');
 const scoringService = require('./services/scoringService'); // <-- THÊM DÒNG NÀY
 const apiRoutes = require('./routes/api'); // <-- THÊM DÒNG NÀY (nếu chưa có)
+const lotteryService = require('./services/lotteryService'); // 
 
 const app = express();
 const port = 6868;
@@ -22,6 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // View engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs'); // Hoặc bất kỳ view engine nào bạn đang dùng
+app.engine('html', require('ejs').renderFile);
 
 // --- API ROUTES ---
 app.use('/api', apiRoutes);
@@ -73,14 +75,16 @@ app.get('/', (req, res) => {
 });
 
 // [ĐÃ CẬP NHẬT] - Route cho trang scoring giờ sẽ truyền dữ liệu
-app.get('/scoring', (req, res) => {
-    // Lấy dữ liệu đã được cache từ scoringService
-    const scoringData = scoringService.getScoringStats();
-
-    // Render trang 'scoring.html' và truyền toàn bộ object data vào
-    res.render('scoring', {
-        scoringData: scoringData || {} // Truyền object rỗng nếu data chưa có
-    });
+app.get('/scoring', async (req, res) => {
+    try {
+        const scoringData = await scoringService.getScoringStats();
+        res.render('scoring-form.html', {
+            scoringData: scoringData || {}
+        });
+    } catch (error) {
+        console.error('Lỗi khi render trang scoring:', error);
+        res.status(500).send("Đã xảy ra lỗi khi tải trang tính điểm.");
+    }
 });
 
 app.get('/simulation', (req, res) => {

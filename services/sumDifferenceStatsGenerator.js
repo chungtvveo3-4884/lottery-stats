@@ -243,28 +243,57 @@ function analyzeNumberSet(data, dateMap, { typeName, descriptionPrefix }) {
     };
 }
 
-// [FIXED] Hàm này đã được sửa để chấp nhận và sử dụng `typeCondition`
-function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMap, descriptionPrefix, typeCondition = () => true }) {
-    const valueBasedNumberMap = new Map(data.filter(typeCondition).map(item => [item.value, true]));
-    return {
-        veLienTiep: findStreaks(data, dateMap, { 
-            condition: (a, b) => typeCondition(a) && typeCondition(b) && valueExtractor(a) === valueExtractor(b), 
-            description: `${descriptionPrefix} - Về liên tiếp` 
+// [FIXED] Hàm này đã được sửa lại hoàn toàn để xử lý logic "về liên tiếp" một cách chính xác.
+function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMap, descriptionPrefix, typeCondition }) {
+    // Xác định xem đây có phải là phân tích theo "dạng" (ví dụ: Tổng Chẵn) hay không.
+    // Nếu có `typeCondition` được truyền vào, đó là phân tích dạng.
+    const isGroupAnalysis = !!typeCondition;
+    const effectiveTypeCondition = typeCondition || (() => true);
+
+    const results = {};
+
+    // --- Logic cho "Về liên tiếp" ---
+    // - Nếu là phân tích DẠNG (isGroupAnalysis = true), chuỗi liên tiếp là khi các mục CÙNG THUỘC DẠNG đó.
+    // - Nếu là phân tích chung (ví dụ: "Các tổng"), chuỗi liên tiếp là khi các mục có CÙNG GIÁ TRỊ.
+    const consecutiveCondition = isGroupAnalysis
+        ? (a, b) => effectiveTypeCondition(a) && effectiveTypeCondition(b)
+        : (a, b) => valueExtractor(a) === valueExtractor(b);
+
+    results.veLienTiep = findStreaks(data, dateMap, {
+        condition: consecutiveCondition,
+        description: `${descriptionPrefix} - Về liên tiếp`
+    });
+
+    // Đối với phân tích DẠNG, ta vẫn có thể muốn biết khi nào một giá trị cụ thể trong dạng đó lặp lại.
+    // Ví dụ: Với "Tổng Chẵn", chuỗi "4, 4" vẫn là một thông tin hữu ích.
+    // Ta sẽ thêm mục này với tên "Về cùng giá trị".
+    if (isGroupAnalysis) {
+        results.veCungGiaTri = findStreaks(data, dateMap, {
+            condition: (a, b) => effectiveTypeCondition(a) && effectiveTypeCondition(b) && valueExtractor(a) === valueExtractor(b),
+            description: `${descriptionPrefix} - Về cùng giá trị`
+        });
+    }
+
+    const valueBasedNumberMap = new Map(data.filter(effectiveTypeCondition).map(item => [item.value, true]));
+
+    // Gán các phần còn lại của thống kê
+    Object.assign(results, {
+        veSole: findAlternatingStreaks(data, dateMap, {
+            condition: effectiveTypeCondition,
+            valueExtractor,
+            description: `${descriptionPrefix} - Về so le`
         }),
-        veSole: findAlternatingStreaks(data, dateMap, { 
-            condition: typeCondition, 
-            valueExtractor, 
-            description: `${descriptionPrefix} - Về so le` 
-        }),
-        veSoleMoi: { 
-            description: `${descriptionPrefix} - Về so le (mới)`, 
+        veSoleMoi: {
+            description: `${descriptionPrefix} - Về so le (mới)`,
             ...findAlternatingTypeStreaksNew(data, dateMap, valueBasedNumberMap)
         },
-        tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor, typeCondition, description: `${descriptionPrefix} - Tiến liên tiếp` }),
-        tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
-        luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor, typeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
-        luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
-    };
+        tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến liên tiếp` }),
+        tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
+        luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
+        luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
+    });
+
+    return results;
 }
 
 
@@ -303,7 +332,6 @@ async function generateSumDifferenceStats() {
             { typeName: 'HIEU_4_5', descriptionPrefix: 'Hiệu - Dạng hiệu (4,5)' },
             { typeName: 'HIEU_6_7', descriptionPrefix: 'Hiệu - Dạng hiệu (6,7)' },
             { typeName: 'HIEU_8_9', descriptionPrefix: 'Hiệu - Dạng hiệu (8,9)' },
-            // [ADDED] Thêm các dạng Chẵn-Lẻ cho Tổng Mới và Tổng TT
             { typeName: 'TONG_MOI_CHAN_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Chẵn' },
             { typeName: 'TONG_MOI_CHAN_LE', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Lẻ' },
             { typeName: 'TONG_MOI_LE_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Lẻ-Chẵn' },
@@ -318,11 +346,12 @@ async function generateSumDifferenceStats() {
         });
 
         // === CÁC DẠNG XÉT CHUỖI GIÁ TRỊ TỔNG/HIỆU (dùng analyzeValueSequence) ===
+        // Phân tích chung, không có typeCondition
         stats['tong_tt_cac_tong'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getTongTT(item.value), valueSet: SETS.TONG_TT_SEQUENCE, valueMap: MAPS.TONG_TT_SEQUENCE, descriptionPrefix: 'Tổng TT - Các tổng' });
         stats['tong_moi_cac_tong'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getTongMoi(item.value), valueSet: SETS.TONG_MOI_SEQUENCE, valueMap: MAPS.TONG_MOI_SEQUENCE, descriptionPrefix: 'Tổng Mới - Các tổng' });
         stats['hieu_cac_hieu'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getHieu(item.value), valueSet: SETS.HIEU_SEQUENCE, valueMap: MAPS.HIEU_SEQUENCE, descriptionPrefix: 'Các Hiệu' });
 
-        // [FIXED] Thêm `typeCondition` để đảm bảo chỉ xét các giá trị Chẵn/Lẻ
+        // Phân tích theo DẠNG, có truyền typeCondition
         stats['tong_tt_chan'] = analyzeValueSequence(lotteryData, dateToIndexMap, { 
             valueExtractor: (item) => getTongTT(item.value), 
             valueSet: SETS.TONG_TT_CHAN_SEQUENCE, 

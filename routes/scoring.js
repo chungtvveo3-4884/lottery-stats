@@ -44,7 +44,7 @@ router.get('/', (req, res) => {
         });
 
         // Render the page with the calculated results
-        res.render('scoring-form', {
+        res.render('scoring-form.html', {
             results: scoringData.results,
             aggregateResults: scoringData.aggregateResults,
             message: scoringData.results.length === 0 ? 'Không tìm thấy kết quả nào phù hợp với điều kiện tìm kiếm.' : null,
@@ -64,7 +64,7 @@ router.get('/', (req, res) => {
 
     } catch (error) {
         console.error('Error in /scoring route:', error);
-        res.status(500).render('scoring-form', {
+        res.status(500).render('scoring-form.html', {
             results: undefined,
             aggregateResults: [],
             message: `Đã xảy ra lỗi nghiêm trọng: ${error.message}`,

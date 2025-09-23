@@ -642,6 +642,9 @@ const getOccurrenceStatistics = (data, startDate, endDate, mode) => {
  * @param {string | null} formFilter - Lọc theo mã dạng cụ thể (ví dụ: 'even-even').
  * @returns {Object} - Kết quả tính điểm cho các dạng được xử lý.
  */
+/**
+ * [ĐÃ SỬA LỖI] - Hàm tính điểm, đảm bảo luôn trả về kết quả khi có bộ lọc.
+ */
 const calculateLotteryScores = (processedData, formFilter = null) => {
     try {
         if (!Array.isArray(processedData)) {
@@ -652,14 +655,14 @@ const calculateLotteryScores = (processedData, formFilter = null) => {
         }
 
         const results = [];
-        const formsToProcess = formFilter ? 
-            scoringForms.filter(form => form.n === formFilter) : 
-            scoringForms;
+        const formsToProcess = formFilter 
+            ? scoringForms.filter(form => form.n === formFilter) 
+            : scoringForms;
 
         for (const form of formsToProcess) {
             const formResult = {
                 form: form.description,
-                formN: form.n, // Thêm mã dạng để dễ xử lý
+                formN: form.n,
                 dates: [],
                 dateToNumbers: {},
                 occurrences: 0,
@@ -674,7 +677,7 @@ const calculateLotteryScores = (processedData, formFilter = null) => {
                 });
 
                 if (matchingNumbers.length > 0) {
-                    const formattedDate = entry.date; // Ngày đã được format sẵn từ generator
+                    const formattedDate = entry.date;
                     formResult.dates.push(formattedDate);
                     formResult.dateToNumbers[formattedDate] = matchingNumbers.map(num => 
                         String(Number(num) % 100).padStart(2, '0')
@@ -685,10 +688,11 @@ const calculateLotteryScores = (processedData, formFilter = null) => {
 
             formResult.score = 90 - (formResult.occurrences * form.multiplier);
             
-            // Luôn thêm kết quả nếu không có bộ lọc, hoặc chỉ thêm nếu có lần xuất hiện khi có bộ lọc
-            if (formResult.occurrences > 0 || !formFilter) {
-                results.push(formResult);
-            }
+            // ====> SỬA LỖI TẠI ĐÂY <====
+            // Logic cũ đã loại bỏ kết quả có 0 lần về khi có bộ lọc.
+            // Logic mới: Luôn thêm kết quả vào mảng. Việc lọc sẽ do hàm gọi xử lý.
+            results.push(formResult);
+            // ====> KẾT THÚC SỬA LỖI <====
         }
 
         results.sort((a, b) => b.score - a.score);

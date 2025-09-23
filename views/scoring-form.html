@@ -4,84 +4,173 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống tính điểm XSMB</title>
-    <link href="/css/styles.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .hidden { display: none; }
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px;
-            border-radius: 50%; border-left-color: #09f;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #09f;
             animation: spin 1s ease infinite;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Thêm style cho hàng con được expand */
+        .details-row > td {
+            padding: 0 !important;
+            border: 0 !important;
+        }
+        body {
+            background-color: #f7fafc;
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .highlight {
+            background-color: #92d7ff;
+            color: #fe7155;
+            font-weight: 800;
+            border-radius: 6px;
+        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
-    <div class="container mx-auto p-4 md:p-8">
-        <h1 class="text-4xl font-bold text-center mb-6 text-gray-700">Tính điểm XSMB</h1>
-        
-        <div class="mb-8 flex justify-center space-x-2">
+<body class="antialiased">
+    <div class="container mx-auto max-w-7xl px-4 py-8">
+        <header class="bg-white shadow-md sticky top-0 z-10">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center py-4">
+                    <a href="/" class="text-2xl font-bold text-gray-800">XSMB Stats</a>
+                    <nav class="hidden md:flex space-x-4">
+                        <a href="/statistics" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Thống kê</a>
+                        <a href="/scoring" class="bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm font-semibold">Tính điểm</a>
+                        <a href="/simulation" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Mô phỏng</a>
+                    </nav>
+                </div>
             </div>
+        </header>
 
-        <main id="mainContent">
-            <form id="scoringForm" class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <div id="customSearchSection" class="bg-white p-6 rounded-lg shadow-lg mb-12">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Tìm kiếm Tùy chỉnh</h2>
+                <form id="scoringForm">
+                    <input type="hidden" name="mode" value="de">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <fieldset>
+                                <legend class="block text-sm font-medium text-gray-700">Loại tìm kiếm</legend>
+                                <div class="mt-4 flex gap-x-8">
+                                    <div class="flex items-center">
+                                        <input id="searchTypeOccurrence" name="searchType" type="radio" value="occurrence" checked class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        <label for="searchTypeOccurrence" class="ml-3 block text-sm font-medium text-gray-700">Theo số lần về</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input id="searchTypeForms" name="searchType" type="radio" value="forms" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        <label for="searchTypeForms" class="ml-3 block text-sm font-medium text-gray-700">Theo dạng số</label>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <div>
+                                <label for="startDate" class="block text-sm font-medium text-gray-700">Từ ngày</label>
+                                <input type="date" id="startDate" name="startDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label for="endDate" class="block text-sm font-medium text-gray-700">Đến ngày</label>
+                                <input type="date" id="endDate" name="endDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            </div>
+                        </div>
+                    <div id="occurrenceInput" class="mt-4">
+                        <label for="occurrenceCount" class="block text-sm font-medium text-gray-700">Nhập số lần về</label>
+                        <input type="number" name="occurrenceCount" id="occurrenceCount" class="mt-1 block w-full md:w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Ví dụ: 0">
+                    </div>
+
+                    <div id="formsSelection" class="mt-4 hidden">
+                        <div class="flex justify-between items-center mb-2">
+                             <h4 class="text-sm font-medium text-gray-700">Chọn các dạng số</h4>
+                             <div>
+                                <button type="button" id="selectAllForms" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-2 rounded">Chọn tất cả</button>
+                                <button type="button" id="clearAllForms" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-2 rounded ml-2">Bỏ chọn</button>
+                            </div>
+                        </div>
+                        <div id="checkboxGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-md max-h-60 overflow-y-auto bg-gray-50"></div>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <button type="submit" id="searchButton" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                            <span id="searchButtonText">Tìm kiếm</span>
+                            <div id="searchSpinner" class="spinner hidden" style="width: 20px; height: 20px; border-width: 2px;"></div>
+                        </button>
+                    </div>
                 </form>
+            </div>
 
             <div id="customSearchResultsContainer" class="mt-10"></div>
             
-            <hr class="my-10 border-t-2 border-blue-500">
+            <hr class="my-12 border-t-2 border-blue-200">
 
             <div id="aggregateResultsContainer" class="mt-10">
                 <% if (scoringData && scoringData.results && scoringData.results.length > 0) { %>
-                    <h2 class="text-3xl font-bold text-center mb-2 text-gray-700">Phân tích Tổng hợp (00-99)</h2>
-                    <div class="text-center bg-blue-100 text-blue-800 p-3 rounded-md mb-6">
-                        Phân tích tự động từ <strong><%= scoringData.aggStartDate %></strong> đến <strong><%= scoringData.aggEndDate %></strong> ở chế độ <strong><%= scoringData.aggMode %></strong>.
+                    <h2 class="text-3xl font-bold text-center mb-2 text-gray-800">Phân tích Tổng hợp (00-99)</h2>
+                    <div class="text-center bg-blue-100 text-blue-800 p-3 rounded-md mb-8 max-w-3xl mx-auto shadow">
+                        Dữ liệu được phân tích từ <strong><%= scoringData.aggStartDate %></strong> đến <strong><%= scoringData.aggEndDate %></strong>.
                     </div>
                     
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                        </div>
+                    <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+                        <label for="chartTypeSelector" class="block text-sm font-medium text-gray-700 mb-2">Hiển thị biểu đồ:</label>
+                        <select id="chartTypeSelector" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"></select>
+                    </div>
+
+                     <div id="heatmapWrapper" class="bg-white p-6 rounded-lg shadow-lg">
+                        <div id="scoreHeatmap" class="grid grid-cols-10 gap-2"></div>
+                        <div id="heatmapLegend" class="mt-4 flex justify-center items-center flex-wrap gap-x-4 gap-y-2"></div>
+                    </div>
+
+                    <div id="barChartWrapper" class="bg-white p-6 rounded-lg shadow-lg" style="display: none; height: 500px;">
+                        <canvas id="specificFormChart"></canvas>
+                    </div>
+
+                    <div class="my-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="statusSummaryContainer"></div>
                     
-                    <div class="my-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="statusSummaryContainer">
-                        </div>
-                    
-                    <h4 class="text-2xl font-bold text-center mt-10 mb-4 text-gray-700">Chi tiết Điểm Tổng Hợp</h4>
-                    <div class="overflow-x-auto bg-white rounded-lg shadow">
-                        <table class="w-full whitespace-nowrap">
+                    <h4 class="text-2xl font-bold text-center mt-12 mb-6 text-gray-700">Chi tiết Điểm Tổng Hợp</h4>
+                    <div class="overflow-x-auto bg-white rounded-lg shadow-lg">
+                        <table class="w-full">
                             <thead class="bg-gray-800 text-white">
                                 <tr>
-                                    <th class="p-3 text-center">Số</th>
-                                    <th class="p-3 text-center">Điểm</th>
-                                    <th class="p-3 text-center">Trạng Thái</th>
-                                    <th class="p-3 text-left">Chi Tiết</th>
+                                    <th class="p-4 text-center font-semibold text-sm">Số</th>
+                                    <th class="p-4 text-center font-semibold text-sm">Điểm</th>
+                                    <th class="p-4 text-center font-semibold text-sm">Trạng Thái</th>
+                                    <th class="p-4 text-center font-semibold text-sm">Tỉ lệ</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
-                                <% scoringData.results.forEach(result => { %>
-                                    <tr class="hover:bg-gray-50">
+                                <% scoringData.results.forEach((result, index) => { %>
+                                    <tr class="hover:bg-gray-50 transition-colors duration-150 cursor-pointer" data-toggle="collapse" data-target="#details-<%= index %>">
                                         <td class="p-3 text-center"><span class="px-3 py-1 text-sm font-semibold text-white bg-blue-500 rounded-full"><%= result.number %></span></td>
-                                        <td class="p-3 text-center font-bold text-lg <%= result.totalScore >= 0 ? 'text-green-600' : 'text-red-600' %>"><%= result.totalScore %></td>
+                                        <td class="p-3 text-center font-bold text-lg <%= result.totalScore >= 300 ? 'text-green-600' : 'text-red-600' %>"><%= result.totalScore %></td>
                                         <td class="p-3 text-center"><span class="px-2 py-1 text-xs font-semibold text-white rounded-md <%= result.statusClass %>"><%= result.status %></span></td>
-                                        <td class="p-3">
-                                            <details class="group">
-                                                <summary class="cursor-pointer text-blue-600 hover:underline">
-                                                    Xem <%= result.contributingForms.length %> dạng (<%= result.scoreRatio %>)
-                                                </summary>
-                                                <div class="mt-2 p-2 border rounded-md bg-gray-50 max-h-60 overflow-y-auto">
+                                        <td class="p-3 text-center text-sm text-gray-600"><%= result.scoreRatio %></td>
+                                    </tr>
+                                    <tr id="details-<%= index %>" class="hidden details-row">
+                                        <td colspan="4">
+                                            <div class="p-4 bg-gray-50 border-t-2 border-blue-200">
+                                                <h6 class="font-semibold mb-2 text-gray-700">Chi tiết các dạng đóng góp:</h6>
+                                                <div class="max-h-60 overflow-y-auto">
                                                     <ul class="divide-y divide-gray-200">
                                                         <% result.contributingForms.forEach(form => { %>
                                                             <li class="py-2 flex justify-between items-center text-sm">
                                                                 <div>
-                                                                    <p class="font-medium"><%= form.formName %></p>
+                                                                    <p class="font-medium text-gray-800"><%= form.formName %></p>
                                                                     <p class="text-xs text-gray-500">Lần về: <%= form.occurrences %>, HS: <%= form.multiplier %></p>
                                                                 </div>
-                                                                <span class="font-semibold px-2 py-1 rounded-md text-white <%= form.score >= 0 ? 'bg-green-500' : 'bg-red-500' %>">
+                                                                <span class="font-semibold px-2 py-1 rounded-md text-white <%= form.score >= 45 ? 'bg-green-500' : 'bg-red-500' %>">
                                                                     <%= Math.round(form.score * 10) / 10 %>
                                                                 </span>
                                                             </li>
                                                         <% }) %>
                                                     </ul>
                                                 </div>
-                                            </details>
+                                            </div>
                                         </td>
                                     </tr>
                                 <% }) %>
@@ -89,16 +178,21 @@
                         </table>
                     </div>
                 <% } else { %>
-                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-r-lg" role="alert">
-                        <p>Không có dữ liệu điểm tổng hợp để hiển thị. Vui lòng thử lại sau.</p>
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-r-lg shadow-md" role="alert">
+                        <p class="font-bold">Không có dữ liệu</p>
+                        <p>Dữ liệu điểm tổng hợp chưa được tính toán. Vui lòng thử lại sau.</p>
                     </div>
                 <% } %>
             </div>
-        </main>
+        
+        <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+            <p>&copy; <%= new Date().getFullYear() %> XSMB Stats. All rights reserved.</p>
+        </footer>
     </div>
 
     <script>
         const serverData = <%- JSON.stringify(scoringData || {}) %>;
     </script>
-    <script src="/js/scoring-client.js"></script> </body>
+    <script src="/js/scoring-client.js"></script> 
+</body>
 </html>

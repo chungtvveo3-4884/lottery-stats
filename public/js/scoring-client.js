@@ -90,6 +90,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 4. Sự kiện tự động tính ngày bắt đầu khi ngày kết thúc thay đổi
         endDateInput.addEventListener('change', setDefaultStartDate);
+        // 5. Sự kiện click để đóng/mở hàng chi tiết trong bảng tổng hợp
+        document.querySelectorAll('[data-toggle="collapse"]').forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.dataset.target;
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.classList.toggle('hidden');
+                }
+            });
+        });
     }
 
 
@@ -328,9 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!heatmapContainer || !legendContainer) return;
 
         const resultsMap = new Map(data.map(item => [item.number, {
-            class: item.statusClass.replace('bg-', 'bg-')
-                                  .replace('text-dark', 'text-black')
-                                  .replace('text-black', 'text-black'),
+            class: item.statusClass, // Sử dụng trực tiếp class từ server
             score: item.totalScore
         }]));
 
@@ -338,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < 100; i++) {
             const numberStr = String(i).padStart(2, '0');
             const result = resultsMap.get(numberStr);
-            const cellClass = result ? result.class : 'bg-gray-200 text-gray-500';
+            const cellClass = result ? result.class : 'bg-gray-200 text-gray-500'; // Mặc định màu xám
             const cellTitle = result ? `Số ${numberStr} | Điểm: ${result.score}` : `Số ${numberStr}`;
             
             heatmapContainer.innerHTML += `

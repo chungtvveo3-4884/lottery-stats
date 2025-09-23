@@ -9,6 +9,7 @@ const { generateScoringStats } = require('./services/scoringStatsGenerator');
 const statisticsService = require('./services/statisticsService'); // <-- Thêm dòng này
 const DATA_FILE = path.join(__dirname, 'data', 'xsmb-2-digits.json');
 const scoringService = require('./services/scoringService'); // <-- THÊM DÒNG NÀY
+const lotteryService = require('./services/lotteryService'); // Import service mới
 // URL API để lấy dữ liệu mới nhất
 const API_URL = 'https://raw.githubusercontent.com/khiemdoan/vietnam-lottery-xsmb-analysis/refs/heads/main/data/xsmb-2-digits.json';
 
@@ -32,14 +33,12 @@ const updateJsonFile = async () => {
             Promise.all([
                 generateNumberStats(),
                 generateHeadTailStats(),
-                generateSumDifferenceStats(),
-                generateScoringStats() // <-- THÊM TÁC VỤ TẠO FILE ĐIỂM
+                generateSumDifferenceStats()
             ]).then(() => {
                 console.log('Tất cả các file thống kê đã được tạo lại thành công!');
                 // === SỬA LỖI: Xóa cache sau khi tạo lại file thống kê ===
                 statisticsService.clearCache();
-                scoringService.clearCache(); 
-
+                scoringService.loadScoringStatistics(); // Tính toán lại điểm
             }).catch(err => {
                 console.error('Đã xảy ra lỗi trong quá trình tạo lại file thống kê:', err);
             });

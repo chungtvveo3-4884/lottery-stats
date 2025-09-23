@@ -21,9 +21,17 @@
 </head>
 <body class="antialiased">
     <div class="container mx-auto max-w-7xl px-4 py-8">
-        <header class="text-center mb-6">
-            <h1 class="text-4xl font-bold text-gray-800">Thống Kê Xổ Số Miền Bắc</h1>
-            <p class="text-lg text-gray-600 mt-2">Phân tích chuyên sâu dựa trên dữ liệu đã được tính toán.</p>
+        <header class="bg-white shadow-md sticky top-0 z-10">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center py-4">
+                    <a href="/" class="text-2xl font-bold text-gray-800">Thống kê XSMB</a>
+                    <nav class="hidden md:flex space-x-4">
+                        <a href="/statistics" class="bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm font-semibold">Thống kê</a>
+                        <a href="/scoring" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Tính điểm</a>
+                        <a href="/simulation" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Mô phỏng</a>
+                    </nav>
+                </div>
+            </div>
         </header>
 
         <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-md shadow" role="alert">
@@ -35,19 +43,6 @@
           </div>
         </div>
 
-        <div class="border-b border-gray-200 mb-6">
-            <nav class="-mb-px flex justify-center space-x-6">
-                <a href="/" class="py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600">
-                    Thống kê
-                </a>
-                <a href="/scoring" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    Tính điểm
-                </a>
-                <a href="/simulation" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    Giả Lập
-                </a>
-            </nav>
-        </div>
         <div class="bg-white rounded-lg shadow-md p-6 mb-8">
             <form id="statsForm">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">

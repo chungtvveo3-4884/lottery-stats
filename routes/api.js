@@ -1,16 +1,21 @@
-// routes/api.js
+// routes/api.js (Đã cập nhật)
 const express = require('express');
 const router = express.Router();
-const scoringService = require('../services/scoringService'); // <-- THAY ĐỔI
-const scoringStatsGenerator = require('../services/scoringStatsGenerator'); // Vẫn cần cho tìm kiếm động
+const scoringService = require('../services/scoringService');
+const scoringStatsGenerator = require('../services/scoringStatsGenerator');
 
 // API: Cung cấp dữ liệu điểm tổng hợp đã được cache
-router.get('/scoring/stats', (req, res) => {
-    const scoringStats = scoringService.getScoringStats(); // <-- THAY ĐỔI
-    if (scoringStats && scoringStats.results) {
-        res.json(scoringStats);
-    } else {
-        res.status(404).json({ message: 'Không tìm thấy dữ liệu thống kê điểm.' });
+router.get('/scoring/stats', async (req, res) => {
+    try {
+        const scoringStats = await scoringService.getScoringStats();
+        if (scoringStats && scoringStats.results) {
+            res.json(scoringStats);
+        } else {
+            res.status(404).json({ message: 'Không tìm thấy dữ liệu thống kê điểm.' });
+        }
+    } catch (error) {
+        console.error('Lỗi API getScoringStats:', error);
+        res.status(500).json({ message: 'Lỗi server khi lấy dữ liệu thống kê.' });
     }
 });
 
@@ -22,7 +27,6 @@ router.post('/scoring/search', async (req, res) => {
             return res.status(400).json({ message: 'Thiếu các tham số tìm kiếm bắt buộc.' });
         }
         
-        // Gọi trực tiếp hàm tìm kiếm từ generator
         const searchResult = await scoringStatsGenerator.performCustomSearch(searchOptions);
         res.json(searchResult);
     } catch (error) {

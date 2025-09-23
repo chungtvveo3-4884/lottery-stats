@@ -1,54 +1,94 @@
-// services/scoringService.js
-const fs = require('fs').promises;
-const path = require('path');
-// const NodeCache = require('node-cache'); // <- Đã xóa dòng này
+// services/scoringService.js (Đã cập nhật logic Year-to-Date và Tailwind CSS)
+const lotteryService = require('./lotteryService');
+const lotteryScoring = require('../utils/lotteryScoring');
 
-const scoringStatsGenerator = require('./scoringStatsGenerator');
-
-const SCORING_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'scoring_stats.json');
-
-// --- THAY THẾ NODE-CACHE BẰNG MỘT BIẾN JAVASCRIPT ĐƠN GIẢN ---
 let scoringCache = null;
 
-/**
- * Nạp dữ liệu thống kê điểm vào cache.
- * Quy trình: Chạy generator để tạo file -> Đọc file -> Lưu vào biến cache.
- */
+const _formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${date.getFullYear()}`;
+};
+
 const loadScoringStatistics = async () => {
     try {
-        console.log('Bắt đầu quy trình nạp dữ liệu cho Scoring Service...');
+        console.log('[ScoringService] Bắt đầu quy trình tính toán và nạp cache điểm...');
         
-        // 1. Yêu cầu generator tạo/cập nhật file JSON
-        await scoringStatsGenerator.generateScoringStats();
+        let rawData = lotteryService.getRawData();
+        if (!rawData || rawData.length === 0) {
+            await lotteryService.loadRawData();
+            rawData = lotteryService.getRawData();
+        }
 
-        // 2. Đọc file JSON vừa được tạo
-        const scoringStatsContent = await fs.readFile(SCORING_STATS_PATH, 'utf-8');
+        if (!rawData || rawData.length === 0) {
+            throw new Error('Không có dữ liệu xổ số thô để thực hiện tính toán.');
+        }
+
+        // ====> LOGIC MỚI: LỌC DỮ LIỆU TỪ ĐẦU NĂM HIỆN TẠI <====
+        const currentYear = new Date().getFullYear();
+        const startDateObj = new Date(`${currentYear}-01-01`);
+
+        const filteredData = rawData.filter(entry => new Date(entry.date) >= startDateObj);
         
-        // 3. Lưu nội dung vào biến cache
-        scoringCache = JSON.parse(scoringStatsContent);
+        if (filteredData.length === 0) {
+            throw new Error(`Không có dữ liệu cho năm ${currentYear}.`);
+        }
 
-        console.log('✅ Dữ liệu điểm đã được nạp vào Scoring Service cache thành công.');
+        const startDate = filteredData[0].date;
+        const endDate = filteredData[filteredData.length - 1].date;
+        const mode = 'de';
+        // ====> KẾT THÚC LOGIC MỚI <====
+
+        const processedData = filteredData.map(day => ({
+            date: _formatDate(day.date),
+            numbers: day.special !== undefined ? [day.special] : []
+        }));
+
+        const { results } = lotteryScoring.calculateAggregateScoreForAllNumbers(processedData);
+
+        if (!results) {
+             throw new Error('Quá trình tính điểm không trả về kết quả.');
+        }
+
+        // ====> CẬP NHẬT TAILWIND CSS CLASSES <====
+        results.forEach(result => {
+            const scoreRatio = parseFloat(result.scoreRatio) / 100;
+            if (scoreRatio >= 0.8) { result.statusClass = 'bg-green-500'; }
+            else if (scoreRatio >= 0.6) { result.statusClass = 'bg-blue-500'; }
+            else if (scoreRatio >= 0.4) { result.statusClass = 'bg-gray-500'; }
+            else if (scoreRatio >= 0.2) { result.statusClass = 'bg-yellow-500 text-black'; }
+            else { result.statusClass = 'bg-red-500'; }
+        });
+        // ====> KẾT THÚC CẬP NHẬT <====
+
+        scoringCache = {
+            aggStartDate: _formatDate(startDate),
+            aggEndDate: _formatDate(endDate),
+            aggMode: mode.toUpperCase(),
+            results,
+            scoringForms: lotteryScoring.scoringForms,
+            lastUpdated: new Date().toISOString()
+        };
+
+        console.log(`✅ [ScoringService] Dữ liệu điểm cho ${filteredData.length} ngày trong năm ${currentYear} đã được nạp.`);
     } catch (error) {
-        console.error(`❌ Lỗi khi nạp dữ liệu thống kê điểm vào cache:`, error);
-        // Nếu có lỗi, đặt cache thành null để tránh phục vụ dữ liệu cũ/sai
+        console.error(`❌ [ScoringService] Lỗi khi nạp thống kê điểm vào cache:`, error);
         scoringCache = null;
     }
 };
 
-/**
- * Lấy dữ liệu thống kê điểm từ cache.
- * @returns {Object | null} Dữ liệu thống kê điểm hoặc null nếu chưa có.
- */
-const getScoringStats = () => {
+const getScoringStats = async () => {
+    if (!scoringCache) {
+        console.log('[ScoringService] Cache trống, đang kích hoạt nạp lại...');
+        await loadScoringStatistics();
+    }
     return scoringCache;
 };
 
-/**
- * Xóa cache của service này bằng cách đặt lại biến.
- */
 const clearCache = () => {
     scoringCache = null;
-    console.log('[CACHE] Cache của Scoring Service đã được xóa.');
+    console.log('[ScoringService] Cache điểm đã được xóa.');
 };
 
 module.exports = {
