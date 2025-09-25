@@ -1,4 +1,4 @@
-// services/scoringService.js (Đã cập nhật logic Year-to-Date và Tailwind CSS)
+// services/scoringService.js (Đã sửa lỗi ngày bắt đầu)
 const lotteryService = require('./lotteryService');
 const lotteryScoring = require('../utils/lotteryScoring');
 
@@ -25,7 +25,7 @@ const loadScoringStatistics = async () => {
             throw new Error('Không có dữ liệu xổ số thô để thực hiện tính toán.');
         }
 
-        // ====> LOGIC MỚI: LỌC DỮ LIỆU TỪ ĐẦU NĂM HIỆN TẠI <====
+        // ====> SỬA LỖI LOGIC NGÀY BẮT ĐẦU TẠI ĐÂY <====
         const currentYear = new Date().getFullYear();
         const startDateObj = new Date(`${currentYear}-01-01`);
 
@@ -35,10 +35,11 @@ const loadScoringStatistics = async () => {
             throw new Error(`Không có dữ liệu cho năm ${currentYear}.`);
         }
 
-        const startDate = filteredData[0].date;
+        // Sử dụng startDateObj đã định nghĩa thay vì lấy từ dữ liệu đã lọc
+        const startDate = startDateObj.toISOString(); 
         const endDate = filteredData[filteredData.length - 1].date;
         const mode = 'de';
-        // ====> KẾT THÚC LOGIC MỚI <====
+        // ====> KẾT THÚC SỬA LỖI <====
 
         const processedData = filteredData.map(day => ({
             date: _formatDate(day.date),
@@ -51,7 +52,6 @@ const loadScoringStatistics = async () => {
              throw new Error('Quá trình tính điểm không trả về kết quả.');
         }
 
-        // ====> CẬP NHẬT TAILWIND CSS CLASSES <====
         results.forEach(result => {
             const scoreRatio = parseFloat(result.scoreRatio) / 100;
             if (scoreRatio >= 0.8) { result.statusClass = 'bg-green-500'; }
@@ -60,7 +60,6 @@ const loadScoringStatistics = async () => {
             else if (scoreRatio >= 0.2) { result.statusClass = 'bg-yellow-500 text-black'; }
             else { result.statusClass = 'bg-red-500'; }
         });
-        // ====> KẾT THÚC CẬP NHẬT <====
 
         scoringCache = {
             aggStartDate: _formatDate(startDate),

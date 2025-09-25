@@ -552,6 +552,102 @@ for (let i = 0; i < 100; i++) {
     });
 }
 
+// --- Helper Functions ---
+// Hàm tính "Hệ số nhân" theo công thức
+const getMultiplier = (numberOfItems) => {
+    if (numberOfItems <= 0) return 0;
+    // Làm tròn đến 4 chữ số thập phân để có độ chính xác cao hơn
+    return Math.round((90 / (numberOfItems * 3.6)) * 10000) / 10000;
+};
+
+// Hàm tính tổng truyền thống
+const getTraditionalSum = (num) => {
+    if (num === 0) return 10;
+    const head = Math.floor(num / 10);
+    const tail = num % 10;
+    const sum = head + tail;
+    if (sum === 0) return 10;
+    return sum > 9 ? sum % 10 === 0 ? 10 : sum % 10 : sum;
+};
+
+// Hàm tính tổng mới
+const getNewSum = (num) => {
+    const head = Math.floor(num / 10);
+    const tail = num % 10;
+    return head + tail;
+};
+
+// Hàm tính hiệu
+const getDifference = (num) => {
+    const head = Math.floor(num / 10);
+    const tail = num % 10;
+    return Math.abs(head - tail);
+};
+
+
+// 1. Dạng Đầu & Đít
+scoringForms.push(
+    { n: 'head-even', description: 'Đầu Chẵn', multiplier: getMultiplier(50), checkFunction: (num) => Math.floor(num / 10) % 2 === 0 },
+    { n: 'head-odd', description: 'Đầu Lẻ', multiplier: getMultiplier(50), checkFunction: (num) => Math.floor(num / 10) % 2 !== 0 },
+    { n: 'tail-even', description: 'Đít Chẵn', multiplier: getMultiplier(50), checkFunction: (num) => (num % 10) % 2 === 0 },
+    { n: 'tail-odd', description: 'Đít Lẻ', multiplier: getMultiplier(50), checkFunction: (num) => (num % 10) % 2 !== 0 }
+);
+
+// 2. Dạng Đầu To/Nhỏ và Đít To/Nhỏ
+scoringForms.push(
+    { n: 'headL-tailL', description: 'Đầu To Đít To (>=5)', multiplier: getMultiplier(25), checkFunction: (num) => Math.floor(num / 10) >= 5 && (num % 10) >= 5 },
+    { n: 'headL-tailS', description: 'Đầu To Đít Nhỏ (>=5, <5)', multiplier: getMultiplier(25), checkFunction: (num) => Math.floor(num / 10) >= 5 && (num % 10) < 5 },
+    { n: 'headS-tailL', description: 'Đầu Nhỏ Đít To (<5, >=5)', multiplier: getMultiplier(25), checkFunction: (num) => Math.floor(num / 10) < 5 && (num % 10) >= 5 },
+    { n: 'headS-tailS', description: 'Đầu Nhỏ Đít Nhỏ (<5)', multiplier: getMultiplier(25), checkFunction: (num) => Math.floor(num / 10) < 5 && (num % 10) < 5 }
+);
+
+// 3. Dạng Tổng (Truyền Thống)
+for (let i = 1; i <= 10; i++) {
+    const count = Array.from({ length: 100 }, (_, j) => j).filter(num => getTraditionalSum(num) === i).length;
+    scoringForms.push({
+        n: `tsum-${i}`,
+        description: `Tổng ${i} (Truyền thống)`,
+        multiplier: getMultiplier(count),
+        checkFunction: (num) => getTraditionalSum(num) === i
+    });
+}
+
+// 4. Dạng Tổng (Mới)
+for (let i = 0; i <= 18; i++) {
+    const count = Array.from({ length: 100 }, (_, j) => j).filter(num => getNewSum(num) === i).length;
+    scoringForms.push({
+        n: `nsum-${i}`,
+        description: `Tổng ${i} (Mới)`,
+        multiplier: getMultiplier(count),
+        checkFunction: (num) => getNewSum(num) === i
+    });
+}
+
+// 5. Dạng Tổng Chẵn/Lẻ và các loại con
+scoringForms.push(
+    { n: 'sum-even', description: 'Tổng Chẵn', multiplier: getMultiplier(50), checkFunction: (num) => getNewSum(num) % 2 === 0 },
+    { n: 'sum-odd', description: 'Tổng Lẻ', multiplier: getMultiplier(50), checkFunction: (num) => getNewSum(num) % 2 !== 0 },
+    { n: 'nsum-even-even', description: 'Tổng Mới Chẵn Chẵn (0-8)', multiplier: getMultiplier(25), checkFunction: (num) => { const s = getNewSum(num); return s <= 8 && s % 2 === 0; } },
+    { n: 'nsum-even-odd', description: 'Tổng Mới Chẵn Lẻ (1-9)', multiplier: getMultiplier(25), checkFunction: (num) => { const s = getNewSum(num); return s <= 9 && s % 2 !== 0; } },
+    { n: 'nsum-odd-even', description: 'Tổng Mới Lẻ Chẵn (10-18)', multiplier: getMultiplier(25), checkFunction: (num) => { const s = getNewSum(num); return s >= 10 && s % 2 === 0; } },
+    { n: 'nsum-odd-odd', description: 'Tổng Mới Lẻ Lẻ (11-17)', multiplier: getMultiplier(25), checkFunction: (num) => { const s = getNewSum(num); return s >= 11 && s % 2 !== 0; } }
+);
+
+// 6. Dạng Hiệu
+for (let i = 0; i <= 9; i++) {
+    const count = Array.from({ length: 100 }, (_, j) => j).filter(num => getDifference(num) === i).length;
+    scoringForms.push({
+        n: `diff-${i}`,
+        description: `Hiệu ${i}`,
+        multiplier: getMultiplier(count),
+        checkFunction: (num) => getDifference(num) === i
+    });
+}
+scoringForms.push(
+    { n: 'diff-even', description: 'Hiệu Chẵn', multiplier: getMultiplier(50), checkFunction: (num) => getDifference(num) % 2 === 0 },
+    { n: 'diff-odd', description: 'Hiệu Lẻ', multiplier: getMultiplier(50), checkFunction: (num) => getDifference(num) % 2 !== 0 }
+);
+
 // Helper function to format date
 const formatDate = (dateString) => {
     const date = new Date(dateString);

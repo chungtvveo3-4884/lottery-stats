@@ -3,380 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giả Lập XSMB</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/styles.css">
+    <title>Mô phỏng Chiến lược</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .nav-item .nav-link { font-weight: 500; color: #495057; background-color: #f8f9fa; border: 1px solid #dee2e6; margin-right: 5px; padding: 0.5rem 1rem; border-radius: 0.25rem; }
-        .nav-item .nav-link:hover { color: #007bff; background-color: #e9ecef; }
-        .nav-item .nav-link.active { color: #fff; background-color: #007bff; border-color: #007bff; font-weight: 600; }
-        .number-grid-container { padding: 0; }
-        .number-grid { border-collapse: collapse; width: 100%; }
-        .number-grid th, .number-grid td { border: 1px solid #dee2e6; text-align: center; padding: 2px; }
-        .number-grid th { font-size: 0.7rem; vertical-align: middle; }
-        .number-btn { width: 100%; aspect-ratio: 1; border: none; background: white; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .number-btn:hover { background: #e9ecef; }
-        .number-btn.selected-danh { background: #198754; color: white; }
-        .number-btn.selected-om { background: #dc3545; color: white; }
-        .history-actions button { font-size: 0.8rem; padding: 0.1rem 0.4rem; }
-        .edit-mode-indicator { display: none; }
-        .result-detail-content { background-color: #f8f9fa; }
+        .hidden { display: none; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border-left-color: #fff;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Giả Lập XSMB</h1>
-        
-        <ul class="nav mb-4 justify-content-center" role="tablist">
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" href="/" role="tab">Thống kê</a>
-            </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link" href="/scoring" role="tab">Tính điểm</a>
-            </li>
-             <li class="nav-item" role="presentation">
-                <a class="nav-link active" href="/simulation" role="tab">Giả Lập</a>
-            </li>
-        </ul>
-
-        <div class="alert alert-info">
-            <p class="mb-1"><strong>Ngày mới nhất trong dữ liệu:</strong> <%= formatDate(latestDate) %></p>
-            <p class="mb-0"><strong>Ngày dự đoán cho giả lập mới:</strong> <%= formatDate(predictionDate) %></p>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>Chọn số và nhập tiền</h5>
-                <div class="alert alert-warning mt-2 edit-mode-indicator">
-                    <strong>Chế độ sửa:</strong> Bạn đang sửa lại giả lập cho ngày <strong id="editingDate"></strong>.
+<body class="antialiased">
+    <div class="container mx-auto max-w-7xl px-4 py-8">
+        <header class="bg-white shadow-md sticky top-0 z-10">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center py-4">
+                    <a href="/" class="text-2xl font-bold text-gray-800">XSMB Mô phỏng giả lập</a>
+                    <nav class="hidden md:flex space-x-4">
+                        <a href="/statistics" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Thống kê</a>
+                        <a href="/scoring" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Tính điểm</a>
+                        <a href="/simulation" class="bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm font-semibold">Mô phỏng</a>
+                    </nav>
                 </div>
             </div>
-            <div class="card-body">
-                <form id="simulationForm">
-                    <input type="hidden" id="simulationId" name="simulationId">
-                    <div class="row">
-                        <!-- Phần Đánh -->
-                        <div class="col-md-6 mb-3">
-                            <div class="border p-3 rounded h-100">
-                                <h6 class="text-success">ĐÁNH (Màu xanh)</h6>
-                                <div class="number-grid-container" id="danhGridContainer"></div>
-                                <div class="mt-3"><label for="danhAmount" class="form-label">Số tiền đánh 1 con (VNĐ):</label><input type="number" class="form-control" id="danhAmount" min="0" step="1000"></div>
-                                <div class="mt-2"><small class="text-muted">Số đã chọn: <span id="danhList">Chưa chọn</span></small></div>
-                            </div>
+        </header>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Thiết lập</h2>
+                    <form id="simulationForm" class="space-y-6">
+                        <div>
+                            <label for="initialCapital" class="block text-sm font-medium text-gray-700">Vốn khởi điểm (k)</label>
+                            <input type="number" id="initialCapital" name="initialCapital" value="10000" min="1000" step="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         </div>
-
-                        <!-- Phần Ôm -->
-                        <div class="col-md-6 mb-3">
-                            <div class="border p-3 rounded h-100">
-                                <h6 class="text-danger">ÔM (Màu đỏ)</h6>
-                                <div class="number-grid-container" id="omGridContainer"></div>
-                                <div class="mt-3"><label for="omAmount" class="form-label">Số tiền ôm 1 con (VNĐ):</label><input type="number" class="form-control" id="omAmount" min="0" step="1000"></div>
-                                <div class="mt-2"><small class="text-muted">Số đã chọn: <span id="omList">Chưa chọn</span></small></div>
-                            </div>
+                        <div>
+                            <label for="simulationDays" class="block text-sm font-medium text-gray-700">Số ngày mô phỏng</label>
+                            <input type="number" id="simulationDays" name="simulationDays" value="30" min="1" max="365" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         </div>
-                    </div>
+                        
+                        <div class="space-y-4" id="formGroupsContainer">
+                            <h3 class="text-lg font-semibold text-gray-800 pt-4 border-t">Các dạng số chơi</h3>
+                            </div>
+                        
+                        <button type="button" id="addFormGroup" class="w-full flex items-center justify-center px-4 py-2 border border-dashed border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            + Thêm dạng số
+                        </button>
+                        
+                        <div class="pt-6 border-t">
+                            <button type="submit" id="runButton" class="w-full inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <span id="runButtonText">Chạy Mô phỏng</span>
+                                <div id="runSpinner" class="spinner hidden"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
 
-                    <div class="text-center mt-3">
-                        <button type="submit" id="submitBtn" class="btn btn-primary btn-lg">Lưu Giả Lập</button>
-                        <button type="button" id="cancelEditBtn" class="btn btn-secondary btn-lg edit-mode-indicator" onclick="cancelEdit()">Hủy Sửa</button>
+                <div id="resultsContainer" class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Kết quả Mô phỏng</h2>
+                    <div id="summaryContainer" class="mb-8"></div>
+                    <div class="mb-8" style="height: 400px;">
+                        <canvas id="simulationChart"></canvas>
                     </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Lịch Sử -->
-        <div class="card">
-            <div class="card-header"><h5>Lịch sử giả lập</h5></div>
-            <div class="card-body">
-                <% if (history && history.length > 0) { %>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
+                    <div class="overflow-auto max-h-96">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100 sticky top-0">
                                 <tr>
-                                    <th>Ngày</th>
-                                    <th>Đánh</th>
-                                    <th>Ôm</th>
-                                    <th>Lãi/Lỗ</th>
-                                    <th></th>
+                                    <th class="p-2 text-center font-semibold">Ngày</th>
+                                    <th class="p-2 text-center font-semibold">Số về</th>
+                                    <th class="p-2 text-right font-semibold">Tổng cược</th>
+                                    <th class="p-2 text-right font-semibold">Thắng</th>
+                                    <th class="p-2 text-right font-semibold">Lãi/Lỗ</th>
+                                    <th class="p-2 text-right font-semibold">Vốn cuối ngày</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <% history.forEach((entry, index) => { %>
-                                    <tr>
-                                        <td><%= formatDate(entry.date) %></td>
-                                        <td><%= (entry.danh && entry.danh.numbers && entry.danh.numbers.length > 0) ? entry.danh.numbers.join(', ') : '-' %></td>
-                                        <td><%= (entry.om && entry.om.numbers && entry.om.numbers.length > 0) ? entry.om.numbers.join(', ') : '-' %></td>
-                                        <td>
-                                            <% if (entry.hasResult) { %>
-                                                <span class="fw-bold <%= entry.winLose >= 0 ? 'text-success' : 'text-danger' %>">
-                                                    <%= entry.winLose >= 0 ? '+' : '' %><%= entry.winLose.toLocaleString() %>
-                                                </span>
-                                            <% } else { %>
-                                                <span class="badge bg-warning text-dark">Chờ KQ</span>
-                                            <% } %>
-                                        </td>
-                                        <td class="history-actions text-end">
-                                            <% if (entry.hasResult) { %>
-                                               
-                                            <% } else { %>
-                                                <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick='startEdit(<%- JSON.stringify(entry) %>)'>Sửa</button>
-                                            <% } %>
-                                        </td>
-                                    </tr>
-                                    <!-- Dòng chi tiết có thể đóng/mở -->
-                                    <% if (entry.hasResult && entry.resultDetails) { %>
-                                    <tr class="collapse" id="details-<%= entry.id %>">
-                                        <td colspan="5" class="p-2">
-                                            <div class="result-detail-content p-2 rounded">
-                                                <% if (entry.resultDetails.danh) { %>
-                                                    <p class="mb-1 small">
-                                                        <strong>Đánh:</strong> 
-                                                        <% if (entry.resultDetails.danh.matchingNumbers.length > 0) { %>
-                                                            <span class="text-success">Trúng <%= entry.resultDetails.danh.matchingNumbers.join(', ') %></span>
-                                                        <% } else { %>
-                                                            <span class="text-danger">Trượt</span>
-                                                        <% } %>
-                                                        (KQ Đề: <%= entry.resultDetails.danh.winningNumbers.join(', ') %>) | Lãi/Lỗ: 
-                                                        <span class="fw-bold <%= entry.resultDetails.danh.profit >= 0 ? 'text-success' : 'text-danger' %>">
-                                                            <%= entry.resultDetails.danh.profit.toLocaleString() %>đ
-                                                        </span>
-                                                    </p>
-                                                <% } %>
-                                                <% if (entry.resultDetails.om) { %>
-                                                    <p class="mb-0 small">
-                                                        <strong>Ôm:</strong> 
-                                                        <% if (entry.resultDetails.om.isWin) { %>
-                                                            <span class="text-success">Thắng (không về)</span>
-                                                        <% } else { %>
-                                                            <span class="text-danger">Thua (về <%= entry.resultDetails.om.matchingNumbers.join(', ') %>)</span>
-                                                        <% } %>
-                                                        | Lãi/Lỗ: 
-                                                        <span class="fw-bold <%= entry.resultDetails.om.profit >= 0 ? 'text-success' : 'text-danger' %>">
-                                                            <%= entry.resultDetails.om.profit.toLocaleString() %>đ
-                                                        </span>
-                                                    </p>
-                                                <% } %>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <% } %>
-                                <% }) %>
-                            </tbody>
+                            <tbody id="resultsTableBody"></tbody>
                         </table>
                     </div>
-                <% } else { %>
-                    <p>Chưa có lịch sử giả lập nào.</p>
-                <% } %>
+                </div>
             </div>
-        </div>
+        
+        <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+            <p>&copy; <%= new Date().getFullYear() %> XSMB Stats. All rights reserved.</p>
+        </footer>
     </div>
-
-    <script>
-        // --- State Management ---
-        let selectedDanh = new Set();
-        let selectedOm = new Set();
-
-        // --- Grid Generation ---
-        function createNumberGrid(type) {
-            const container = document.getElementById(`${type}GridContainer`);
-            const table = document.createElement('table');
-            table.className = 'number-grid';
-            
-            // Header row with column checkboxes
-            const thead = table.createTHead();
-            const headerRow = thead.insertRow();
-            headerRow.insertCell(); // Empty corner cell
-            for (let col = 0; col < 10; col++) {
-                const th = document.createElement('th');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'form-check-input';
-                checkbox.onchange = () => toggleColumn(type, col);
-                th.appendChild(checkbox);
-                headerRow.appendChild(th);
-            }
-
-            // Number rows
-            const tbody = table.createTBody();
-            for (let row = 0; row < 10; row++) {
-                const tr = tbody.insertRow();
-                // Row checkbox
-                const th = document.createElement('th');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.className = 'form-check-input';
-                checkbox.onchange = () => toggleRow(type, row);
-                th.appendChild(checkbox);
-                tr.appendChild(th);
-
-                // Number buttons
-                for (let col = 0; col < 10; col++) {
-                    const td = tr.insertCell();
-                    const number = (row * 10 + col).toString().padStart(2, '0');
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'number-btn';
-                    btn.textContent = number;
-                    btn.dataset.number = number;
-                    btn.onclick = () => toggleNumber(type, number);
-                    td.appendChild(btn);
-                }
-            }
-            container.appendChild(table);
-        }
-        
-        // --- Selection Logic ---
-        function toggleNumber(type, number) {
-            const set = type === 'danh' ? selectedDanh : selectedOm;
-            const otherSet = type === 'danh' ? selectedOm : selectedDanh;
-            
-            if (otherSet.has(number)) {
-                alert(`Số ${number} đã được chọn cho ${type === 'danh' ? 'ôm' : 'đánh'}!`);
-                return;
-            }
-            
-            if (set.has(number)) set.delete(number);
-            else set.add(number);
-            
-            updateUI();
-        }
-
-        function toggleRow(type, rowIndex) {
-            for (let col = 0; col < 10; col++) {
-                const number = (rowIndex * 10 + col).toString().padStart(2, '0');
-                toggleNumber(type, number);
-            }
-        }
-
-        function toggleColumn(type, colIndex) {
-            for (let row = 0; row < 10; row++) {
-                const number = (row * 10 + colIndex).toString().padStart(2, '0');
-                toggleNumber(type, number);
-            }
-        }
-
-        // --- UI Update ---
-        function updateUI() {
-            updateGrid('danh', selectedDanh);
-            updateGrid('om', selectedOm);
-            updateSelectedList('danh', selectedDanh);
-            updateSelectedList('om', selectedOm);
-        }
-
-        function updateGrid(type, set) {
-            const buttons = document.querySelectorAll(`#${type}GridContainer .number-btn`);
-            buttons.forEach(btn => {
-                if (set.has(btn.dataset.number)) {
-                    btn.classList.add(`selected-${type}`);
-                } else {
-                    btn.classList.remove(`selected-${type}`);
-                }
-            });
-        }
-
-        function updateSelectedList(type, set) {
-            const listElement = document.getElementById(`${type}List`);
-            listElement.textContent = set.size > 0 ? Array.from(set).sort().join(', ') : 'Chưa chọn';
-        }
-
-        // --- Form Submission and Editing ---
-        function startEdit(entry) {
-            // Clear current selections
-            selectedDanh.clear();
-            selectedOm.clear();
-
-            // Populate selections from history entry
-            if (entry.danh && entry.danh.numbers) {
-                entry.danh.numbers.forEach(num => selectedDanh.add(String(num).padStart(2, '0')));
-                document.getElementById('danhAmount').value = entry.danh.amount;
-            }
-            if (entry.om && entry.om.numbers) {
-                entry.om.numbers.forEach(num => selectedOm.add(String(num).padStart(2, '0')));
-                document.getElementById('omAmount').value = entry.om.amount;
-            }
-            
-            // Update UI to reflect loaded data
-            updateUI();
-            
-            // Enter edit mode
-            document.getElementById('simulationId').value = entry.id;
-            document.getElementById('editingDate').textContent = formatDate(entry.date);
-            document.querySelectorAll('.edit-mode-indicator').forEach(el => el.style.display = 'block');
-            document.getElementById('submitBtn').textContent = 'Lưu Thay Đổi';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function cancelEdit() {
-            selectedDanh.clear();
-            selectedOm.clear();
-            updateUI();
-            document.getElementById('simulationForm').reset();
-            document.getElementById('simulationId').value = '';
-            document.querySelectorAll('.edit-mode-indicator').forEach(el => el.style.display = 'none');
-            document.getElementById('submitBtn').textContent = 'Lưu Giả Lập';
-        }
-
-        document.getElementById('simulationForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const id = document.getElementById('simulationId').value;
-            const isEditing = !!id;
-
-            const danhNumbers = Array.from(selectedDanh);
-            const omNumbers = Array.from(selectedOm);
-            const danhAmount = document.getElementById('danhAmount').value;
-            const omAmount = document.getElementById('omAmount').value;
-
-            if (danhNumbers.length === 0 && omNumbers.length === 0) return alert('Vui lòng chọn ít nhất một số!');
-            if (danhNumbers.length > 0 && (!danhAmount || danhAmount <= 0)) return alert('Vui lòng nhập số tiền đánh!');
-            if (omNumbers.length > 0 && (!omAmount || omAmount <= 0)) return alert('Vui lòng nhập số tiền ôm!');
-
-            const url = isEditing ? `/simulation/edit/${id}` : '/simulation/submit';
-            const method = 'POST';
-            
-            const body = {
-                danhNumbers,
-                danhAmount,
-                omNumbers,
-                omAmount
-            };
-
-            fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    location.reload();
-                } else {
-                    alert('Lỗi: ' + data.message);
-                }
-            })
-            .catch(err => {
-                console.error('Error:', err);
-                alert('Có lỗi xảy ra khi gửi dữ liệu!');
-            });
-        });
-
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            createNumberGrid('danh');
-            createNumberGrid('om');
-        });
-        
-        // Helper to use in the template
-        const formatDate = (dateString) => {
-            if (!dateString) return 'N/A';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return 'Ngày không hợp lệ';
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        };
-    </script>
+    <script src="/js/simulation-client.js"></script>
 </body>
 </html>

@@ -13,32 +13,28 @@ let latestDate = null;
  * Đọc và hợp nhất dữ liệu từ tất cả các file thống kê.
  */
 async function getStatsData() {
-    if (cachedStats && process.env.NODE_ENV !== 'development') {
-        return cachedStats;
-    }
-    console.log('[CACHE] Dữ liệu cũ không có hoặc đang ở môi trường dev. Đọc lại file...');
-    try {
-        const [numberStatsRaw, headTailStatsRaw, sumDiffStatsRaw] = await Promise.all([
-            fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'),
-            fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
-            fs.readFile(SUM_DIFFERENCE_STATS_PATH, 'utf-8').catch(() => '{}')
-        ]);
-        
-        const numberStats = JSON.parse(numberStatsRaw);
-        const headTailStats = JSON.parse(headTailStatsRaw);
-        const sumDiffStats = JSON.parse(sumDiffStatsRaw);
+        try {
+            const [numberStatsRaw, headTailStatsRaw, sumDiffStatsRaw] = await Promise.all([
+                fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'),
+                fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
+                fs.readFile(SUM_DIFFERENCE_STATS_PATH, 'utf-8').catch(() => '{}')
+            ]);
+            
+            const numberStats = JSON.parse(numberStatsRaw);
+            const headTailStats = JSON.parse(headTailStatsRaw);
+            const sumDiffStats = JSON.parse(sumDiffStatsRaw);
 
-        cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
-        console.log('[CACHE] Đã nạp thành công dữ liệu mới vào cache.');
-        return cachedStats;
-    } catch (error) {
-        console.error('Lỗi khi đọc hoặc phân tích file thống kê:', error);
-        return {}; 
-    }
+            cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
+            console.log('[CACHE] Đã nạp thành công dữ liệu statistic mới vào cache.');
+            return cachedStats;
+        } catch (error) {
+            console.error('Lỗi khi đọc hoặc phân tích file thống kê:', error);
+            return {}; 
+        }
 }
 
 // === HÀM MỚI ĐỂ XÓA CACHE ===
-exports.clearCache = () => {
+function clearCache() {
     console.log('[CACHE] Xóa cache thống kê...');
     cachedStats = null;
 };
@@ -82,7 +78,7 @@ function parseDate(dateString) {
 /**
  * Lấy và lọc các chuỗi thống kê
  */
-exports.getFilteredStreaks = async (category, subcategory, filters = {}) => {
+async function getFilteredStreaks(category, subcategory, filters = {}) {
     const allStats = await getStatsData();
     let statsData;
     let finalStreaks = []; // Khai báo ở đây để đảm bảo luôn tồn tại
@@ -123,7 +119,7 @@ exports.getFilteredStreaks = async (category, subcategory, filters = {}) => {
 /**
  * Lấy dữ liệu cho phần Thống kê kỷ lục
  */
-exports.getQuickStats = async () => {
+async function getQuickStats() {
     const allStats = await getStatsData();
     const quickStats = {};
     latestDate = await getLatestDate();
@@ -196,4 +192,11 @@ exports.getQuickStats = async () => {
     }
 
     return quickStats;
+};
+
+module.exports = {
+    getStatsData,
+    getFilteredStreaks,
+    getQuickStats,
+    clearCache
 };

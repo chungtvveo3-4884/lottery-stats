@@ -183,26 +183,18 @@ for (let i = 1; i <= 10; i++) {
     INDEX_MAPS[key] = new Map(SETS[key].map((item, index) => [item, index]));
 }
 
-// Các nhóm Tổng TT
-SETS.TONG_TT_1_2 = [...SETS.TONG_TT_1, ...SETS.TONG_TT_2].sort();
-MAPS.TONG_TT_1_2 = new Map(SETS.TONG_TT_1_2.map((n, index) => [n, index]));
-INDEX_MAPS.TONG_TT_1_2 = new Map(SETS.TONG_TT_1_2.map((item, index) => [item, index]));
+// [MODIFIED] Các nhóm Tổng TT được chia thành 3 nhóm
+SETS.TONG_TT_1_3 = [...SETS.TONG_TT_1, ...SETS.TONG_TT_2, ...SETS.TONG_TT_3].sort();
+MAPS.TONG_TT_1_3 = new Map(SETS.TONG_TT_1_3.map((n, index) => [n, index]));
+INDEX_MAPS.TONG_TT_1_3 = new Map(SETS.TONG_TT_1_3.map((item, index) => [item, index]));
 
-SETS.TONG_TT_3_4 = [...SETS.TONG_TT_3, ...SETS.TONG_TT_4].sort();
-MAPS.TONG_TT_3_4 = new Map(SETS.TONG_TT_3_4.map((n, index) => [n, index]));
-INDEX_MAPS.TONG_TT_3_4 = new Map(SETS.TONG_TT_3_4.map((item, index) => [item, index]));
+SETS.TONG_TT_4_6 = [...SETS.TONG_TT_4, ...SETS.TONG_TT_5, ...SETS.TONG_TT_6].sort();
+MAPS.TONG_TT_4_6 = new Map(SETS.TONG_TT_4_6.map((n, index) => [n, index]));
+INDEX_MAPS.TONG_TT_4_6 = new Map(SETS.TONG_TT_4_6.map((item, index) => [item, index]));
 
-SETS.TONG_TT_5_6 = [...SETS.TONG_TT_5, ...SETS.TONG_TT_6].sort();
-MAPS.TONG_TT_5_6 = new Map(SETS.TONG_TT_5_6.map((n, index) => [n, index]));
-INDEX_MAPS.TONG_TT_5_6 = new Map(SETS.TONG_TT_5_6.map((item, index) => [item, index]));
-
-SETS.TONG_TT_7_8 = [...SETS.TONG_TT_7, ...SETS.TONG_TT_8].sort();
-MAPS.TONG_TT_7_8 = new Map(SETS.TONG_TT_7_8.map((n, index) => [n, index]));
-INDEX_MAPS.TONG_TT_7_8 = new Map(SETS.TONG_TT_7_8.map((item, index) => [item, index]));
-
-SETS.TONG_TT_9_10 = [...SETS.TONG_TT_9, ...SETS.TONG_TT_10].sort();
-MAPS.TONG_TT_9_10 = new Map(SETS.TONG_TT_9_10.map((n, index) => [n, index]));
-INDEX_MAPS.TONG_TT_9_10 = new Map(SETS.TONG_TT_9_10.map((item, index) => [item, index]));
+SETS.TONG_TT_7_10 = [...SETS.TONG_TT_7, ...SETS.TONG_TT_8, ...SETS.TONG_TT_9, ...SETS.TONG_TT_10].sort();
+MAPS.TONG_TT_7_10 = new Map(SETS.TONG_TT_7_10.map((n, index) => [n, index]));
+INDEX_MAPS.TONG_TT_7_10 = new Map(SETS.TONG_TT_7_10.map((item, index) => [item, index]));
 
 // Tổng TT Chẵn/Lẻ
 SETS.TONG_TT_CHAN = ALL_NUMBERS.filter(n => getTongTT(n) % 2 === 0 || getTongTT(n) === 10);
@@ -269,26 +261,18 @@ for (let i = 0; i <= 9; i++) {
     INDEX_MAPS[key] = new Map(SETS[key].map((item, index) => [item, index]));
 }
 
-// Các nhóm Hiệu
-SETS.HIEU_0_1 = [...SETS.HIEU_0, ...SETS.HIEU_1].sort();
-MAPS.HIEU_0_1 = new Map(SETS.HIEU_0_1.map((n, index) => [n, index]));
-INDEX_MAPS.HIEU_0_1 = new Map(SETS.HIEU_0_1.map((item, index) => [item, index]));
+// [MODIFIED] Các nhóm Hiệu được chia thành 3 nhóm
+SETS.HIEU_0_2 = [...SETS.HIEU_0, ...SETS.HIEU_1, ...SETS.HIEU_2].sort();
+MAPS.HIEU_0_2 = new Map(SETS.HIEU_0_2.map((n, index) => [n, index]));
+INDEX_MAPS.HIEU_0_2 = new Map(SETS.HIEU_0_2.map((item, index) => [item, index]));
 
-SETS.HIEU_2_3 = [...SETS.HIEU_2, ...SETS.HIEU_3].sort();
-MAPS.HIEU_2_3 = new Map(SETS.HIEU_2_3.map((n, index) => [n, index]));
-INDEX_MAPS.HIEU_2_3 = new Map(SETS.HIEU_2_3.map((item, index) => [item, index]));
+SETS.HIEU_3_5 = [...SETS.HIEU_3, ...SETS.HIEU_4, ...SETS.HIEU_5].sort();
+MAPS.HIEU_3_5 = new Map(SETS.HIEU_3_5.map((n, index) => [n, index]));
+INDEX_MAPS.HIEU_3_5 = new Map(SETS.HIEU_3_5.map((item, index) => [item, index]));
 
-SETS.HIEU_4_5 = [...SETS.HIEU_4, ...SETS.HIEU_5].sort();
-MAPS.HIEU_4_5 = new Map(SETS.HIEU_4_5.map((n, index) => [n, index]));
-INDEX_MAPS.HIEU_4_5 = new Map(SETS.HIEU_4_5.map((item, index) => [item, index]));
-
-SETS.HIEU_6_7 = [...SETS.HIEU_6, ...SETS.HIEU_7].sort();
-MAPS.HIEU_6_7 = new Map(SETS.HIEU_6_7.map((n, index) => [n, index]));
-INDEX_MAPS.HIEU_6_7 = new Map(SETS.HIEU_6_7.map((item, index) => [item, index]));
-
-SETS.HIEU_8_9 = [...SETS.HIEU_8, ...SETS.HIEU_9].sort();
-MAPS.HIEU_8_9 = new Map(SETS.HIEU_8_9.map((n, index) => [n, index]));
-INDEX_MAPS.HIEU_8_9 = new Map(SETS.HIEU_8_9.map((item, index) => [item, index]));
+SETS.HIEU_6_9 = [...SETS.HIEU_6, ...SETS.HIEU_7, ...SETS.HIEU_8, ...SETS.HIEU_9].sort();
+MAPS.HIEU_6_9 = new Map(SETS.HIEU_6_9.map((n, index) => [n, index]));
+INDEX_MAPS.HIEU_6_9 = new Map(SETS.HIEU_6_9.map((item, index) => [item, index]));
 
 // Hiệu Chẵn/Lẻ
 SETS.HIEU_CHAN = ALL_NUMBERS.filter(n => getHieu(n) % 2 === 0);
