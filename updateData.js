@@ -20,36 +20,38 @@ const updateJsonFile = async () => {
         const response = await axios.get(API_URL);
         const githubData = response.data;
 
-        // Kiểm tra dữ liệu hợp lệ
         if (githubData && Array.isArray(githubData) && githubData.length > 0) {
-            
-            // Sắp xếp lại để đảm bảo dữ liệu luôn đúng thứ tự thời gian
             githubData.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            // Ghi file
             fs.writeFileSync(DATA_FILE, JSON.stringify(githubData, null, 2), 'utf8');
-            console.log(`[DATA UPDATE] Đã cập nhật file ${DATA_FILE} thành công từ GitHub.`);
-            // Chạy lại tất cả các tiến trình tạo thống kê
-            Promise.all([
+            console.log(`[DATA UPDATE] Đã cập nhật file ${DATA_FILE} thành công.`);
+
+            // Xóa cache cũ trước khi tạo file mới
+            await statisticsService.clearCache();
+            console.log('[CACHE] Đã xóa cache thống kê cũ.');
+
+            // Tạo lại tất cả các file thống kê và chờ chúng hoàn thành
+            await Promise.all([
                 generateNumberStats(),
                 generateHeadTailStats(),
-                generateSumDifferenceStats(),
-                statisticsService.clearCache(),
-            ]).then(() => {
-                console.log('Tất cả các file thống kê đã được tạo lại thành công!');     
-                statisticsService.getStatsData();
-                scoringService.loadScoringStatistics(); // Tính toán lại điểm
-            }).catch(err => {
-                console.error('Đã xảy ra lỗi trong quá trình tạo lại file thống kê:', err);
-            });
-            return true; 
+                generateSumDifferenceStats()
+            ]);
+            console.log('Tất cả các file thống kê đã được tạo lại thành công!');
 
+            // Nạp lại cache và quan trọng nhất là "await" cho nó xong
+            await statisticsService.getStatsData();
+            console.log('[CACHE] Đã nạp lại cache thống kê mới.');
+            
+            // Tải lại các dịch vụ khác nếu cần
+            await scoringService.loadScoringStatistics();
+            console.log('[SCORING] Đã tính toán và nạp lại cache điểm.');
+
+            return true;
         } else {
             console.log('[DATA UPDATE] Không nhận được dữ liệu hợp lệ từ GitHub.');
-            return false; 
+            return false;
         }
     } catch (error) {
-        console.error(`[DATA UPDATE] Lỗi khi cập nhật file dữ liệu từ GitHub:`, error.message);
+        console.error(`[DATA UPDATE] Lỗi khi cập nhật file dữ liệu:`, error.message);
         return false;
     }
 };

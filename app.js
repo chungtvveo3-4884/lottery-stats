@@ -89,24 +89,27 @@ app.get('/simulation', (req, res) => {
 const startServer = async () => {
     try {
         console.log('--- Khởi động server: Cập nhật dữ liệu và nạp cache lần đầu ---');
-        await updateJsonFile();
+        // Chờ cho việc cập nhật và nạp cache lần đầu hoàn tất
+        await updateJsonFile(); 
 
         app.listen(port, () => {
             console.log(`✅ Server đang chạy trên http://localhost:${port}`);
-            console.log('✅ Tác vụ cập nhật dữ liệu hàng ngày đã được lên lịch.');
         });
+
+        // Lên lịch tác vụ sau khi server đã chạy
+        cron.schedule('45 6,18 * * *', async () => {
+            console.log('--- [CRON JOB] Bắt đầu tác vụ cập nhật dữ liệu hàng ngày ---');
+            await updateJsonFile();
+        }, {
+            scheduled: true,
+            timezone: "Asia/Ho_Chi_Minh"
+        });
+        console.log('✅ Tác vụ cập nhật dữ liệu hàng ngày đã được lên lịch.');
+
     } catch (error) {
         console.error('❌ Lỗi nghiêm trọng khi khởi động server:', error);
         process.exit(1);
     }
 };
-
-cron.schedule('45 6,18 * * *', () => {
-    console.log('--- [CRON JOB] Bắt đầu tác vụ cập nhật dữ liệu hàng ngày ---');
-    updateJsonFile();
-}, {
-    scheduled: true,
-    timezone: "Asia/Ho_Chi_Minh"
-});
 
 startServer();

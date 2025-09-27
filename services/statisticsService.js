@@ -13,30 +13,41 @@ let latestDate = null;
  * Đọc và hợp nhất dữ liệu từ tất cả các file thống kê.
  */
 async function getStatsData() {
-        try {
-            const [numberStatsRaw, headTailStatsRaw, sumDiffStatsRaw] = await Promise.all([
-                fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'),
-                fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
-                fs.readFile(SUM_DIFFERENCE_STATS_PATH, 'utf-8').catch(() => '{}')
-            ]);
-            
-            const numberStats = JSON.parse(numberStatsRaw);
-            const headTailStats = JSON.parse(headTailStatsRaw);
-            const sumDiffStats = JSON.parse(sumDiffStatsRaw);
+    // 1. Kiểm tra cache trước tiên
+    if (cachedStats) {
+        console.log('[CACHE] Sử dụng dữ liệu statistic từ cache.');
+        return cachedStats;
+    }
 
-            cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
-            console.log('[CACHE] Đã nạp thành công dữ liệu statistic mới vào cache.');
-            return cachedStats;
-        } catch (error) {
-            console.error('Lỗi khi đọc hoặc phân tích file thống kê:', error);
-            return {}; 
-        }
+    // 2. Nếu cache trống, đọc file và tạo cache mới
+    try {
+        console.log('[CACHE] Cache trống, đang đọc dữ liệu thống kê từ file...');
+        const [numberStatsRaw, headTailStatsRaw, sumDiffStatsRaw] = await Promise.all([
+            fs.readFile(NUMBER_STATS_PATH, 'utf-8').catch(() => '{}'),
+            fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
+            fs.readFile(SUM_DIFFERENCE_STATS_PATH, 'utf-8').catch(() => '{}')
+        ]);
+        
+        const numberStats = JSON.parse(numberStatsRaw);
+        const headTailStats = JSON.parse(headTailStatsRaw);
+        const sumDiffStats = JSON.parse(sumDiffStatsRaw);
+
+        // Nạp dữ liệu vào cache
+        cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
+        console.log('[CACHE] Đã nạp thành công dữ liệu statistic mới vào cache.');
+        return cachedStats;
+
+    } catch (error) {
+        console.error('Lỗi khi đọc hoặc phân tích file thống kê:', error);
+        return {}; // Trả về đối tượng rỗng nếu có lỗi
+    }
 }
 
 // === HÀM MỚI ĐỂ XÓA CACHE ===
 function clearCache() {
     console.log('[CACHE] Xóa cache thống kê...');
     cachedStats = null;
+    latestDate = null;
 };
 
 /**
