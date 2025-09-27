@@ -84,7 +84,7 @@ function findAlternatingStreaks(data, dateMap, { condition, description, valueEx
      const allStreaks = [];
      const processedStreaks = new Set();
      for (let i = 0; i < data.length - 2; i++) {
-        if (!condition(data[i])) continue; // Check condition for the starting item
+        if (!condition(data[i])) continue; 
 
         const startValue = valueExtractor(data[i]);
         if (isConsecutive(data[i].date, data[i + 1].date) && isConsecutive(data[i + 1].date, data[i + 2].date)) {
@@ -117,8 +117,12 @@ function findAlternatingStreaks(data, dateMap, { condition, description, valueEx
 
 function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     const allStreaks = [];
+    const processedDates = new Set();
     for (let i = 0; i < data.length - 2; i++) {
         const dayA = data[i];
+        
+        if (processedDates.has(dayA.date)) continue;
+
         const dayB = data[i + 1];
         const dayC = data[i + 2];
 
@@ -147,22 +151,20 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
             
             if (streak.length >= 2) {
                 allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                i = lastIndex -1; 
+                streak.forEach(item => processedDates.add(item.date));
             }
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
-// [FIXED] Sửa lỗi lặp chuỗi bằng cách thêm `processedDates`
 function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     const allStreaks = [];
-    const processedDates = new Set(); // Dùng để theo dõi các ngày đã được xử lý
+    const processedDates = new Set(); 
 
     for (let i = 0; i < data.length - 2; i++) {
         const dayA = data[i];
         
-        // Bỏ qua nếu ngày bắt đầu đã thuộc một chuỗi khác
         if (processedDates.has(dayA.date)) continue;
 
         const dayB = data[i+1];
@@ -188,7 +190,6 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
             }
             if (streak.length >= 2) {
                 allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                // Đánh dấu tất cả các ngày trong chuỗi vừa tìm thấy là đã xử lý
                 streak.forEach(item => processedDates.add(item.date));
             }
         }
@@ -231,7 +232,6 @@ function findSequence(data, dateMap, { isProgressive, isUniform, valueExtractor,
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
-// Hàm này dùng để xét chuỗi của các con số
 function analyzeNumberSet(data, dateMap, { typeName, descriptionPrefix }) {
     const typeCondition = (item) => MAPS[typeName] && MAPS[typeName].has(item.value);
     return {
@@ -251,7 +251,6 @@ function analyzeNumberSet(data, dateMap, { typeName, descriptionPrefix }) {
     };
 }
 
-// [FIXED] Sửa logic "Về so le" cho các dạng tổng/hiệu
 function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMap, descriptionPrefix, typeCondition }) {
     const isGroupAnalysis = !!typeCondition;
     const effectiveTypeCondition = typeCondition || (() => true);
@@ -274,14 +273,11 @@ function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMa
         });
     }
     
-    // [FIX] Chọn đúng hàm tìm chuỗi so le dựa trên ngữ cảnh
     const veSoleResult = isGroupAnalysis
-        // Nếu là phân tích theo DẠNG (ví dụ: Tổng Chẵn), chỉ cần các mục cùng dạng
         ? findAlternatingTypeStreaks(data, dateMap, {
             condition: effectiveTypeCondition,
             description: `${descriptionPrefix} - Về so le`
           })
-        // Nếu là phân tích chung (ví dụ: Các Tổng), các mục phải có cùng giá trị
         : findAlternatingStreaks(data, dateMap, {
             condition: effectiveTypeCondition,
             valueExtractor,
@@ -326,30 +322,16 @@ async function generateSumDifferenceStats() {
             ...Array.from({ length: 10 }, (_, i) => ({ typeName: `TONG_TT_${i + 1}`, descriptionPrefix: `Tổng TT - Cùng tổng ${i + 1}` })),
             ...Array.from({ length: 19 }, (_, i) => ({ typeName: `TONG_MOI_${i}`, descriptionPrefix: `Tổng Mới - Cùng tổng ${i}` })),
             ...Array.from({ length: 10 }, (_, i) => ({ typeName: `HIEU_${i}`, descriptionPrefix: `Hiệu - Cùng hiệu ${i}` })),
-            { typeName: 'TONG_TT_1_3', descriptionPrefix: 'Tổng TT - Dạng tổng (1,2,3)' },
-            { typeName: 'TONG_TT_4_6', descriptionPrefix: 'Tổng TT - Dạng tổng (4,5,6)' },
-            { typeName: 'TONG_TT_7_10', descriptionPrefix: 'Tổng TT - Dạng tổng (7,8,9,10)' },
-            { typeName: 'TONG_MOI_0_3', descriptionPrefix: 'Tổng Mới - Dạng tổng (0-3)' },
-            { typeName: 'TONG_MOI_4_6', descriptionPrefix: 'Tổng Mới - Dạng tổng (4-6)' },
-            { typeName: 'TONG_MOI_7_9', descriptionPrefix: 'Tổng Mới - Dạng tổng (7-9)' },
-            { typeName: 'TONG_MOI_10_12', descriptionPrefix: 'Tổng Mới - Dạng tổng (10-12)' },
-            { typeName: 'TONG_MOI_13_15', descriptionPrefix: 'Tổng Mới - Dạng tổng (13-15)' },
-            { typeName: 'TONG_MOI_16_18', descriptionPrefix: 'Tổng Mới - Dạng tổng (16-18)' },
-            { typeName: 'HIEU_0_2', descriptionPrefix: 'Hiệu - Dạng hiệu (0,1,2)' },
-            { typeName: 'HIEU_3_5', descriptionPrefix: 'Hiệu - Dạng hiệu (3,4,5)' },
-            { typeName: 'HIEU_6_9', descriptionPrefix: 'Hiệu - Dạng hiệu (6,7,8,9)' },
         ];
         numberSetConfigs.forEach(config => {
             stats[config.typeName.toLowerCase()] = analyzeNumberSet(lotteryData, dateToIndexMap, config);
         });
 
         // === CÁC DẠNG XÉT CHUỖI GIÁ TRỊ TỔNG/HIỆU (dùng analyzeValueSequence) ===
-        // Phân tích chung, không có typeCondition
         stats['tong_tt_cac_tong'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getTongTT(item.value), valueSet: SETS.TONG_TT_SEQUENCE, valueMap: MAPS.TONG_TT_SEQUENCE, descriptionPrefix: 'Tổng TT - Các tổng' });
         stats['tong_moi_cac_tong'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getTongMoi(item.value), valueSet: SETS.TONG_MOI_SEQUENCE, valueMap: MAPS.TONG_MOI_SEQUENCE, descriptionPrefix: 'Tổng Mới - Các tổng' });
         stats['hieu_cac_hieu'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getHieu(item.value), valueSet: SETS.HIEU_SEQUENCE, valueMap: MAPS.HIEU_SEQUENCE, descriptionPrefix: 'Các Hiệu' });
 
-        // Phân tích theo DẠNG, có truyền typeCondition
         stats['tong_tt_chan'] = analyzeValueSequence(lotteryData, dateToIndexMap, { 
             valueExtractor: (item) => getTongTT(item.value), 
             valueSet: SETS.TONG_TT_CHAN_SEQUENCE, 
@@ -394,7 +376,7 @@ async function generateSumDifferenceStats() {
             descriptionPrefix: 'Hiệu Lẻ',
             typeCondition: (item) => getHieu(item.value) % 2 !== 0
         });
-        // [ADDED] Áp dụng analyzeValueSequence cho các dạng Chẵn-Lẻ của Tổng
+
         const dangTongConfigs = [
             { typeName: 'TONG_MOI_CHAN_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Chẵn', getter: getTongMoi, sequenceSet: SETS.TONG_MOI_SEQUENCE, sequenceMap: MAPS.TONG_MOI_SEQUENCE },
             { typeName: 'TONG_MOI_CHAN_LE', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Lẻ', getter: getTongMoi, sequenceSet: SETS.TONG_MOI_SEQUENCE, sequenceMap: MAPS.TONG_MOI_SEQUENCE },
@@ -411,6 +393,35 @@ async function generateSumDifferenceStats() {
                 valueExtractor: (item) => config.getter(item.value),
                 valueSet: config.sequenceSet,
                 valueMap: config.sequenceMap,
+                descriptionPrefix: config.descriptionPrefix,
+                typeCondition: (item) => MAPS[config.typeName] && MAPS[config.typeName].has(item.value)
+            });
+        });
+
+        // [ADDED] Xử lý các dạng nhóm tổng/hiệu bằng analyzeValueSequence
+        const dangNhomConfigs = [
+            { typeName: 'TONG_TT_1_3', descriptionPrefix: 'Tổng TT - Dạng tổng (1,2,3)', getter: getTongTT, sequence: ['1', '2', '3'] },
+            { typeName: 'TONG_TT_4_6', descriptionPrefix: 'Tổng TT - Dạng tổng (4,5,6)', getter: getTongTT, sequence: ['4', '5', '6'] },
+            { typeName: 'TONG_TT_7_10', descriptionPrefix: 'Tổng TT - Dạng tổng (7,8,9,10)', getter: getTongTT, sequence: ['7', '8', '9', '10'] },
+            { typeName: 'TONG_MOI_0_3', descriptionPrefix: 'Tổng Mới - Dạng tổng (0-3)', getter: getTongMoi, sequence: ['0', '1', '2', '3'] },
+            { typeName: 'TONG_MOI_4_6', descriptionPrefix: 'Tổng Mới - Dạng tổng (4-6)', getter: getTongMoi, sequence: ['4', '5', '6'] },
+            { typeName: 'TONG_MOI_7_9', descriptionPrefix: 'Tổng Mới - Dạng tổng (7-9)', getter: getTongMoi, sequence: ['7', '8', '9'] },
+            { typeName: 'TONG_MOI_10_12', descriptionPrefix: 'Tổng Mới - Dạng tổng (10-12)', getter: getTongMoi, sequence: ['10', '11', '12'] },
+            { typeName: 'TONG_MOI_13_15', descriptionPrefix: 'Tổng Mới - Dạng tổng (13-15)', getter: getTongMoi, sequence: ['13', '14', '15'] },
+            { typeName: 'TONG_MOI_16_18', descriptionPrefix: 'Tổng Mới - Dạng tổng (16-18)', getter: getTongMoi, sequence: ['16', '17', '18'] },
+            { typeName: 'HIEU_0_2', descriptionPrefix: 'Hiệu - Dạng hiệu (0,1,2)', getter: getHieu, sequence: ['0', '1', '2'] },
+            { typeName: 'HIEU_3_5', descriptionPrefix: 'Hiệu - Dạng hiệu (3,4,5)', getter: getHieu, sequence: ['3', '4', '5'] },
+            { typeName: 'HIEU_6_9', descriptionPrefix: 'Hiệu - Dạng hiệu (6,7,8,9)', getter: getHieu, sequence: ['6', '7', '8', '9'] },
+        ];
+
+        dangNhomConfigs.forEach(config => {
+            const sequenceSet = config.sequence;
+            const sequenceMap = new Map(sequenceSet.map((item, index) => [item, index]));
+            
+            stats[config.typeName.toLowerCase()] = analyzeValueSequence(lotteryData, dateToIndexMap, {
+                valueExtractor: (item) => config.getter(item.value),
+                valueSet: sequenceSet,
+                valueMap: sequenceMap,
                 descriptionPrefix: config.descriptionPrefix,
                 typeCondition: (item) => MAPS[config.typeName] && MAPS[config.typeName].has(item.value)
             });

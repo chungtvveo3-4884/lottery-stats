@@ -5,6 +5,7 @@ const scoringService = require('../services/scoringService');
 const scoringStatsGenerator = require('../services/scoringStatsGenerator');
 const { scoringForms } = require('../utils/lotteryScoring');
 const simulationService = require('../services/simulationService'); // Import service mới
+const statisticsController = require('../controllers/statisticsController');
 
 // API: Cung cấp dữ liệu điểm tổng hợp đã được cache
 router.get('/scoring/stats', async (req, res) => {
@@ -55,5 +56,7 @@ router.post('/simulation/run', (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+router.get('/suggestions', statisticsController.getSuggestions);
 
 module.exports = router;

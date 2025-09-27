@@ -102,6 +102,20 @@
             </div>
         </div>
 
+        <div class="card mb-4 shadow-sm bg-light">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">💡 Gợi ý thông minh</h5>
+                    <button id="suggestionBtn" class="btn btn-success">
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        Lấy gợi ý cho hôm nay
+                    </button>
+                </div>
+                <div id="suggestions-container" class="mt-3" style="display: none;">
+                    </div>
+            </div>
+        </div>
+
         <div x-data="{ open: true }" class="bg-white rounded-lg shadow-md">
              <div @click="open = !open" class="flex justify-between items-center p-4 cursor-pointer">
                 <h3 class="text-xl font-semibold text-gray-800 flex items-center">
@@ -478,45 +492,29 @@
                 { text: "Các Tổng TT - Lùi liên tiếp", category: "tong_tt_cac_tong", subcategory: "luiLienTiep" },
                 { text: "Các Tổng TT - Lùi Đều", category: "tong_tt_cac_tong", subcategory: "luiDeuLienTiep" },
 
-                { text: "Tổng (1,2) - Về liên tiếp", category: "tong_tt_1_2", subcategory: "veLienTiep" },
-                { text: "Tổng (1,2) - Về so le", category: "tong_tt_1_2", subcategory: "veSole" },
-                { text: "Tổng (1,2) - Về so le Mới", category: "tong_tt_1_2", subcategory: "veSoleMoi" },
-                { text: "Tổng (1,2) - Tiến liên tiếp", category: "tong_tt_1_2", subcategory: "tienLienTiep" },
-                { text: "Tổng (1,2) - Tiến Đều", category: "tong_tt_1_2", subcategory: "tienDeuLienTiep" },
-                { text: "Tổng (1,2) - Lùi liên tiếp", category: "tong_tt_1_2", subcategory: "luiLienTiep" },
-                { text: "Tổng (1,2) - Lùi Đều", category: "tong_tt_1_2", subcategory: "luiDeuLienTiep" },
-                // Tổng (3,4)
-                { text: "Dạng Tổng (3,4) - Về liên tiếp", category: "tong_tt_3_4", subcategory: "veLienTiep" },
-                { text: "Dạng Tổng (3,4) - Về so le", category: "tong_tt_3_4", subcategory: "veSole" },
-                { text: "Dạng Tổng (3,4) - Về so le Mới", category: "tong_tt_3_4", subcategory: "veSoleMoi" },
-                { text: "Dạng Tổng (3,4) - Tiến liên tiếp", category: "tong_tt_3_4", subcategory: "tienLienTiep" },
-                { text: "Dạng Tổng (3,4) - Tiến Đều", category: "tong_tt_3_4", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Tổng (3,4) - Lùi liên tiếp", category: "tong_tt_3_4", subcategory: "luiLienTiep" },
-                { text: "Dạng Tổng (3,4) - Lùi Đều", category: "tong_tt_3_4", subcategory: "luiDeuLienTiep" },
-                // Tổng (5,6)
-                { text: "Dạng Tổng (5,6) - Về liên tiếp", category: "tong_tt_5_6", subcategory: "veLienTiep" },
-                { text: "Dạng Tổng (5,6) - Về so le", category: "tong_tt_5_6", subcategory: "veSole" },
-                { text: "Dạng Tổng (5,6) - Về so le Mới", category: "tong_tt_5_6", subcategory: "veSoleMoi" },
-                { text: "Dạng Tổng (5,6) - Tiến liên tiếp", category: "tong_tt_5_6", subcategory: "tienLienTiep" },
-                { text: "Dạng Tổng (5,6) - Tiến Đều", category: "tong_tt_5_6", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Tổng (5,6) - Lùi liên tiếp", category: "tong_tt_5_6", subcategory: "luiLienTiep" },
-                { text: "Dạng Tổng (5,6) - Lùi Đều", category: "tong_tt_5_6", subcategory: "luiDeuLienTiep" },
-                // Tổng (7,8)
-                { text: "Dạng Tổng (7,8) - Về liên tiếp", category: "tong_tt_7_8", subcategory: "veLienTiep" },
-                { text: "Dạng Tổng (7,8) - Về so le", category: "tong_tt_7_8", subcategory: "veSole" },
-                { text: "Dạng Tổng (7,8) - Về so le Mới", category: "tong_tt_7_8", subcategory: "veSoleMoi" },
-                { text: "Dạng Tổng (7,8) - Tiến liên tiếp", category: "tong_tt_7_8", subcategory: "tienLienTiep" },
-                { text: "Dạng Tổng (7,8) - Tiến Đều", category: "tong_tt_7_8", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Tổng (7,8) - Lùi liên tiếp", category: "tong_tt_7_8", subcategory: "luiLienTiep" },
-                { text: "Dạng Tổng (7,8) - Lùi Đều", category: "tong_tt_7_8", subcategory: "luiDeuLienTiep" },
-                // Tổng (9,10)
-                { text: "Dạng Tổng (9,10) - Về liên tiếp", category: "tong_tt_9_10", subcategory: "veLienTiep" },
-                { text: "Dạng Tổng (9,10) - Về so le", category: "tong_tt_9_10", subcategory: "veSole" },
-                { text: "Dạng Tổng (9,10) - Về so le Mới", category: "tong_tt_9_10", subcategory: "veSoleMoi" },
-                { text: "Dạng Tổng (9,10) - Tiến liên tiếp", category: "tong_tt_9_10", subcategory: "tienLienTiep" },
-                { text: "Dạng Tổng (9,10) - Tiến Đều", category: "tong_tt_9_10", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Tổng (9,10) - Lùi liên tiếp", category: "tong_tt_9_10", subcategory: "luiLienTiep" },
-                { text: "Dạng Tổng (9,10) - Lùi Đều", category: "tong_tt_9_10", subcategory: "luiDeuLienTiep" },
+                { text: "Tổng (1-3) - Về liên tiếp", category: "tong_tt_1_3", subcategory: "veLienTiep" },
+                { text: "Tổng (1-3) - Về so le", category: "tong_tt_1_3", subcategory: "veSole" },
+                { text: "Tổng (1-3) - Về so le Mới", category: "tong_tt_1_3", subcategory: "veSoleMoi" },
+                { text: "Tổng (1-3) - Tiến liên tiếp", category: "tong_tt_1_3", subcategory: "tienLienTiep" },
+                { text: "Tổng (1-3) - Tiến Đều", category: "tong_tt_1_3", subcategory: "tienDeuLienTiep" },
+                { text: "Tổng (1-3) - Lùi liên tiếp", category: "tong_tt_1_3", subcategory: "luiLienTiep" },
+                { text: "Tổng (1-3) - Lùi Đều", category: "tong_tt_1_3", subcategory: "luiDeuLienTiep" },
+                
+                { text: "Dạng Tổng (4-6) - Về liên tiếp", category: "tong_tt_4_6", subcategory: "veLienTiep" },
+                { text: "Dạng Tổng (4-6) - Về so le", category: "tong_tt_4_6", subcategory: "veSole" },
+                { text: "Dạng Tổng (4-6) - Về so le Mới", category: "tong_tt_4_6", subcategory: "veSoleMoi" },
+                { text: "Dạng Tổng (4-6) - Tiến liên tiếp", category: "tong_tt_4_6", subcategory: "tienLienTiep" },
+                { text: "Dạng Tổng (4-6) - Tiến Đều", category: "tong_tt_4_6", subcategory: "tienDeuLienTiep" },
+                { text: "Dạng Tổng (4-6) - Lùi liên tiếp", category: "tong_tt_4_6", subcategory: "luiLienTiep" },
+                { text: "Dạng Tổng (4-6) - Lùi Đều", category: "tong_tt_4_6", subcategory: "luiDeuLienTiep" },
+                
+                { text: "Dạng Tổng (7-10) - Về liên tiếp", category: "tong_tt_7_10", subcategory: "veLienTiep" },
+                { text: "Dạng Tổng (7-10) - Về so le", category: "tong_tt_7_10", subcategory: "veSole" },
+                { text: "Dạng Tổng (7-10) - Về so le Mới", category: "tong_tt_7_10", subcategory: "veSoleMoi" },
+                { text: "Dạng Tổng (7-10) - Tiến liên tiếp", category: "tong_tt_7_10", subcategory: "tienLienTiep" },
+                { text: "Dạng Tổng (7-10) - Tiến Đều", category: "tong_tt_7_10", subcategory: "tienDeuLienTiep" },
+                { text: "Dạng Tổng (7-10) - Lùi liên tiếp", category: "tong_tt_7_10", subcategory: "luiLienTiep" },
+                { text: "Dạng Tổng (7-10) - Lùi Đều", category: "tong_tt_7_10", subcategory: "luiDeuLienTiep" },
 
                 // Tổng Chẵn
                 { text: "Dạng Tổng Chẵn - Về liên tiếp", category: "tong_tt_chan", subcategory: "veLienTiep" },
@@ -914,46 +912,29 @@
                 { text: "Dạng Hiệu Lẻ - Lùi liên tiếp", category: "hieu_le", subcategory: "luiLienTiep" },
                 { text: "Dạng Hiệu Lẻ - Lùi Đều", category: "hieu_le", subcategory: "luiDeuLienTiep" },
         
-                // Hiệu (0,1)
-                { text: "Dạng Hiệu (0,1) - Về liên tiếp", category: "hieu_0_1", subcategory: "veLienTiep" },
-                { text: "Dạng Hiệu (0,1) - Về so le", category: "hieu_0_1", subcategory: "veSole" },
-                { text: "Dạng Hiệu (0,1) - Về so le Mới", category: "hieu_0_1", subcategory: "veSoleMoi" },
-                { text: "Dạng Hiệu (0,1) - Tiến liên tiếp", category: "hieu_0_1", subcategory: "tienLienTiep" },
-                { text: "Dạng Hiệu (0,1) - Tiến Đều", category: "hieu_0_1", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Hiệu (0,1) - Lùi liên tiếp", category: "hieu_0_1", subcategory: "luiLienTiep" },
-                { text: "Dạng Hiệu (0,1) - Lùi Đều", category: "hieu_0_1", subcategory: "luiDeuLienTiep" },
-                // Hiệu (2,3)
-                { text: "Dạng Hiệu (2,3) - Về liên tiếp", category: "hieu_2_3", subcategory: "veLienTiep" },
-                { text: "Dạng Hiệu (2,3) - Về so le", category: "hieu_2_3", subcategory: "veSole" },
-                { text: "Dạng Hiệu (2,3) - Về so le Mới", category: "hieu_2_3", subcategory: "veSoleMoi" },
-                { text: "Dạng Hiệu (2,3) - Tiến liên tiếp", category: "hieu_2_3", subcategory: "tienLienTiep" },
-                { text: "Dạng Hiệu (2,3) - Tiến Đều", category: "hieu_2_3", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Hiệu (2,3) - Lùi liên tiếp", category: "hieu_2_3", subcategory: "luiLienTiep" },
-                { text: "Dạng Hiệu (2,3) - Lùi Đều", category: "hieu_2_3", subcategory: "luiDeuLienTiep" },
-                // Hiệu (4,5)
-                { text: "Dạng Hiệu (4,5) - Về liên tiếp", category: "hieu_4_5", subcategory: "veLienTiep" },
-                { text: "Dạng Hiệu (4,5) - Về so le", category: "hieu_4_5", subcategory: "veSole" },
-                { text: "Dạng Hiệu (4,5) - Về so le Mới", category: "hieu_4_5", subcategory: "veSoleMoi" },
-                { text: "Dạng Hiệu (4,5) - Tiến liên tiếp", category: "hieu_4_5", subcategory: "tienLienTiep" },
-                { text: "Dạng Hiệu (4,5) - Tiến Đều", category: "hieu_4_5", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Hiệu (4,5) - Lùi liên tiếp", category: "hieu_4_5", subcategory: "luiLienTiep" },
-                { text: "Dạng Hiệu (4,5) - Lùi Đều", category: "hieu_4_5", subcategory: "luiDeuLienTiep" },
-                // Hiệu (6,7)
-                { text: "Dạng Hiệu (6,7) - Về liên tiếp", category: "hieu_6_7", subcategory: "veLienTiep" },
-                { text: "Dạng Hiệu (6,7) - Về so le", category: "hieu_6_7", subcategory: "veSole" },
-                { text: "Dạng Hiệu (6,7) - Về so le Mới", category: "hieu_6_7", subcategory: "veSoleMoi" },
-                { text: "Dạng Hiệu (6,7) - Tiến liên tiếp", category: "hieu_6_7", subcategory: "tienLienTiep" },
-                { text: "Dạng Hiệu (6,7) - Tiến Đều", category: "hieu_6_7", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Hiệu (6,7) - Lùi liên tiếp", category: "hieu_6_7", subcategory: "luiLienTiep" },
-                { text: "Dạng Hiệu (6,7) - Lùi Đều", category: "hieu_6_7", subcategory: "luiDeuLienTiep" },
-                // Hiệu (8,9)
-                { text: "Dạng Hiệu (8,9) - Về liên tiếp", category: "hieu_8_9", subcategory: "veLienTiep" },
-                { text: "Dạng Hiệu (8,9) - Về so le", category: "hieu_8_9", subcategory: "veSole" },
-                { text: "Dạng Hiệu (8,9) - Về so le Mới", category: "hieu_8_9", subcategory: "veSoleMoi" },
-                { text: "Dạng Hiệu (8,9) - Tiến liên tiếp", category: "hieu_8_9", subcategory: "tienLienTiep" },
-                { text: "Dạng Hiệu (8,9) - Tiến Đều", category: "hieu_8_9", subcategory: "tienDeuLienTiep" },
-                { text: "Dạng Hiệu (8,9) - Lùi liên tiếp", category: "hieu_8_9", subcategory: "luiLienTiep" },
-                { text: "Dạng Hiệu (8,9) - Lùi Đều", category: "hieu_8_9", subcategory: "luiDeuLienTiep" }
+                { text: "Dạng Hiệu (0-2) - Về liên tiếp", category: "hieu_0_2", subcategory: "veLienTiep" },
+                { text: "Dạng Hiệu (0-2) - Về so le", category: "hieu_0_2", subcategory: "veSole" },
+                { text: "Dạng Hiệu (0-2) - Về so le Mới", category: "hieu_0_2", subcategory: "veSoleMoi" },
+                { text: "Dạng Hiệu (0-2) - Tiến liên tiếp", category: "hieu_0_2", subcategory: "tienLienTiep" },
+                { text: "Dạng Hiệu (0-2) - Tiến Đều", category: "hieu_0_2", subcategory: "tienDeuLienTiep" },
+                { text: "Dạng Hiệu (0-2) - Lùi liên tiếp", category: "hieu_0_2", subcategory: "luiLienTiep" },
+                { text: "Dạng Hiệu (0-2) - Lùi Đều", category: "hieu_0_2", subcategory: "luiDeuLienTiep" },
+
+                { text: "Dạng Hiệu (3-5) - Về liên tiếp", category: "hieu_3_5", subcategory: "veLienTiep" },
+                { text: "Dạng Hiệu (3-5) - Về so le", category: "hieu_3_5", subcategory: "veSole" },
+                { text: "Dạng Hiệu (3-5) - Về so le Mới", category: "hieu_3_5", subcategory: "veSoleMoi" },
+                { text: "Dạng Hiệu (3-5) - Tiến liên tiếp", category: "hieu_3_5", subcategory: "tienLienTiep" },
+                { text: "Dạng Hiệu (3-5) - Tiến Đều", category: "hieu_3_5", subcategory: "tienDeuLienTiep" },
+                { text: "Dạng Hiệu (3-5) - Lùi liên tiếp", category: "hieu_3_5", subcategory: "luiLienTiep" },
+                { text: "Dạng Hiệu (3-5) - Lùi Đều", category: "hieu_3_5", subcategory: "luiDeuLienTiep" },
+
+                { text: "Dạng Hiệu (6-9) - Về liên tiếp", category: "hieu_6_9", subcategory: "veLienTiep" },
+                { text: "Dạng Hiệu (6-9) - Về so le", category: "hieu_6_9", subcategory: "veSole" },
+                { text: "Dạng Hiệu (6-9) - Về so le Mới", category: "hieu_6_9", subcategory: "veSoleMoi" },
+                { text: "Dạng Hiệu (6-9) - Tiến liên tiếp", category: "hieu_6_9", subcategory: "tienLienTiep" },
+                { text: "Dạng Hiệu (6-9) - Tiến Đều", category: "hieu_6_9", subcategory: "tienDeuLienTiep" },
+                { text: "Dạng Hiệu (6-9) - Lùi liên tiếp", category: "hieu_6_9", subcategory: "luiLienTiep" },
+                { text: "Dạng Hiệu (6-9) - Lùi Đều", category: "hieu_6_9", subcategory: "luiDeuLienTiep" }
             ],
         };
         const BASE_URL = window.location.origin;
@@ -1289,6 +1270,94 @@
 
             form.addEventListener('submit', handleStatsSubmit);
             initializePage();
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const suggestionBtn = document.getElementById('suggestionBtn');
+            const suggestionsContainer = document.getElementById('suggestions-container');
+            const spinner = suggestionBtn.querySelector('.spinner-border');
+
+            suggestionBtn.addEventListener('click', async () => {
+                // Hiển thị spinner và vô hiệu hóa nút
+                spinner.classList.remove('d-none');
+                suggestionBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/api/suggestions');
+                    if (!response.ok) {
+                        throw new Error('Lỗi mạng khi tải gợi ý.');
+                    }
+                    const data = await response.json();
+                    renderSuggestions(data);
+                } catch (error) {
+                    console.error('Lỗi khi tải gợi ý:', error);
+                    suggestionsContainer.innerHTML = `<div class="p-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">Không thể tải gợi ý. Vui lòng thử lại.</div>`;
+                    suggestionsContainer.style.display = 'block';
+                } finally {
+                    // Ẩn spinner và kích hoạt lại nút
+                    spinner.classList.add('d-none');
+                    suggestionBtn.disabled = false;
+                }
+            });
+
+            function renderSuggestions(data) {
+                if (!data || !data.explanations || data.explanations.length === 0) {
+                    suggestionsContainer.innerHTML = `<div class="p-4 text-sm text-blue-700 bg-blue-100 rounded-lg" role="alert">Hiện tại không có gợi ý nào nổi bật.</div>`;
+                    suggestionsContainer.style.display = 'block';
+                    return;
+                }
+
+                // Phần tổng hợp các số NÊN ÔM
+                let numbersToBetHtml = '';
+                if (data.numbersToBet && data.numbersToBet.length > 0) {
+                    data.numbersToBet.forEach(num => {
+                        numbersToBetHtml += `<span class="inline-block bg-red-600 text-white text-sm font-semibold mr-2 px-2.5 py-1 rounded-full">${String(num).padStart(2, '0')}</span>`;
+                    });
+                } else {
+                    numbersToBetHtml = '<span class="text-gray-500">Không có số nào được đề xuất để ôm.</span>';
+                }
+
+                // Phần giải thích chi tiết
+                let explanationsHtml = '';
+                data.explanations.forEach(item => {
+                    const isBetOn = item.type === 'bet-on';
+                    const cardBorderClass = isBetOn ? 'border-green-500' : 'border-yellow-500';
+                    const headerBgClass = isBetOn ? 'bg-green-100' : 'bg-yellow-100';
+                    const titleClass = isBetOn ? 'text-green-800' : 'text-yellow-800';
+                    const numberBadgeClass = isBetOn ? 'bg-green-600' : 'bg-gray-400';
+
+                    let numbersHtml = '';
+                    item.numbers.forEach(num => {
+                        numbersHtml += `<span class="inline-block ${numberBadgeClass} text-white text-xs font-semibold mr-2 px-2.5 py-1 rounded-full">${String(num).padStart(2, '0')}</span>`;
+                    });
+
+                    explanationsHtml += `
+                        <div class="bg-white rounded-lg shadow-sm border-l-4 ${cardBorderClass} mb-4">
+                            <div class="p-4 rounded-t-lg ${headerBgClass}">
+                                <strong class="font-semibold ${titleClass}">${item.title}</strong>
+                            </div>
+                            <div class="p-4">
+                                <p class="text-gray-700 text-sm mb-3">${item.explanation}</p>
+                                <p class="text-xs font-semibold text-gray-600 mb-2">CÁC SỐ LIÊN QUAN:</p>
+                                <div>${numbersHtml}</div>
+                            </div>
+                        </div>`;
+                });
+
+                // Gộp tất cả lại
+                const finalHtml = `
+                    <h6 class="text-md font-semibold text-gray-800 mb-2">TỔNG HỢP CÁC SỐ NÊN ÔM:</h6>
+                    <div class="mb-4">${numbersToBetHtml}</div>
+                    <hr class="my-4">
+                    <h5 class="text-lg font-bold text-gray-900 mb-3">GIẢI THÍCH CHI TIẾT:</h5>
+                    ${explanationsHtml}
+                `;
+
+                suggestionsContainer.innerHTML = finalHtml;
+                suggestionsContainer.style.display = 'block';
+            }
         });
     </script>
 </body>

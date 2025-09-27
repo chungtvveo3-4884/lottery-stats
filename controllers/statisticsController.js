@@ -1,4 +1,5 @@
 const statisticsService = require('../services/statisticsService');
+const suggestionService = require('../services/suggestionService'); 
 
 /**
  * Handler chung để lấy dữ liệu thống kê
@@ -35,5 +36,19 @@ exports.getQuickStats = async (req, res) => {
     } catch (error) {
         console.error('Lỗi khi lấy thống kê nhanh:', error);
         res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+    }
+};
+
+exports.getSuggestions = async (req, res) => {
+    try {
+        // Chỉ cần lấy chuỗi nóng và thống kê tổng thể
+        const recentStreaks = await statisticsService.getRecentStreaks();
+        const overallStats = await statisticsService.getQuickStats();
+        
+        const suggestions = await suggestionService.generateSuggestions(recentStreaks, overallStats);
+        res.json(suggestions);
+    } catch (error) {
+        console.error('Lỗi khi tạo gợi ý:', error);
+        res.status(500).json({ message: "Lỗi máy chủ nội bộ khi tạo gợi ý" });
     }
 };

@@ -194,9 +194,90 @@ async function getQuickStats() {
     return quickStats;
 };
 
+/**
+ * Lấy toàn bộ dữ liệu thống kê, sử dụng cache nếu có.
+ */
+async function getAllStreaks() {
+    if (!cachedStats) {
+        await getStatsData();
+    }
+    return cachedStats;
+}
+
+/**
+ * Lấy các chuỗi đang diễn ra gần đây.
+ */
+async function getRecentStreaks(days = 30) {
+    const allStreaks = await getAllStreaks();
+    const recentStreaks = { streaks: {} };
+
+    for (const key in allStreaks) {
+        const streakInfo = allStreaks[key];
+        if (streakInfo.current) {
+            const currentLength = streakInfo.current.length;
+            if (!recentStreaks.streaks[currentLength]) {
+                recentStreaks.streaks[currentLength] = [];
+            }
+            recentStreaks.streaks[currentLength].push({
+                statName: key,
+                statDescription: streakInfo.description,
+                details: [streakInfo.current] 
+            });
+        }
+    }
+    return recentStreaks;
+}
+
+/**
+ * Lấy thống kê chi tiết cho một loại chuỗi với độ dài cụ thể.
+ * (Hàm đã được cải tiến để ổn định hơn)
+ */
+async function getStreakStats(statName, exactLength) {
+    try {
+        const allStreaks = await getAllStreaks();
+        const streakData = allStreaks[statName];
+        
+        if (!streakData || !streakData.streaks) {
+            return { runs: [] };
+        }
+
+        const runs = streakData.streaks
+            .filter(streak => streak.length === exactLength)
+            .map(streak => ({ date: streak.startDate })); // Lấy ngày bắt đầu của chuỗi
+
+        // Sắp xếp các lần chạy theo ngày để tính toán cho chính xác
+        return {
+            runs: runs.sort((a, b) => new Date(a.date) - new Date(b.date)),
+        };
+    } catch (error) {
+        console.error(`Lỗi khi lấy getStreakStats cho ${statName}:`, error);
+        return { runs: [] }; // Trả về mảng rỗng nếu có lỗi
+    }
+}
+
+/**
+ * Lấy kết quả xổ số của ngày gần nhất.
+ */
+async function getLatestLotteryResult() {
+    try {
+        const data = await fs.readFile(RAW_DATA_PATH, 'utf-8');
+        const results = JSON.parse(data);
+        // Sắp xếp để đảm bảo kết quả cuối cùng là mới nhất
+        results.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return results[0]; // Trả về kết quả của ngày gần nhất
+    } catch (error) {
+        console.error('Lỗi khi đọc file dữ liệu kết quả xổ số:', error);
+        return null;
+    }
+}
+
 module.exports = {
     getStatsData,
     getFilteredStreaks,
     getQuickStats,
-    clearCache
+    clearCache,
+    getAllStreaks,
+    getRecentStreaks,
+    getLatestLotteryResult, // <-- ĐÃ THÊM VÀO EXPORT
+    getStreakStats // Thêm dòng này
 };
