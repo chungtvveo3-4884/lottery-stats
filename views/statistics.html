@@ -102,20 +102,6 @@
             </div>
         </div>
 
-        <div class="card mb-4 shadow-sm bg-light">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">💡 Gợi ý thông minh</h5>
-                    <button id="suggestionBtn" class="btn btn-success">
-                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                        Lấy gợi ý cho hôm nay
-                    </button>
-                </div>
-                <div id="suggestions-container" class="mt-3" style="display: none;">
-                    </div>
-            </div>
-        </div>
-
         <div x-data="{ open: true }" class="bg-white rounded-lg shadow-md">
              <div @click="open = !open" class="flex justify-between items-center p-4 cursor-pointer">
                 <h3 class="text-xl font-semibold text-gray-800 flex items-center">

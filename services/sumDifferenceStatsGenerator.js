@@ -284,20 +284,22 @@ function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMa
             description: `${descriptionPrefix} - Về so le`
           });
 
-
-    const valueBasedNumberMap = new Map(data.filter(effectiveTypeCondition).map(item => [item.value, true]));
-
     Object.assign(results, {
         veSole: veSoleResult,
-        veSoleMoi: {
-            description: `${descriptionPrefix} - Về so le (mới)`,
-            ...findAlternatingTypeStreaksNew(data, dateMap, valueBasedNumberMap)
-        },
         tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến liên tiếp` }),
         tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
         luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
         luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
     });
+
+    // [FIX 1] Chỉ tính "so le mới" khi phân tích theo dạng (có typeCondition)
+    if (isGroupAnalysis) {
+        const valueBasedNumberMap = new Map(data.filter(effectiveTypeCondition).map(item => [item.value, true]));
+        results.veSoleMoi = {
+            description: `${descriptionPrefix} - Về so le (mới)`,
+            ...findAlternatingTypeStreaksNew(data, dateMap, valueBasedNumberMap)
+        };
+    }
 
     return results;
 }
@@ -377,28 +379,33 @@ async function generateSumDifferenceStats() {
             typeCondition: (item) => getHieu(item.value) % 2 !== 0
         });
 
+        // [FIX 2] Cập nhật cấu hình để chọn đúng bộ so sánh tiến/lùi đều
         const dangTongConfigs = [
-            { typeName: 'TONG_MOI_CHAN_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Chẵn', getter: getTongMoi, sequenceSet: SETS.TONG_MOI_SEQUENCE, sequenceMap: MAPS.TONG_MOI_SEQUENCE },
-            { typeName: 'TONG_MOI_CHAN_LE', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Lẻ', getter: getTongMoi, sequenceSet: SETS.TONG_MOI_SEQUENCE, sequenceMap: MAPS.TONG_MOI_SEQUENCE },
-            { typeName: 'TONG_MOI_LE_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Lẻ-Chẵn', getter: getTongMoi, sequenceSet: SETS.TONG_MOI_SEQUENCE, sequenceMap: MAPS.TONG_MOI_SEQUENCE },
-            { typeName: 'TONG_MOI_LE_LE', descriptionPrefix: 'Tổng Mới - Dạng Lẻ-Lẻ', getter: getTongMoi, sequenceSet: SETS.TONG_MOI_SEQUENCE, sequenceMap: MAPS.TONG_MOI_SEQUENCE },
-            { typeName: 'TONG_TT_CHAN_CHAN', descriptionPrefix: 'Tổng TT - Dạng Chẵn-Chẵn', getter: getTongTT, sequenceSet: SETS.TONG_TT_SEQUENCE, sequenceMap: MAPS.TONG_TT_SEQUENCE },
-            { typeName: 'TONG_TT_CHAN_LE', descriptionPrefix: 'Tổng TT - Dạng Chẵn-Lẻ', getter: getTongTT, sequenceSet: SETS.TONG_TT_SEQUENCE, sequenceMap: MAPS.TONG_TT_SEQUENCE },
-            { typeName: 'TONG_TT_LE_CHAN', descriptionPrefix: 'Tổng TT - Dạng Lẻ-Chẵn', getter: getTongTT, sequenceSet: SETS.TONG_TT_SEQUENCE, sequenceMap: MAPS.TONG_TT_SEQUENCE },
-            { typeName: 'TONG_TT_LE_LE', descriptionPrefix: 'Tổng TT - Dạng Lẻ-Lẻ', getter: getTongTT, sequenceSet: SETS.TONG_TT_SEQUENCE, sequenceMap: MAPS.TONG_TT_SEQUENCE },
+            { typeName: 'TONG_MOI_CHAN_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Chẵn', getter: getTongMoi, sequenceType: 'CHAN' },
+            { typeName: 'TONG_MOI_CHAN_LE', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Lẻ', getter: getTongMoi, sequenceType: 'LE' },
+            { typeName: 'TONG_MOI_LE_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Lẻ-Chẵn', getter: getTongMoi, sequenceType: 'CHAN' },
+            { typeName: 'TONG_MOI_LE_LE', descriptionPrefix: 'Tổng Mới - Dạng Lẻ-Lẻ', getter: getTongMoi, sequenceType: 'LE' },
+            { typeName: 'TONG_TT_CHAN_CHAN', descriptionPrefix: 'Tổng TT - Dạng Chẵn-Chẵn', getter: getTongTT, sequenceType: 'CHAN' },
+            { typeName: 'TONG_TT_CHAN_LE', descriptionPrefix: 'Tổng TT - Dạng Chẵn-Lẻ', getter: getTongTT, sequenceType: 'LE' },
+            { typeName: 'TONG_TT_LE_CHAN', descriptionPrefix: 'Tổng TT - Dạng Lẻ-Chẵn', getter: getTongTT, sequenceType: 'CHAN' },
+            { typeName: 'TONG_TT_LE_LE', descriptionPrefix: 'Tổng TT - Dạng Lẻ-Lẻ', getter: getTongTT, sequenceType: 'LE' },
         ];
 
         dangTongConfigs.forEach(config => {
+            const isTongTT = config.typeName.startsWith('TONG_TT');
+            const tongPrefix = isTongTT ? 'TONG_TT' : 'TONG_MOI';
+            const sequenceSet = config.sequenceType === 'CHAN' ? SETS[`${tongPrefix}_CHAN_SEQUENCE`] : SETS[`${tongPrefix}_LE_SEQUENCE`];
+            const sequenceMap = config.sequenceType === 'CHAN' ? MAPS[`${tongPrefix}_CHAN_SEQUENCE`] : MAPS[`${tongPrefix}_LE_SEQUENCE`];
+
             stats[config.typeName.toLowerCase()] = analyzeValueSequence(lotteryData, dateToIndexMap, {
                 valueExtractor: (item) => config.getter(item.value),
-                valueSet: config.sequenceSet,
-                valueMap: config.sequenceMap,
+                valueSet: sequenceSet,
+                valueMap: sequenceMap,
                 descriptionPrefix: config.descriptionPrefix,
                 typeCondition: (item) => MAPS[config.typeName] && MAPS[config.typeName].has(item.value)
             });
         });
 
-        // [ADDED] Xử lý các dạng nhóm tổng/hiệu bằng analyzeValueSequence
         const dangNhomConfigs = [
             { typeName: 'TONG_TT_1_3', descriptionPrefix: 'Tổng TT - Dạng tổng (1,2,3)', getter: getTongTT, sequence: ['1', '2', '3'] },
             { typeName: 'TONG_TT_4_6', descriptionPrefix: 'Tổng TT - Dạng tổng (4,5,6)', getter: getTongTT, sequence: ['4', '5', '6'] },
