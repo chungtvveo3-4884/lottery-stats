@@ -97,7 +97,7 @@ const startServer = async () => {
         });
 
         // Lên lịch tác vụ sau khi server đã chạy
-        cron.schedule('45 6,18 * * *', async () => {
+        cron.schedule('01 7,19 * * *', async () => {
             console.log('--- [CRON JOB] Bắt đầu tác vụ cập nhật dữ liệu hàng ngày ---');
             await updateJsonFile();
         }, {

@@ -5,11 +5,11 @@ const axios = require('axios');
 const generateNumberStats = require('./services/statisticsGenerator');
 const generateHeadTailStats = require('./services/headTailStatsGenerator');
 const generateSumDifferenceStats = require('./services/sumDifferenceStatsGenerator'); 
-const { generateScoringStats } = require('./services/scoringStatsGenerator'); 
 const statisticsService = require('./services/statisticsService'); // <-- Thêm dòng này
 const DATA_FILE = path.join(__dirname, 'data', 'xsmb-2-digits.json');
 const scoringService = require('./services/scoringService'); // <-- THÊM DÒNG NÀY
 const lotteryService = require('./services/lotteryService'); // Import service mới
+const { checkAndUpdateHistory, analyzeAndSavePrediction } = require('./services/dailyAnalysisService'); 
 
 // URL API để lấy dữ liệu mới nhất
 const API_URL = 'https://raw.githubusercontent.com/khiemdoan/vietnam-lottery-xsmb-analysis/refs/heads/main/data/xsmb-2-digits.json';
@@ -40,9 +40,13 @@ const updateJsonFile = async () => {
             // Nạp lại cache và quan trọng nhất là "await" cho nó xong
             await statisticsService.getStatsData();
             console.log('[CACHE] Đã nạp lại cache thống kê mới.');
-            
+            await lotteryService.loadRawData();
             // Tải lại các dịch vụ khác nếu cần
             await scoringService.loadScoringStatistics();
+            // 2. Đối chiếu kết quả cũ (nếu có)
+            await checkAndUpdateHistory();
+            // 3. Tạo và lưu dự đoán mới cho ngày mai
+            await analyzeAndSavePrediction();
             console.log('[SCORING] Đã tính toán và nạp lại cache điểm.');
 
             return true;
