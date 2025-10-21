@@ -9,7 +9,7 @@ const {
     getHieu, 
     findNextInSet, 
     findPreviousInSet 
-} = require('../utils/numberAnalysis');
+} = require('../utils/numberAnalysis'); // Giả định utils/numberAnalysis.js đã có TONG_MOI_18_0_1
 
 const DATA_FILE_PATH = path.join(__dirname, '..', 'data', 'xsmb-2-digits.json');
 const OUTPUT_FILE_PATH = path.join(__dirname, '..', 'data', 'statistics', 'sum_difference_stats.json');
@@ -46,14 +46,16 @@ function createStreakObject(data, dateMap, streak, typeSpecificData = {}) {
     const startIndex = dateMap.get(firstItem.date);
     const endIndex = dateMap.get(lastItem.date);
     if (startIndex === undefined || endIndex === undefined) return null;
-    const fullSequence = data.slice(startIndex, endIndex + 1);
+    // Lấy fullSequence dựa trên index thực tế, không phải độ dài chuỗi tìm được
+    const actualFullSequence = data.slice(startIndex, endIndex + 1);
     return {
         startDate: firstItem.date,
         endDate: lastItem.date,
-        length: fullSequence.length,
+        // Độ dài fullSequence mới là độ dài thực tế
+        length: actualFullSequence.length,
         values: streak.map(item => item.value),
         dates: streak.map(item => item.date),
-        fullSequence,
+        fullSequence: actualFullSequence, // Sử dụng fullSequence đúng
         ...typeSpecificData
     };
 }
@@ -62,19 +64,27 @@ function createStreakObject(data, dateMap, streak, typeSpecificData = {}) {
 
 function findStreaks(data, dateMap, { condition, description }) {
     const allStreaks = [];
-    for (let i = 0; i < data.length - 1; i++) {
-        if (!condition(data[i], data[i])) continue;
+    let i = 0;
+    while (i < data.length - 1) {
+        if (!condition(data[i], data[i])) {
+            i++;
+            continue;
+        }
         let currentStreak = [data[i]];
-        for (let j = i; j < data.length - 1; j++) {
+        let j = i;
+        while (j < data.length - 1) {
             if (isConsecutive(data[j].date, data[j + 1].date) && condition(data[j], data[j + 1])) {
                 currentStreak.push(data[j + 1]);
+                j++;
             } else {
                 break;
             }
         }
         if (currentStreak.length > 1) {
             allStreaks.push(createStreakObject(data, dateMap, currentStreak));
-            i += currentStreak.length - 1;
+            i = j + 1; // Nhảy tới sau chuỗi vừa tìm thấy
+        } else {
+            i++; // Chỉ tăng 1 nếu không tìm thấy chuỗi
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
@@ -82,127 +92,151 @@ function findStreaks(data, dateMap, { condition, description }) {
 
 function findAlternatingStreaks(data, dateMap, { condition, description, valueExtractor }) {
      const allStreaks = [];
-     const processedStreaks = new Set();
-     for (let i = 0; i < data.length - 2; i++) {
-        if (!condition(data[i])) continue; 
+     let i = 0;
+     while (i < data.length - 2) {
+        if (!condition(data[i])) {
+            i++;
+            continue;
+        } 
 
         const startValue = valueExtractor(data[i]);
-        if (isConsecutive(data[i].date, data[i + 1].date) && isConsecutive(data[i + 1].date, data[i + 2].date)) {
-            if (condition(data[i+2]) && startValue === valueExtractor(data[i+2])) {
-                const streakKey = `${startValue}-${data[i].date}`;
-                if (processedStreaks.has(streakKey)) continue;
-                let streak = [data[i], data[i+2]];
+        const dayB = data[i+1];
+        const dayC = data[i+2];
+
+        if (dayB && dayC && isConsecutive(data[i].date, dayB.date) && isConsecutive(dayB.date, dayC.date)) {
+            if (condition(dayC) && startValue === valueExtractor(dayC)) {
+                let streak = [data[i], dayC];
                 let lastIndex = i + 2;
                 while(lastIndex < data.length - 2) {
-                    const nextPossibleIndex = lastIndex + 2;
-                    if (data[nextPossibleIndex] && data[lastIndex + 1] && isConsecutive(data[lastIndex].date, data[lastIndex + 1].date) && isConsecutive(data[lastIndex + 1].date, data[nextPossibleIndex].date) && condition(data[nextPossibleIndex]) && startValue === valueExtractor(data[nextPossibleIndex])) {
-                        streak.push(data[nextPossibleIndex]);
-                        lastIndex = nextPossibleIndex;
+                    const nextDayB = data[lastIndex + 1];
+                    const nextDayC = data[lastIndex + 2];
+                    if (nextDayB && nextDayC && isConsecutive(data[lastIndex].date, nextDayB.date) && isConsecutive(nextDayB.date, nextDayC.date) && condition(nextDayC) && startValue === valueExtractor(nextDayC)) {
+                        streak.push(nextDayC);
+                        lastIndex += 2;
                     } else {
                         break;
                     }
                 }
                 if (streak.length >= 2) {
-                    const finalStreak = createStreakObject(data, dateMap, streak, { value: `${description.split(' ')[0]} ${startValue}` });
-                    if(finalStreak) {
-                        allStreaks.push(finalStreak);
-                        streak.forEach(item => processedStreaks.add(`${startValue}-${item.date}`));
-                    }
+                    allStreaks.push(createStreakObject(data, dateMap, streak, { value: `${description.split(' ')[0]} ${startValue}` }));
+                    i = lastIndex; // Nhảy tới cuối chuỗi vừa tìm được
+                    continue; // Bắt đầu vòng lặp tiếp theo từ vị trí mới
                 }
             }
+        }
+        i++; // Chỉ tăng 1 nếu không tìm thấy chuỗi bắt đầu từ i
+    }
+    return { description, streaks: allStreaks.filter(Boolean) };
+}
+
+
+// [FIXED] Hàm này giờ dùng cho "Các Tổng - Về so le" và "Các Tổng - Về so le mới"
+function findAlternatingValueStreaks(data, dateMap, { valueExtractor, description, isNewType }) {
+    const allStreaks = [];
+    const processedStreaks = new Set(); 
+
+    for (let i = 0; i < data.length - 2; i++) {
+        const startValue = valueExtractor(data[i]);
+        const streakKey = `${startValue}-${data[i].date}`;
+
+        if (processedStreaks.has(streakKey)) continue;
+
+        let streak = [data[i]];
+        let lastIndex = i;
+
+        while (lastIndex < data.length - 2) {
+            const dayB = data[lastIndex + 1];
+            const dayC = data[lastIndex + 2];
+            
+            if (dayB && dayC && isConsecutive(data[lastIndex].date, dayB.date) && isConsecutive(dayB.date, dayC.date)) {
+                const valueB = valueExtractor(dayB);
+                const valueC = valueExtractor(dayC);
+                
+                // Điều kiện của "so le mới" là ngày ở giữa phải khác giá trị
+                const newTypeCondition = isNewType ? valueB !== startValue : true;
+
+                if (valueC === startValue && newTypeCondition) {
+                    streak.push(dayC);
+                    lastIndex += 2;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        if (streak.length >= 2) {
+            allStreaks.push(createStreakObject(data, dateMap, streak, { value: startValue }));
+            streak.forEach(item => processedStreaks.add(`${startValue}-${item.date}`));
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
+
+// [FIXED] Sửa lại logic để không bỏ sót chuỗi
 function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     const allStreaks = [];
-    const processedDates = new Set();
     for (let i = 0; i < data.length - 2; i++) {
-        const dayA = data[i];
-        
-        if (processedDates.has(dayA.date)) continue;
+        if (!condition(data[i])) continue;
 
-        const dayB = data[i + 1];
-        const dayC = data[i + 2];
-
-        if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
-            condition(dayA) &&
-            condition(dayC)) 
-        {
-            let streak = [dayA, dayC];
-            let lastIndex = i + 2;
-
-            while (lastIndex < data.length - 2) {
-                const nextDay = data[lastIndex + 1];
-                const nextStreakDay = data[lastIndex + 2];
-
-                if (nextDay && nextStreakDay && 
-                    isConsecutive(data[lastIndex].date, nextDay.date) && 
-                    isConsecutive(nextDay.date, nextStreakDay.date) && 
-                    condition(nextStreakDay))
-                {
-                    streak.push(nextStreakDay);
-                    lastIndex += 2;
-                } else {
-                    break;
-                }
+        let streak = [data[i]];
+        let currentIndex = i;
+        while (currentIndex < data.length - 2) {
+            const nextIndex = currentIndex + 2;
+            if (data[currentIndex + 1] && data[nextIndex] && isConsecutive(data[currentIndex].date, data[currentIndex + 1].date) && isConsecutive(data[currentIndex + 1].date, data[nextIndex].date) && condition(data[nextIndex])) {
+                streak.push(data[nextIndex]);
+                currentIndex = nextIndex;
+            } else {
+                break;
             }
-            
-            if (streak.length >= 2) {
-                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                streak.forEach(item => processedDates.add(item.date));
-            }
+        }
+        if (streak.length >= 2) {
+            allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
+// [FIXED] Sửa lại logic để không bỏ sót chuỗi
 function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     const allStreaks = [];
-    const processedDates = new Set(); 
-
     for (let i = 0; i < data.length - 2; i++) {
-        const dayA = data[i];
-        
-        if (processedDates.has(dayA.date)) continue;
+        if (!numberMap.has(data[i].value)) continue;
 
-        const dayB = data[i+1];
-        const dayC = data[i+2];
-
-        if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
-            numberMap.has(dayA.value) && 
-            !numberMap.has(dayB.value) && 
-            numberMap.has(dayC.value)) 
-        {
-            let streak = [dayA, dayC];
-            let lastIndex = i + 2;
-
-            while (lastIndex < data.length - 2) {
-                const nextDay = data[lastIndex + 1];
-                const nextStreakDay = data[lastIndex + 2];
-                if (nextDay && nextStreakDay && isConsecutive(data[lastIndex].date, nextDay.date) && isConsecutive(nextDay.date, nextStreakDay.date) && !numberMap.has(nextDay.value) && numberMap.has(nextStreakDay.value)) {
-                    streak.push(nextStreakDay);
-                    lastIndex += 2;
-                } else {
-                    break;
-                }
+        let streak = [data[i]];
+        let currentIndex = i;
+        while (currentIndex < data.length - 2) {
+            const nextIndex = currentIndex + 2;
+            const dayB = data[currentIndex + 1];
+            const dayC = data[nextIndex];
+            if (dayB && dayC && isConsecutive(data[currentIndex].date, dayB.date) && isConsecutive(dayB.date, dayC.date) && !numberMap.has(dayB.value) && numberMap.has(dayC.value)) {
+                streak.push(dayC);
+                currentIndex = nextIndex;
+            } else {
+                break;
             }
-            if (streak.length >= 2) {
-                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                streak.forEach(item => processedDates.add(item.date));
-            }
+        }
+        if (streak.length >= 2) {
+            allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
         }
     }
     return { streaks: allStreaks.filter(Boolean) };
 }
 
+
 function findSequence(data, dateMap, { isProgressive, isUniform, valueExtractor, numberSet, indexMap, typeCondition, description }) {
     const allStreaks = [];
-    for (let i = 0; i < data.length - 1; i++) {
-        if (!typeCondition(data[i])) continue;
+    let i = 0;
+    while (i < data.length - 1) {
+        if (!typeCondition(data[i])) {
+            i++;
+            continue;
+        }
         let currentStreak = [data[i]];
-        for (let j = i; j < data.length - 1; j++) {
+        let j = i;
+        while (j < data.length - 1) {
             const currentItem = data[j];
             const nextItem = data[j + 1];
             if (!isConsecutive(currentItem.date, nextItem.date) || !typeCondition(nextItem)) {
@@ -220,17 +254,21 @@ function findSequence(data, dateMap, { isProgressive, isUniform, valueExtractor,
             }
             if (valueCondition) {
                 currentStreak.push(nextItem);
+                j++;
             } else {
                 break;
             }
         }
         if (currentStreak.length > 1) {
             allStreaks.push(createStreakObject(data, dateMap, currentStreak));
-            i += currentStreak.length - 2;
+             i = j; // Nhảy tới cuối chuỗi
+        } else {
+            i++;
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
 }
+
 
 function analyzeNumberSet(data, dateMap, { typeName, descriptionPrefix }) {
     const typeCondition = (item) => MAPS[typeName] && MAPS[typeName].has(item.value);
@@ -254,17 +292,10 @@ function analyzeNumberSet(data, dateMap, { typeName, descriptionPrefix }) {
 function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMap, descriptionPrefix, typeCondition }) {
     const isGroupAnalysis = !!typeCondition;
     const effectiveTypeCondition = typeCondition || (() => true);
-
     const results = {};
 
-    const consecutiveCondition = isGroupAnalysis
-        ? (a, b) => effectiveTypeCondition(a) && effectiveTypeCondition(b)
-        : (a, b) => valueExtractor(a) === valueExtractor(b);
-
-    results.veLienTiep = findStreaks(data, dateMap, {
-        condition: consecutiveCondition,
-        description: `${descriptionPrefix} - Về liên tiếp`
-    });
+    const consecutiveCondition = isGroupAnalysis ? (a, b) => effectiveTypeCondition(a) && effectiveTypeCondition(b) : (a, b) => valueExtractor(a) === valueExtractor(b);
+    results.veLienTiep = findStreaks(data, dateMap, { condition: consecutiveCondition, description: `${descriptionPrefix} - Về liên tiếp` });
 
     if (isGroupAnalysis) {
         results.veCungGiaTri = findStreaks(data, dateMap, {
@@ -272,38 +303,28 @@ function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMa
             description: `${descriptionPrefix} - Về cùng giá trị`
         });
     }
-    
-    const veSoleResult = isGroupAnalysis
-        ? findAlternatingTypeStreaks(data, dateMap, {
-            condition: effectiveTypeCondition,
-            description: `${descriptionPrefix} - Về so le`
-          })
-        : findAlternatingStreaks(data, dateMap, {
-            condition: effectiveTypeCondition,
-            valueExtractor,
-            description: `${descriptionPrefix} - Về so le`
-          });
+    // [FIXED] Phân luồng logic cho "so le" và "so le mới"
+    if (isGroupAnalysis) {
+        results.veSole = findAlternatingTypeStreaks(data, dateMap, { condition: effectiveTypeCondition, description: `${descriptionPrefix} - Về so le` });
+        const valueBasedNumberMap = new Map(data.filter(effectiveTypeCondition).map(item => [item.value, true]));
+        results.veSoleMoi = {
+            description: `${descriptionPrefix} - Về so le (mới)`,
+            ...findAlternatingTypeStreaksNew(data, dateMap, valueBasedNumberMap)
+        };
+    } else {
+        results.veSole = findAlternatingValueStreaks(data, dateMap, { valueExtractor, description: `${descriptionPrefix} - Về so le`, isNewType: false });
+        results.veSoleMoi = findAlternatingValueStreaks(data, dateMap, { valueExtractor, description: `${descriptionPrefix} - Về so le (mới)`, isNewType: true });
+    }
 
     Object.assign(results, {
-        veSole: veSoleResult,
         tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến liên tiếp` }),
         tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
         luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
         luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
     });
 
-    // [FIX 1] Chỉ tính "so le mới" khi phân tích theo dạng (có typeCondition)
-    if (isGroupAnalysis) {
-        const valueBasedNumberMap = new Map(data.filter(effectiveTypeCondition).map(item => [item.value, true]));
-        results.veSoleMoi = {
-            description: `${descriptionPrefix} - Về so le (mới)`,
-            ...findAlternatingTypeStreaksNew(data, dateMap, valueBasedNumberMap)
-        };
-    }
-
     return results;
 }
-
 
 async function generateSumDifferenceStats() {
     try {
@@ -319,7 +340,6 @@ async function generateSumDifferenceStats() {
 
         const stats = {};
 
-        // === CÁC DẠNG XÉT CHUỖI SỐ (dùng analyzeNumberSet) ===
         const numberSetConfigs = [
             ...Array.from({ length: 10 }, (_, i) => ({ typeName: `TONG_TT_${i + 1}`, descriptionPrefix: `Tổng TT - Cùng tổng ${i + 1}` })),
             ...Array.from({ length: 19 }, (_, i) => ({ typeName: `TONG_MOI_${i}`, descriptionPrefix: `Tổng Mới - Cùng tổng ${i}` })),
@@ -329,7 +349,6 @@ async function generateSumDifferenceStats() {
             stats[config.typeName.toLowerCase()] = analyzeNumberSet(lotteryData, dateToIndexMap, config);
         });
 
-        // === CÁC DẠNG XÉT CHUỖI GIÁ TRỊ TỔNG/HIỆU (dùng analyzeValueSequence) ===
         stats['tong_tt_cac_tong'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getTongTT(item.value), valueSet: SETS.TONG_TT_SEQUENCE, valueMap: MAPS.TONG_TT_SEQUENCE, descriptionPrefix: 'Tổng TT - Các tổng' });
         stats['tong_moi_cac_tong'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getTongMoi(item.value), valueSet: SETS.TONG_MOI_SEQUENCE, valueMap: MAPS.TONG_MOI_SEQUENCE, descriptionPrefix: 'Tổng Mới - Các tổng' });
         stats['hieu_cac_hieu'] = analyzeValueSequence(lotteryData, dateToIndexMap, { valueExtractor: (item) => getHieu(item.value), valueSet: SETS.HIEU_SEQUENCE, valueMap: MAPS.HIEU_SEQUENCE, descriptionPrefix: 'Các Hiệu' });
@@ -379,7 +398,6 @@ async function generateSumDifferenceStats() {
             typeCondition: (item) => getHieu(item.value) % 2 !== 0
         });
 
-        // [FIX 2] Cập nhật cấu hình để chọn đúng bộ so sánh tiến/lùi đều
         const dangTongConfigs = [
             { typeName: 'TONG_MOI_CHAN_CHAN', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Chẵn', getter: getTongMoi, sequenceType: 'CHAN' },
             { typeName: 'TONG_MOI_CHAN_LE', descriptionPrefix: 'Tổng Mới - Dạng Chẵn-Lẻ', getter: getTongMoi, sequenceType: 'LE' },
@@ -394,8 +412,9 @@ async function generateSumDifferenceStats() {
         dangTongConfigs.forEach(config => {
             const isTongTT = config.typeName.startsWith('TONG_TT');
             const tongPrefix = isTongTT ? 'TONG_TT' : 'TONG_MOI';
-            const sequenceSet = config.sequenceType === 'CHAN' ? SETS[`${tongPrefix}_CHAN_SEQUENCE`] : SETS[`${tongPrefix}_LE_SEQUENCE`];
-            const sequenceMap = config.sequenceType === 'CHAN' ? MAPS[`${tongPrefix}_CHAN_SEQUENCE`] : MAPS[`${tongPrefix}_LE_SEQUENCE`];
+            const valueSequenceKey = config.sequenceType === 'CHAN' ? `${tongPrefix}_CHAN_SEQUENCE` : `${tongPrefix}_LE_SEQUENCE`;
+            const sequenceSet = SETS[valueSequenceKey];
+            const sequenceMap = MAPS[valueSequenceKey];
 
             stats[config.typeName.toLowerCase()] = analyzeValueSequence(lotteryData, dateToIndexMap, {
                 valueExtractor: (item) => config.getter(item.value),
@@ -409,19 +428,26 @@ async function generateSumDifferenceStats() {
         const dangNhomConfigs = [
             { typeName: 'TONG_TT_1_3', descriptionPrefix: 'Tổng TT - Dạng tổng (1,2,3)', getter: getTongTT, sequence: ['1', '2', '3'] },
             { typeName: 'TONG_TT_4_6', descriptionPrefix: 'Tổng TT - Dạng tổng (4,5,6)', getter: getTongTT, sequence: ['4', '5', '6'] },
-            { typeName: 'TONG_TT_7_10', descriptionPrefix: 'Tổng TT - Dạng tổng (7,8,9,10)', getter: getTongTT, sequence: ['7', '8', '9', '10'] },
-            { typeName: 'TONG_MOI_0_3', descriptionPrefix: 'Tổng Mới - Dạng tổng (0-3)', getter: getTongMoi, sequence: ['0', '1', '2', '3'] },
+            { typeName: 'TONG_TT_7_9', descriptionPrefix: 'Tổng TT - Dạng tổng (7,8,9)', getter: getTongTT, sequence: ['7', '8', '9'] },
+            { typeName: 'TONG_TT_10_1_2', descriptionPrefix: 'Tổng TT - Dạng tổng (10,1,2)', getter: getTongTT, sequence: ['10', '1', '2'] },
+            { typeName: 'TONG_MOI_1_3', descriptionPrefix: 'Tổng Mới - Dạng tổng (1,2,3)', getter: getTongMoi, sequence: ['1', '2', '3'] },
             { typeName: 'TONG_MOI_4_6', descriptionPrefix: 'Tổng Mới - Dạng tổng (4-6)', getter: getTongMoi, sequence: ['4', '5', '6'] },
             { typeName: 'TONG_MOI_7_9', descriptionPrefix: 'Tổng Mới - Dạng tổng (7-9)', getter: getTongMoi, sequence: ['7', '8', '9'] },
             { typeName: 'TONG_MOI_10_12', descriptionPrefix: 'Tổng Mới - Dạng tổng (10-12)', getter: getTongMoi, sequence: ['10', '11', '12'] },
             { typeName: 'TONG_MOI_13_15', descriptionPrefix: 'Tổng Mới - Dạng tổng (13-15)', getter: getTongMoi, sequence: ['13', '14', '15'] },
             { typeName: 'TONG_MOI_16_18', descriptionPrefix: 'Tổng Mới - Dạng tổng (16-18)', getter: getTongMoi, sequence: ['16', '17', '18'] },
+            { typeName: 'TONG_MOI_18_0_1', descriptionPrefix: 'Tổng Mới - Dạng tổng (18,0,1)', getter: getTongMoi, sequence: ['18', '0', '1'] }, 
             { typeName: 'HIEU_0_2', descriptionPrefix: 'Hiệu - Dạng hiệu (0,1,2)', getter: getHieu, sequence: ['0', '1', '2'] },
             { typeName: 'HIEU_3_5', descriptionPrefix: 'Hiệu - Dạng hiệu (3,4,5)', getter: getHieu, sequence: ['3', '4', '5'] },
-            { typeName: 'HIEU_6_9', descriptionPrefix: 'Hiệu - Dạng hiệu (6,7,8,9)', getter: getHieu, sequence: ['6', '7', '8', '9'] },
+            { typeName: 'HIEU_6_8', descriptionPrefix: 'Hiệu - Dạng hiệu (6,7,8)', getter: getHieu, sequence: ['6', '7', '8'] },
+            { typeName: 'HIEU_9_0_1', descriptionPrefix: 'Hiệu - Dạng hiệu (9,0,1)', getter: getHieu, sequence: ['9', '0', '1'] },
         ];
 
         dangNhomConfigs.forEach(config => {
+            if (!SETS[config.typeName] || !MAPS[config.typeName]) {
+                console.warn(`[WARN] Bộ số ${config.typeName} không tồn tại. Bỏ qua thống kê này.`);
+                return;
+            }
             const sequenceSet = config.sequence;
             const sequenceMap = new Map(sequenceSet.map((item, index) => [item, index]));
             
@@ -430,7 +456,7 @@ async function generateSumDifferenceStats() {
                 valueSet: sequenceSet,
                 valueMap: sequenceMap,
                 descriptionPrefix: config.descriptionPrefix,
-                typeCondition: (item) => MAPS[config.typeName] && MAPS[config.typeName].has(item.value)
+                typeCondition: (item) => MAPS[config.typeName].has(item.value)
             });
         });
 

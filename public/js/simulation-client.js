@@ -35,50 +35,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(err.error || 'Lỗi không xác định');
             }
             const data = await response.json();
-            renderHistory(data.reverse());
+            renderHistory(data.reverse()); // Sắp xếp để hiển thị ngày mới nhất lên đầu
         } catch (error) {
             historyContent.innerHTML = `<p class="text-red-500">Lỗi tải lịch sử: ${error.message}</p>`;
         }
     }
 
     function renderAnalysis(data) {
-        const { basedOn, mostLikely, leastLikely, analysisDetails } = data;
+        const { date, basedOn, om, danh, analysisDetails } = data;
+        const formattedDate = new Date(date).toLocaleDateString('vi-VN', { timeZone: 'UTC' });
         
-        let html = `<p class="text-sm text-gray-600 mb-4">Dựa trên kết quả 3 ngày gần nhất: <span class="font-mono font-bold">${basedOn.join(', ')}</span></p>`;
+        let html = `<p class="text-sm text-gray-600 mb-1">Dự đoán cho ngày: <span class="font-bold">${formattedDate}</span></p>`;
+        html += `<p class="text-sm text-gray-600 mb-4">Dựa trên kết quả: <span class="font-mono font-bold">${basedOn.join(', ')}</span></p>`;
         html += `<h4 class="font-semibold mb-2">Các yếu tố thống kê ảnh hưởng nhất:</h4>
                  <div class="flex flex-wrap gap-2 mb-4">
                     ${analysisDetails.topFactors.map(factor => `<span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">${factor[0]}</span>`).join('')}
                  </div>`;
         html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <h4 class="font-semibold text-green-600 mb-2">Dàn Đánh (${mostLikely.length} số)</h4>
-                        <div class="number-grid p-2 bg-gray-100 rounded-md">${mostLikely.map(num => `<div class="number-item bg-white">${num}</div>`).join('')}</div>
+                        <h4 class="font-semibold text-green-600 mb-2">Dàn Đánh (${danh.numbers.length} số)</h4>
+                        <div class="number-grid p-2 bg-gray-100 rounded-md">${danh.numbers.map(num => `<div class="number-item bg-white">${num}</div>`).join('')}</div>
                     </div>
                     <div>
-                        <h4 class="font-semibold text-red-600 mb-2">Dàn Ôm (${leastLikely.length} số)</h4>
-                        <div class="number-grid p-2 bg-gray-100 rounded-md">${leastLikely.map(num => `<div class="number-item bg-white">${num}</div>`).join('')}</div>
+                        <h4 class="font-semibold text-red-600 mb-2">Dàn Ôm (${om.numbers.length} số)</h4>
+                        <div class="number-grid p-2 bg-gray-100 rounded-md">${om.numbers.map(num => `<div class="number-item bg-white">${num}</div>`).join('')}</div>
                     </div>
                  </div>`;
         analysisContent.innerHTML = html;
     }
 
     function renderHistory(historyData) {
-        if(historyData.length === 0){
+        if (historyData.length === 0) {
             historyContent.innerHTML = `<p class="text-gray-500">Chưa có lịch sử đối chiếu nào.</p>`;
             return;
         }
         let tableHtml = `<table class="w-full text-sm text-left">
                             <thead class="bg-gray-100 sticky top-0"><tr><th class="p-2">Ngày</th><th class="p-2 text-center">Số Về</th><th class="p-2 text-right">L/L Ôm</th><th class="p-2 text-right">L/L Đánh</th></tr></thead>
                             <tbody>`;
-        for(const item of historyData){
-            const omResult = item.results.omWinLoss;
-            const danhResult = item.results.danhWinLoss;
-            tableHtml += `<tr class="border-b hover:bg-gray-50">
-                            <td class="p-2">${new Date(item.date).toLocaleDateString('vi-VN')}</td>
-                            <td class="p-2 text-center"><span class="font-mono bg-blue-100 text-blue-800 rounded px-2 py-1">${item.winningNumber}</span></td>
-                            <td class="p-2 text-right font-semibold ${omResult >= 0 ? 'text-green-600' : 'text-red-600'}">${Math.round(omResult).toLocaleString()}k</td>
-                            <td class="p-2 text-right font-semibold ${danhResult >= 0 ? 'text-green-600' : 'text-red-600'}">${Math.round(danhResult).toLocaleString()}k</td>
-                         </tr>`;
+        for (const item of historyData) {
+            const date = new Date(item.date).toLocaleDateString('vi-VN', { timeZone: 'UTC' });
+            let resultHtml;
+
+            if (item.result) {
+                const { winningNumber, omWinLoss, danhWinLoss } = item.result;
+                resultHtml = `
+                    <td class="p-2 text-center"><span class="font-mono bg-blue-100 text-blue-800 rounded px-2 py-1">${winningNumber}</span></td>
+                    <td class="p-2 text-right font-semibold ${omWinLoss >= 0 ? 'text-green-600' : 'text-red-600'}">${Math.round(omWinLoss).toLocaleString()}k</td>
+                    <td class="p-2 text-right font-semibold ${danhWinLoss >= 0 ? 'text-green-600' : 'text-red-600'}">${Math.round(danhWinLoss).toLocaleString()}k</td>
+                `;
+            } else {
+                resultHtml = `<td colspan="3" class="p-2 text-center text-gray-400">Chờ kết quả...</td>`;
+            }
+            tableHtml += `<tr class="border-b hover:bg-gray-50"><td class="p-2 font-medium">${date}</td>${resultHtml}</tr>`;
         }
         tableHtml += `</tbody></table>`;
         historyContent.innerHTML = tableHtml;

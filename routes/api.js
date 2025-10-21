@@ -51,36 +51,36 @@ router.get('/scoring/forms', (req, res) => {
 
 // === API MỚI CHO TRANG SIMULATION ===
 
-// API lấy phân tích chi tiết cho ngày mai
-router.get('/analysis/latest', (req, res) => {
+// API lấy phân tích chi tiết cho dự đoán MỚI NHẤT
+router.get('/analysis/latest', async (req, res) => {
     try {
-        const rawData = lotteryService.getRawData();
-        if (!rawData || rawData.length < 4) {
-            return res.status(404).json({ error: 'Không đủ dữ liệu để phân tích.' });
-        }
-        const historicalSpecials = rawData.map(d => d.special.toString().padStart(2, '0'));
-        const recentDays = historicalSpecials.slice(-3);
+        const predictionsPath = path.join(__dirname, '..', 'data', 'predictions.json');
+        const predictions = JSON.parse(await fs.readFile(predictionsPath, 'utf-8'));
         
-        const results = simulationService.getCombinedSuggestions(historicalSpecials, recentDays);
-        res.json({
-            basedOn: recentDays,
-            ...results
-        });
+        const latestPrediction = predictions[predictions.length - 1];
+        
+        if (!latestPrediction) {
+            return res.status(404).json({ error: 'Không tìm thấy dự đoán nào.' });
+        }
+        res.json(latestPrediction);
     } catch (error) {
+        if (error.code === 'ENOENT') {
+             return res.status(404).json({ error: 'Chưa có file dự đoán nào được tạo.' });
+        }
         console.error('Lỗi khi lấy phân tích mới nhất:', error);
         res.status(500).json({ error: 'Lỗi server khi phân tích dữ liệu.' });
     }
 });
 
-// API lấy lịch sử dự đoán
+// API lấy toàn bộ lịch sử dự đoán
 router.get('/analysis/history', async (req, res) => {
     try {
-        const historyPath = path.join(__dirname, '..', 'data', 'prediction_history.json');
+        const historyPath = path.join(__dirname, '..', 'data', 'predictions.json');
         const data = await fs.readFile(historyPath, 'utf-8');
         res.json(JSON.parse(data));
     } catch (error) {
         if (error.code === 'ENOENT') {
-            return res.json([]); // Nếu file chưa tồn tại, trả về mảng rỗng
+            return res.json([]); 
         }
         console.error('Lỗi khi đọc lịch sử dự đoán:', error);
         res.status(500).json({ error: 'Lỗi server khi đọc file lịch sử.' });

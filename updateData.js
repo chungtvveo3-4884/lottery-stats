@@ -45,13 +45,14 @@ const updateJsonFile = async () => {
             await scoringService.loadScoringStatistics();
             // 2. Đối chiếu kết quả cũ (nếu có)
             await checkAndUpdateHistory();
-            // 3. Tạo và lưu dự đoán mới cho ngày mai
+            // 3. Sau khi đối chiếu xong, tạo dự đoán mới cho ngày mai
             await analyzeAndSavePrediction();
             console.log('[SCORING] Đã tính toán và nạp lại cache điểm.');
 
             return true;
         } else {
             console.log('[DATA UPDATE] Không nhận được dữ liệu hợp lệ từ GitHub.');
+            await analyzeAndSavePrediction();
             return false;
         }
     } catch (error) {
