@@ -427,20 +427,44 @@ async function generateSumDifferenceStats() {
 
         const dangNhomConfigs = [
             { typeName: 'TONG_TT_1_3', descriptionPrefix: 'Tổng TT - Dạng tổng (1,2,3)', getter: getTongTT, sequence: ['1', '2', '3'] },
+            { typeName: 'TONG_TT_2_4', descriptionPrefix: 'Tổng TT - Dạng tổng (2,3,4)', getter: getTongTT, sequence: ['2', '3', '4'] },
+            { typeName: 'TONG_TT_3_5', descriptionPrefix: 'Tổng TT - Dạng tổng (3,4,5)', getter: getTongTT, sequence: ['3', '4', '5'] },
             { typeName: 'TONG_TT_4_6', descriptionPrefix: 'Tổng TT - Dạng tổng (4,5,6)', getter: getTongTT, sequence: ['4', '5', '6'] },
+            { typeName: 'TONG_TT_5_7', descriptionPrefix: 'Tổng TT - Dạng tổng (5,6,7)', getter: getTongTT, sequence: ['5', '6', '7'] },
+            { typeName: 'TONG_TT_6_8', descriptionPrefix: 'Tổng TT - Dạng tổng (6,7,8)', getter: getTongTT, sequence: ['5', '6', '7'] },
             { typeName: 'TONG_TT_7_9', descriptionPrefix: 'Tổng TT - Dạng tổng (7,8,9)', getter: getTongTT, sequence: ['7', '8', '9'] },
-            { typeName: 'TONG_TT_10_1_2', descriptionPrefix: 'Tổng TT - Dạng tổng (10,1,2)', getter: getTongTT, sequence: ['10', '1', '2'] },
+            { typeName: 'TONG_TT_8_10', descriptionPrefix: 'Tổng TT - Dạng tổng (8,9,10)', getter: getTongTT, sequence: ['8', '9', '10'] },
+            { typeName: 'TONG_TT_9_1', descriptionPrefix: 'Tổng TT - Dạng tổng (9,10,1)', getter: getTongTT, sequence: ['9', '10', '1'] },
+            { typeName: 'TONG_TT_10_2', descriptionPrefix: 'Tổng TT - Dạng tổng (10,1,2)', getter: getTongTT, sequence: ['10', '1', '2'] },
+            { typeName: 'TONG_MOI_0_2', descriptionPrefix: 'Tổng Mới - Dạng tổng (0,1,2)', getter: getTongMoi, sequence: ['0', '1', '2'] },
             { typeName: 'TONG_MOI_1_3', descriptionPrefix: 'Tổng Mới - Dạng tổng (1,2,3)', getter: getTongMoi, sequence: ['1', '2', '3'] },
-            { typeName: 'TONG_MOI_4_6', descriptionPrefix: 'Tổng Mới - Dạng tổng (4-6)', getter: getTongMoi, sequence: ['4', '5', '6'] },
-            { typeName: 'TONG_MOI_7_9', descriptionPrefix: 'Tổng Mới - Dạng tổng (7-9)', getter: getTongMoi, sequence: ['7', '8', '9'] },
-            { typeName: 'TONG_MOI_10_12', descriptionPrefix: 'Tổng Mới - Dạng tổng (10-12)', getter: getTongMoi, sequence: ['10', '11', '12'] },
-            { typeName: 'TONG_MOI_13_15', descriptionPrefix: 'Tổng Mới - Dạng tổng (13-15)', getter: getTongMoi, sequence: ['13', '14', '15'] },
-            { typeName: 'TONG_MOI_16_18', descriptionPrefix: 'Tổng Mới - Dạng tổng (16-18)', getter: getTongMoi, sequence: ['16', '17', '18'] },
-            { typeName: 'TONG_MOI_18_0_1', descriptionPrefix: 'Tổng Mới - Dạng tổng (18,0,1)', getter: getTongMoi, sequence: ['18', '0', '1'] }, 
+            { typeName: 'TONG_MOI_2_4', descriptionPrefix: 'Tổng Mới - Dạng tổng (2,3,4)', getter: getTongMoi, sequence: ['2', '3', '4'] },
+            { typeName: 'TONG_MOI_3_5', descriptionPrefix: 'Tổng Mới - Dạng tổng (3,4,5)', getter: getTongMoi, sequence: ['2', '3', '4'] },
+            { typeName: 'TONG_MOI_4_6', descriptionPrefix: 'Tổng Mới - Dạng tổng (4,5,6)', getter: getTongMoi, sequence: ['4', '5', '6'] },
+            { typeName: 'TONG_MOI_5_7', descriptionPrefix: 'Tổng Mới - Dạng tổng (5,6,7)', getter: getTongMoi, sequence: ['5', '6', '7'] },
+            { typeName: 'TONG_MOI_6_8', descriptionPrefix: 'Tổng Mới - Dạng tổng (6,7,8)', getter: getTongMoi, sequence: ['6', '7', '8'] },
+            { typeName: 'TONG_MOI_7_9', descriptionPrefix: 'Tổng Mới - Dạng tổng (7,8,9)', getter: getTongMoi, sequence: ['7', '8', '9'] },
+            { typeName: 'TONG_MOI_8_10', descriptionPrefix: 'Tổng Mới - Dạng tổng (8,9,10)', getter: getTongMoi, sequence: ['8', '9', '10'] },
+            { typeName: 'TONG_MOI_9_11', descriptionPrefix: 'Tổng Mới - Dạng tổng (9,10,11)', getter: getTongMoi, sequence: ['9', '10', '11'] },
+            { typeName: 'TONG_MOI_10_12', descriptionPrefix: 'Tổng Mới - Dạng tổng (10,11,12)', getter: getTongMoi, sequence: ['10', '11', '12'] },
+            { typeName: 'TONG_MOI_11_13', descriptionPrefix: 'Tổng Mới - Dạng tổng (11,12,13)', getter: getTongMoi, sequence: ['11', '12', '13'] },
+            { typeName: 'TONG_MOI_12_14', descriptionPrefix: 'Tổng Mới - Dạng tổng (12,13,14)', getter: getTongMoi, sequence: ['12', '13', '14'] },
+            { typeName: 'TONG_MOI_13_15', descriptionPrefix: 'Tổng Mới - Dạng tổng (13,14,15)', getter: getTongMoi, sequence: ['13', '14', '15'] },
+            { typeName: 'TONG_MOI_14_16', descriptionPrefix: 'Tổng Mới - Dạng tổng (14,15,16)', getter: getTongMoi, sequence: ['14', '15', '16'] },
+            { typeName: 'TONG_MOI_15_17', descriptionPrefix: 'Tổng Mới - Dạng tổng (15,16,17)', getter: getTongMoi, sequence: ['15', '16', '17'] },
+            { typeName: 'TONG_MOI_16_18', descriptionPrefix: 'Tổng Mới - Dạng tổng (16,17,18)', getter: getTongMoi, sequence: ['16', '17', '18'] },
+            { typeName: 'TONG_MOI_17_0', descriptionPrefix: 'Tổng Mới - Dạng tổng (17,18,0)', getter: getTongMoi, sequence: ['17', '18', '0'] },
+            { typeName: 'TONG_MOI_18_1', descriptionPrefix: 'Tổng Mới - Dạng tổng (18,0,1)', getter: getTongMoi, sequence: ['18', '0', '1'] }, 
             { typeName: 'HIEU_0_2', descriptionPrefix: 'Hiệu - Dạng hiệu (0,1,2)', getter: getHieu, sequence: ['0', '1', '2'] },
+            { typeName: 'HIEU_1_3', descriptionPrefix: 'Hiệu - Dạng hiệu (1,2,3)', getter: getHieu, sequence: ['1', '2', '3'] },
+            { typeName: 'HIEU_2_4', descriptionPrefix: 'Hiệu - Dạng hiệu (2,3,4)', getter: getHieu, sequence: ['2', '3', '4'] },
             { typeName: 'HIEU_3_5', descriptionPrefix: 'Hiệu - Dạng hiệu (3,4,5)', getter: getHieu, sequence: ['3', '4', '5'] },
+            { typeName: 'HIEU_4_6', descriptionPrefix: 'Hiệu - Dạng hiệu (4,5,6)', getter: getHieu, sequence: ['4', '5', '6'] },
+            { typeName: 'HIEU_5_7', descriptionPrefix: 'Hiệu - Dạng hiệu (5,6,7)', getter: getHieu, sequence: ['5', '6', '7'] },
             { typeName: 'HIEU_6_8', descriptionPrefix: 'Hiệu - Dạng hiệu (6,7,8)', getter: getHieu, sequence: ['6', '7', '8'] },
-            { typeName: 'HIEU_9_0_1', descriptionPrefix: 'Hiệu - Dạng hiệu (9,0,1)', getter: getHieu, sequence: ['9', '0', '1'] },
+            { typeName: 'HIEU_7_9', descriptionPrefix: 'Hiệu - Dạng hiệu (7,8,9)', getter: getHieu, sequence: ['7', '8', '9'] },
+            { typeName: 'HIEU_8_0', descriptionPrefix: 'Hiệu - Dạng hiệu (8,9,0)', getter: getHieu, sequence: ['8', '9', '0'] },
+            { typeName: 'HIEU_9_1', descriptionPrefix: 'Hiệu - Dạng hiệu (9,0,1)', getter: getHieu, sequence: ['9', '0', '1'] },
         ];
 
         dangNhomConfigs.forEach(config => {
@@ -459,7 +483,6 @@ async function generateSumDifferenceStats() {
                 typeCondition: (item) => MAPS[config.typeName].has(item.value)
             });
         });
-
 
         await fs.writeFile(OUTPUT_FILE_PATH, JSON.stringify(stats, null, 2));
         console.log(`✅ Đã lưu kết quả thống kê Tổng-Hiệu vào: ${OUTPUT_FILE_PATH}`);

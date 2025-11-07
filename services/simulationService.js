@@ -1,186 +1,224 @@
 // services/simulationService.js
-const { SETS } = require('../utils/numberAnalysis');
+const { SETS, getTongTT, getHieu } = require('../utils/numberAnalysis');
+const lotteryService = require('./lotteryService');
 
-// Tự động lấy tất cả các khóa (bộ số) từ numberAnalysis để phân tích
-const allSetKeys = Object.keys(SETS).filter(key => 
-    !key.endsWith('_SEQUENCE') && 
-    !key.endsWith('_DIGITS') && 
-    key !== 'ALL' && 
-    key !== 'DIGITS'
-);
+// --- CÀI ĐẶT CHIẾN LƯỢC ---
+const BASE_BET = 10;    // 10.000 VND
+const BET_STEP = 5;     // 5.000 VND
+const NUM_COUNT = 25;   // Đánh 25 số
+const WIN_RATE = 70;    // Tỷ lệ thắng
 
-// Cache lại các thuộc tính của mỗi số để tăng tốc độ
-const numberPropertiesCache = new Map();
-for (let i = 0; i < 100; i++) {
-    const numStr = i.toString().padStart(2, '0');
-    const properties = [];
-    for (const key of allSetKeys) {
-        if (SETS[key].includes(numStr)) {
-            properties.push(key);
+// --- HÀM TÍNH TOÁN (GẤP THẾP & LÃI LỖ) ---
+function calculateBetAmount(totalLossSoFar) {
+    let betAmount = BASE_BET;
+    while (true) {
+        const totalBetToday = NUM_COUNT * betAmount;
+        const totalCostIfWin = totalLossSoFar + totalBetToday;
+        const potentialWin = betAmount * WIN_RATE;
+        if (potentialWin > totalCostIfWin) {
+            return betAmount;
         }
+        betAmount += BET_STEP;
     }
-    numberPropertiesCache.set(numStr, properties);
 }
 
-function getSingleScoredSuggestions(history, previousDays, trendingFactors) {
-    const sourceProperties = new Set();
-    previousDays.forEach(day => {
-        (numberPropertiesCache.get(day) || []).forEach(prop => sourceProperties.add(prop));
-    });
-
-    if (sourceProperties.size === 0) return new Map();
-    
-    const targetSetScores = new Map();
-    for (let i = 0; i < history.length - 1; i++) {
-        const currentDayProps = numberPropertiesCache.get(history[i]) || [];
-        let isSource = false;
-        for(const prop of currentDayProps){
-            if(sourceProperties.has(prop)){
-                isSource = true;
-                break;
-            }
-        }
-        if (isSource) {
-            (numberPropertiesCache.get(history[i + 1]) || []).forEach(prop => {
-                targetSetScores.set(prop, (targetSetScores.get(prop) || 0) + 1);
-            });
-        }
+function calculateWinLoss(numbersToBet, winningNumber, betAmount, totalLossSoFar) {
+    const totalBetToday = numbersToBet.length * betAmount;
+    if (numbersToBet.includes(winningNumber)) {
+        const winAmount = betAmount * WIN_RATE;
+        const profit = winAmount - (totalBetToday + totalLossSoFar); 
+        return {
+            isWin: true, profit: profit, winAmount: winAmount,
+            totalBet: totalBetToday, totalLossToDate: 0 
+        };
+    } else {
+        const profit = -totalBetToday;
+        return {
+            isWin: false, profit: profit, winAmount: 0,
+            totalBet: totalBetToday, totalLossToDate: totalLossSoFar + totalBetToday
+        };
     }
-    
-    if(targetSetScores.size > 0) {
-        const maxScore = Math.max(...targetSetScores.values());
-        [...targetSetScores.entries()].forEach(([factor, score]) => {
-            if (score === maxScore) {
-                trendingFactors.set(factor, (trendingFactors.get(factor) || 0) + score);
+}
+
+// --- THUẬT TOÁN PHÂN TÍCH MỚI ---
+
+// Xây dựng cache cho các thuộc tính số khi khởi động
+const numberPropertiesCache = new Map();
+function buildNumberPropertiesCache() {
+    if (numberPropertiesCache.size > 0) return;
+    const allSetKeys = Object.keys(SETS).filter(key => 
+        !key.endsWith('_SEQUENCE') && !key.endsWith('_DIGITS') && key !== 'ALL' && key !== 'DIGITS'
+    );
+    for (let i = 0; i < 100; i++) {
+        const numStr = i.toString().padStart(2, '0');
+        const properties = [];
+        for (const key of allSetKeys) {
+            // Tối ưu: Chỉ cần kiểm tra xem key có trong SETS và SETS[key] có chứa numStr không
+            if (SETS[key] && SETS[key].includes(numStr)) {
+                properties.push(key);
             }
-        });
+        }
+        numberPropertiesCache.set(numStr, properties);
+    }
+    console.log('[SimulationService] Cache thuộc tính số đã được xây dựng.');
+}
+
+function getNumberProperties(numberString) {
+    if (numberPropertiesCache.size === 0) {
+        buildNumberPropertiesCache();
+    }
+    return numberPropertiesCache.get(numberString) || [];
+}
+
+/**
+ * [MỚI] Thuật toán phân tích chuyên sâu
+ */
+function getCombinedSuggestions(historicalSpecials) {
+    const numberStats = lotteryService.getNumberStats();
+    const htStats = lotteryService.getHeadTailStats();
+    const sdStats = lotteryService.getSumDiffStats();
+
+    if (!numberStats || !htStats || !sdStats) {
+        throw new Error('Một hoặc nhiều file thống kê chưa được tải (number_stats, head_tail_stats, sum_difference_stats).');
     }
 
     const numberScores = new Map();
+
+    // 1. Lấy thuộc tính của ngày gần nhất làm "Tác nhân"
+    const lastDayNumber = historicalSpecials[historicalSpecials.length - 1];
+    const triggerProps = getNumberProperties(lastDayNumber);
+    
+    // 2. Chấm điểm cho từng số 00-99
     for (let i = 0; i < 100; i++) {
         const numStr = i.toString().padStart(2, '0');
-        const props = numberPropertiesCache.get(numStr) || [];
         let finalScore = 0;
-        props.forEach(prop => {
-            finalScore += (targetSetScores.get(prop) || 0);
-        });
-        numberScores.set(numStr, finalScore);
-    }
-    return numberScores;
-}
+        let reasons = []; // Lưu lý do được cộng điểm
 
-function getCombinedSuggestions(history, recentDays) {
-    const combinedScores = new Map();
-    const trendingFactors = new Map();
+        // 2a. Lấy điểm cơ bản từ number_stats.json (tần suất)
+        const baseStats = numberStats[numStr];
+        if (baseStats) {
+            finalScore += (baseStats.frequency || 0) * 10; // Tăng trọng số cho tần suất
+            finalScore += (baseStats.daysSinceLast || 0); // Thưởng cho các số "gan"
+        }
+        
+        // 2b. Lấy các thuộc tính của số đang xét
+        const targetProps = getNumberProperties(numStr);
 
-    for (let i = 0; i < 100; i++) {
-        combinedScores.set(i.toString().padStart(2, '0'), { score: 0, reasons: [] });
-    }
-
-    for (let j = 1; j <= 3; j++) {
-        const previousDays = recentDays.slice(recentDays.length - j);
-        const scores = getSingleScoredSuggestions(history, previousDays, trendingFactors);
-        scores.forEach((score, num) => {
-            const current = combinedScores.get(num);
-            current.score += score;
-        });
-    }
-
-    trendingFactors.forEach((_, factor) => {
-        if(SETS[factor]){
-            for(const num of SETS[factor]){
-                if(combinedScores.has(num)){
-                    combinedScores.get(num).reasons.push(factor);
+        // 2c. Tính điểm xu hướng (dựa trên tác nhân)
+        for (const trigger of triggerProps) {
+            // Tìm nguồn thống kê (head_tail_stats hoặc sum_difference_stats)
+            const statSource = htStats[trigger.toLowerCase()] || sdStats[trigger.toLowerCase()];
+            if (statSource && statSource.nextDayStats) {
+                // Duyệt qua các thuộc tính của số đang xét (target)
+                for (const target of targetProps) {
+                    let weight = 0;
+                    const targetKey = target.toLowerCase();
+                    
+                    // Tìm trọng số tương ứng
+                    if (statSource.nextDayStats.head && statSource.nextDayStats.head[targetKey]) {
+                        weight = statSource.nextDayStats.head[targetKey];
+                    } else if (statSource.nextDayStats.tail && statSource.nextDayStats.tail[targetKey]) {
+                        weight = statSource.nextDayStats.tail[targetKey];
+                    } else if (statSource.nextDayStats.sum && statSource.nextDayStats.sum[targetKey]) {
+                        weight = statSource.nextDayStats.sum[targetKey];
+                    } else if (statSource.nextDayStats.diff && statSource.nextDayStats.diff[targetKey]) {
+                        weight = statSource.nextDayStats.diff[targetKey];
+                    }
+                    
+                    if (weight > 0) {
+                        finalScore += weight; // Cộng điểm xu hướng
+                        reasons.push(`${trigger} -> ${target} (${weight})`);
+                    }
                 }
             }
         }
-    });
+        numberScores.set(numStr, { score: finalScore, reasons });
+    }
 
-    const sortedNumbers = [...combinedScores.entries()].sort((a, b) => {
-        const scoreDiff = b[1].score - a[1].score;
-        if (scoreDiff !== 0) return scoreDiff;
-        return Math.random() - 0.5;
-    }).map(entry => entry[0]);
-
-    const analysisDetails = {
-        topFactors: [...trendingFactors.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10),
-        numberScores: [...combinedScores.entries()].sort((a,b) => b[1].score - a[1].score)
-    };
+    // 3. Sắp xếp và chọn 25 số
+    const sortedNumbers = [...numberScores.entries()]
+        .sort((a, b) => b[1].score - a[1].score) // Sắp xếp theo điểm từ cao đến thấp
+        .map(entry => entry[0]);
+        
+    const topFactors = triggerProps.map(prop => [prop, 1]); // Hiển thị các tác nhân
 
     return {
-        mostLikely: sortedNumbers.slice(0, 70),
-        leastLikely: sortedNumbers.slice(70),
-        analysisDetails
+        mostLikely: sortedNumbers.slice(0, NUM_COUNT), // Lấy 25 số
+        analysisDetails: {
+            topFactors: topFactors
+        }
     };
 }
 
-function calculateOmWinLoss(numbersToBet, winningNumber, betAmountPerNumber) {
-    const he_so_thang = 0.705;
-    const he_so_thua = 70;
-    const initialWin = numbersToBet.length * betAmountPerNumber * he_so_thang;
-    if (numbersToBet.includes(winningNumber)) {
-        return initialWin - (betAmountPerNumber * he_so_thua);
-    }
-    return initialWin;
-}
 
-function calculateDanhWinLoss(numbersToBet, winningNumber, betAmountPerNumber) {
-    const he_so = 0.8;
-    const totalBet = numbersToBet.length * betAmountPerNumber * he_so;
-    if (numbersToBet.includes(winningNumber)) {
-        return (betAmountPerNumber * 70) - totalBet;
-    }
-    return -totalBet;
-}
-
-function runSimulation(options, lotteryData) {
-    const { simulationDays, initialCapital, betAmount } = options;
-    if (!simulationDays || !initialCapital || !betAmount) throw new Error('Thiếu thông số.');
+// === LOGIC MÔ PHỎNG GIẢ LẬP (GẤP THẾP) ===
+function runProgressiveSimulation(options, lotteryData) {
+    const { simulationDays, initialCapital } = options;
+    if (!simulationDays || !initialCapital) throw new Error('Thiếu Vốn hoặc Số ngày.');
     if (!lotteryData || lotteryData.length === 0) throw new Error('Không có dữ liệu.');
 
-    const formattedData = lotteryData.map(item => ({ date: new Date(item.date), special: item.special.toString().padStart(2, '0')})).sort((a, b) => a.date - b.date);
-    const daysToSimulate = parseInt(simulationDays, 10);
+    const days = parseInt(simulationDays, 10);
     const capital = parseInt(initialCapital, 10);
-    const betAmountPerNumber = parseInt(betAmount, 10);
-    const historicalSpecials = formattedData.map(d => d.special);
+    const historicalSpecials = lotteryData.map(d => d.special.toString().padStart(2, '0'));
+    
     const dailyResults = [];
     let currentCapital = capital;
-    
+    let totalLossSoFar = 0;
+
     const startIndex = 3;
-    if (historicalSpecials.length < startIndex + 1) return { dailyResults: [], initialCapital: capital };
-    const endIndex = Math.min(startIndex + daysToSimulate, historicalSpecials.length - 1);
+    if (historicalSpecials.length < startIndex + 1) {
+        throw new Error('Không đủ dữ liệu lịch sử (cần ít nhất 4 ngày).');
+    }
+    const endIndex = Math.min(startIndex + days, historicalSpecials.length - 1);
 
     for (let i = startIndex; i < endIndex; i++) {
         const historyUpToCurrentDay = historicalSpecials.slice(0, i + 1);
         const winningNumber = String(Math.floor(Math.random() * 100)).padStart(2, '0');
-        const currentDate = formattedData[i + 1].date.toISOString().split('T')[0];
         
-        const recentDays = historicalSpecials.slice(i - 2, i + 1);
-        const analysis = getCombinedSuggestions(historyUpToCurrentDay, recentDays);
+        // Phân tích bằng logic mới
+        const { mostLikely } = getCombinedSuggestions(historyUpToCurrentDay);
         
-        const omWinLoss = calculateOmWinLoss(analysis.leastLikely, winningNumber, betAmountPerNumber);
-        const danhWinLoss = calculateDanhWinLoss(analysis.mostLikely, winningNumber, betAmountPerNumber);
+        const betAmount = calculateBetAmount(totalLossSoFar);
+        
+        if (currentCapital < (betAmount * NUM_COUNT)) {
+            dailyResults.push({ 
+                day: dailyResults.length + 1,
+                date: "N/A",
+                error: 'Vỡ nợ - Không đủ vốn cược', 
+                betAmount: betAmount,
+                totalBet: (betAmount * NUM_COUNT),
+                profit: 0,
+                endCapital: currentCapital
+            });
+            break;
+        }
 
-        const dayResult = {
+        const calculation = calculateWinLoss(mostLikely, winningNumber, betAmount, totalLossSoFar);
+        
+        const profitToday = calculation.isWin ? (calculation.winAmount - calculation.totalBet) : calculation.profit;
+        currentCapital += profitToday;
+        totalLossSoFar = calculation.totalLossToDate;
+
+        dailyResults.push({
             day: dailyResults.length + 1,
-            date: currentDate,
-            winningNumber: winningNumber,
-            om: { numbers: analysis.leastLikely, winLoss: omWinLoss },
-            danh: { numbers: analysis.mostLikely, winLoss: danhWinLoss }
-        };
-
-        const bestWinLoss = Math.max(omWinLoss, danhWinLoss);
-        currentCapital += bestWinLoss;
-        dayResult.endCapital = currentCapital;
-        dailyResults.push(dayResult);
+            date: lotteryData[i + 1].date.substring(0, 10),
+            winningNumber,
+            numbersBet: mostLikely,
+            betAmount,
+            totalBet: calculation.totalBet,
+            winAmount: calculation.winAmount,
+            profit: profitToday, // Lãi/lỗ ròng của ngày
+            totalLossSoFar: totalLossSoFar,
+            endCapital: currentCapital
+        });
     }
 
     return { dailyResults, initialCapital: capital };
 }
 
 module.exports = { 
-    runSimulation, 
-    getCombinedSuggestions, 
-    calculateOmWinLoss, 
-    calculateDanhWinLoss
+    getCombinedSuggestions,
+    calculateBetAmount,
+    calculateWinLoss,
+    runProgressiveSimulation
 };

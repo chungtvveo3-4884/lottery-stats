@@ -343,14 +343,25 @@ async function generateHeadTailStats() {
             motDitVeSoleMoi: findAlternatingStreaksNew(lotteryData, dateToIndexMap, { description: "1 Đít về so le (mới)", valueExtractor: getTail }),
         };
         const analysisConfigs = [
-            { typeName: 'DAU_CHAN', descriptionPrefix: 'Đầu chẵn', valueExtractor: getHead, digitSetKey: 'CHAN_DIGITS' },
-            { typeName: 'DAU_LE', descriptionPrefix: 'Đầu lẻ', valueExtractor: getHead, digitSetKey: 'LE_DIGITS' },
-            { typeName: 'DIT_CHAN', descriptionPrefix: 'Đít chẵn', valueExtractor: getTail, digitSetKey: 'CHAN_DIGITS' },
-            { typeName: 'DIT_LE', descriptionPrefix: 'Đít lẻ', valueExtractor: getTail, digitSetKey: 'LE_DIGITS' },
+            // [MỚI] Tự động thêm 8 dạng cơ bản
+            ...[
+                { typeName: 'DAU_CHAN', descriptionPrefix: 'Đầu chẵn', valueExtractor: getHead, digitSetKey: 'CHAN_DIGITS' },
+                { typeName: 'DAU_LE', descriptionPrefix: 'Đầu lẻ', valueExtractor: getHead, digitSetKey: 'LE_DIGITS' },
+                { typeName: 'DIT_CHAN', descriptionPrefix: 'Đít chẵn', valueExtractor: getTail, digitSetKey: 'CHAN_DIGITS' },
+                { typeName: 'DIT_LE', descriptionPrefix: 'Đít lẻ', valueExtractor: getTail, digitSetKey: 'LE_DIGITS' },
+                { typeName: 'DAU_TO', descriptionPrefix: 'Đầu to', valueExtractor: getHead, digitSetKey: 'TO_DIGITS' },
+                { typeName: 'DAU_NHO', descriptionPrefix: 'Đầu nhỏ', valueExtractor: getHead, digitSetKey: 'NHO_DIGITS' },
+                { typeName: 'DIT_TO', descriptionPrefix: 'Đít to', valueExtractor: getTail, digitSetKey: 'TO_DIGITS' },
+                { typeName: 'DIT_NHO', descriptionPrefix: 'Đít nhỏ', valueExtractor: getTail, digitSetKey: 'NHO_DIGITS' },
+            ],
+
+            // Dạng 2 chữ số (isTwoDigitSequence: true)
             { typeName: 'DAU_TO_DIT_TO', descriptionPrefix: 'Đầu to đít to', valueExtractor: getValue, isTwoDigitSequence: true },
             { typeName: 'DAU_TO_DIT_NHO', descriptionPrefix: 'Đầu to đít nhỏ', valueExtractor: getValue, isTwoDigitSequence: true },
             { typeName: 'DAU_NHO_DIT_TO', descriptionPrefix: 'Đầu nhỏ đít to', valueExtractor: getValue, isTwoDigitSequence: true },
             { typeName: 'DAU_NHO_DIT_NHO', descriptionPrefix: 'Đầu nhỏ đít nhỏ', valueExtractor: getValue, isTwoDigitSequence: true },
+            
+            // Dạng 1 chữ số (isTwoDigitSequence: false)
             { typeName: 'DAU_CHAN_LON_HON_4', descriptionPrefix: 'Đầu chẵn > 4', valueExtractor: getHead, digitSetKey: 'CHAN_LON_HON_4_DIGITS' },
             { typeName: 'DAU_CHAN_NHO_HON_4', descriptionPrefix: 'Đầu chẵn < 4', valueExtractor: getHead, digitSetKey: 'CHAN_NHO_HON_4_DIGITS' },
             { typeName: 'DIT_CHAN_LON_HON_4', descriptionPrefix: 'Đít chẵn > 4', valueExtractor: getTail, digitSetKey: 'CHAN_LON_HON_4_DIGITS' },
@@ -359,6 +370,8 @@ async function generateHeadTailStats() {
             { typeName: 'DAU_LE_NHO_HON_5', descriptionPrefix: 'Đầu lẻ < 5', valueExtractor: getHead, digitSetKey: 'LE_NHO_HON_5_DIGITS' },
             { typeName: 'DIT_LE_LON_HON_5', descriptionPrefix: 'Đít lẻ > 5', valueExtractor: getTail, digitSetKey: 'LE_LON_HON_5_DIGITS' },
             { typeName: 'DIT_LE_NHO_HON_5', descriptionPrefix: 'Đít lẻ < 5', valueExtractor: getTail, digitSetKey: 'LE_NHO_HON_5_DIGITS' },
+
+            // Dạng 2 chữ số (isTwoDigitSequence: true)
             { typeName: 'DAU_CHAN_LON_4_DIT_CHAN_LON_4', descriptionPrefix: 'Đầu chẵn > 4 và đít chẵn > 4', valueExtractor: getValue, isTwoDigitSequence: true },
             { typeName: 'DAU_CHAN_LON_4_DIT_CHAN_NHO_4', descriptionPrefix: 'Đầu chẵn > 4 và đít chẵn < 4', valueExtractor: getValue, isTwoDigitSequence: true },
             { typeName: 'DAU_CHAN_NHO_4_DIT_CHAN_LON_4', descriptionPrefix: 'Đầu chẵn < 4 và đít chẵn > 4', valueExtractor: getValue, isTwoDigitSequence: true },
@@ -381,15 +394,20 @@ async function generateHeadTailStats() {
             stats[key] = analyzeType(lotteryData, dateToIndexMap, config);
         });
 
-        // SỬA LỖI: Di chuyển định nghĩa của 'consecutiveOnlyConfigs' vào đây
-        const consecutiveOnlyConfigs = [
+        const fixedSetConfigs = [
             'DAU_4_DIT_CHAN_LON_4', 'DAU_4_DIT_CHAN_NHO_4', 'DAU_4_DIT_LE_LON_5', 'DAU_4_DIT_LE_NHO_5',
             'DAU_5_DIT_CHAN_LON_4', 'DAU_5_DIT_CHAN_NHO_4', 'DAU_5_DIT_LE_LON_5', 'DAU_5_DIT_LE_NHO_5',
             'DIT_4_DAU_CHAN_LON_4', 'DIT_4_DAU_CHAN_NHO_4', 'DIT_4_DAU_LE_LON_5', 'DIT_4_DAU_LE_NHO_5',
             'DIT_5_DAU_CHAN_LON_4', 'DIT_5_DAU_CHAN_NHO_4', 'DIT_5_DAU_LE_LON_5', 'DIT_5_DAU_LE_NHO_5'
         ];
-        
-        const consecutiveOnlyDescriptions = {
+    
+        // Thêm 20 config Đầu/Đít 0-9
+        for (let i = 0; i < 10; i++) {
+            fixedSetConfigs.push(`DAU_${i}`);
+            fixedSetConfigs.push(`DIT_${i}`);
+        }
+    
+        const fixedSetDescriptions = {
             'DAU_4_DIT_CHAN_LON_4': 'Dạng Đầu 4 và Đít chẵn > 4',
             'DAU_4_DIT_CHAN_NHO_4': 'Dạng Đầu 4 và Đít chẵn < 4',
             'DAU_4_DIT_LE_LON_5': 'Dạng Đầu 4 và Đít lẻ > 5',
@@ -407,16 +425,45 @@ async function generateHeadTailStats() {
             'DIT_5_DAU_LE_LON_5': 'Dạng Đít 5 và Đầu lẻ > 5',
             'DIT_5_DAU_LE_NHO_5': 'Dạng Đít 5 và Đầu lẻ < 5'
         };
-
-        consecutiveOnlyConfigs.forEach(typeName => {
+    
+        // Thêm 20 description cho Đầu/Đít 0-9
+        for (let i = 0; i < 10; i++) {
+            fixedSetDescriptions[`DAU_${i}`] = `Dạng Đầu ${i}`;
+            fixedSetDescriptions[`DIT_${i}`] = `Dạng Đít ${i}`;
+        }
+    
+        // [SỬA ĐỔI] Vòng lặp này giờ sẽ tính 3 loại thống kê
+        fixedSetConfigs.forEach(typeName => {
             const key = typeName.toLowerCase();
-            const description = consecutiveOnlyDescriptions[typeName];
-            stats[key] = {
-                 veLienTiep: findStreaks(lotteryData, dateToIndexMap, {
-                    condition: (a, b) => MAPS[typeName].has(a.value) && MAPS[typeName].has(b.value),
-                    description: `${description} về liên tiếp`
-                })
+            const description = fixedSetDescriptions[typeName];
+            const numberMap = MAPS[typeName]; // Lấy Map cho bộ số
+    
+            if (!description) {
+                console.warn(`[fixedSet] Bỏ qua ${typeName}: không tìm thấy description`);
+                return;
             }
+            if (!numberMap) {
+                console.warn(`[fixedSet] Bỏ qua ${typeName}: không tìm thấy MAPS`);
+                return;
+            }
+    
+            // Hàm điều kiện (condition)
+            const typeCondition = (item) => numberMap.has(item.value);
+    
+            stats[key] = {
+                veLienTiep: findStreaks(lotteryData, dateToIndexMap, {
+                    condition: (a, b) => typeCondition(a) && typeCondition(b),
+                    description: `${description} về liên tiếp`
+                }),
+                veSole: findAlternatingTypeStreaks(lotteryData, dateToIndexMap, {
+                    description: `${description} về so le`,
+                    condition: typeCondition
+                }),
+                veSoleMoi: {
+                    description: `${description} về so le (mới)`,
+                    ...findAlternatingTypeStreaksNew(lotteryData, dateToIndexMap, numberMap)
+                }
+            };
         });
 
         await fs.writeFile(OUTPUT_FILE_PATH, JSON.stringify(stats, null, 2));

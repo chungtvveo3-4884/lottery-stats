@@ -3,40 +3,73 @@ const fs = require('fs').promises;
 const path = require('path');
 
 const RAW_DATA_PATH = path.join(__dirname, '..', 'data', 'xsmb-2-digits.json');
-let rawDataCache = null;
+const NUMBER_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'number_stats.json');
+const HEAD_TAIL_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'head_tail_stats.json');
+const SUM_DIFF_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'sum_difference_stats.json');
 
-/**
- * Tải dữ liệu thô từ file JSON vào cache.
- */
-const loadRawData = async () => {
+let rawDataCache = null;
+let numberStatsCache = null;
+let headTailStatsCache = null;
+let sumDiffStatsCache = null;
+
+async function loadJson(filePath) {
     try {
-        console.log('[LotteryService] Đang tải dữ liệu thô vào cache...');
-        const rawDataContent = await fs.readFile(RAW_DATA_PATH, 'utf-8');
-        rawDataCache = JSON.parse(rawDataContent);
-        console.log(`[LotteryService] Đã tải thành công ${rawDataCache.length} bản ghi.`);
+        const data = await fs.readFile(filePath, 'utf-8');
+        return JSON.parse(data);
     } catch (error) {
-        console.error('[LotteryService] Lỗi khi tải dữ liệu thô:', error);
-        rawDataCache = []; // Đảm bảo cache là một mảng trống khi có lỗi
+        console.error(`Lỗi khi tải file ${filePath}:`, error.message);
+        return null;
+    }
+}
+
+const loadRawData = async () => {
+    console.log('[LotteryService] Đang tải dữ liệu thô và thống kê vào cache...');
+    
+    // Tải song song các file
+    [
+        rawDataCache, 
+        numberStatsCache, 
+        headTailStatsCache, 
+        sumDiffStatsCache
+    ] = await Promise.all([
+        loadJson(RAW_DATA_PATH),
+        loadJson(NUMBER_STATS_PATH),
+        loadJson(HEAD_TAIL_STATS_PATH),
+        loadJson(SUM_DIFF_STATS_PATH)
+    ]);
+    
+    if (rawDataCache) {
+        console.log(`[LotteryService] Đã tải thành công ${rawDataCache.length} bản ghi kết quả.`);
+    }
+    if (numberStatsCache) {
+        console.log('[LotteryService] Đã tải thành công number_stats.json.');
+    }
+    if (headTailStatsCache) {
+        console.log('[LotteryService] Đã tải thành công head_tail_stats.json.');
+    }
+    if (sumDiffStatsCache) {
+        console.log('[LotteryService] Đã tải thành công sum_difference_stats.json.');
     }
 };
 
-/**
- * Lấy dữ liệu thô đã được cache.
- */
-const getRawData = () => {
-    return rawDataCache;
-};
+const getRawData = () => rawDataCache;
+const getNumberStats = () => numberStatsCache;
+const getHeadTailStats = () => headTailStatsCache;
+const getSumDiffStats = () => sumDiffStatsCache;
 
-/**
- * Xóa cache dữ liệu thô.
- */
 const clearCache = () => {
     rawDataCache = null;
-    console.log('[LotteryService] Cache dữ liệu thô đã được xóa.');
+    numberStatsCache = null;
+    headTailStatsCache = null;
+    sumDiffStatsCache = null;
+    console.log('[LotteryService] Cache đã được xóa.');
 };
 
 module.exports = {
     loadRawData,
     getRawData,
+    getNumberStats,
+    getHeadTailStats,
+    getSumDiffStats,
     clearCache
 };

@@ -3,35 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mô phỏng & Phân tích</title>
+    <title>Phân tích & Giả lập</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .hidden { display: none; }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border-left-color: #fff;
-            animation: spin 1s ease infinite;
-        }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 20px; height: 20px; border-radius: 50%; border-left-color: #fff; animation: spin 1s ease infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .number-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
-            gap: 4px;
-        }
-        .number-item {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: monospace;
-            font-size: 12px;
-            border-radius: 4px;
-            padding: 2px;
-        }
+        .number-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 4px; }
+        .number-item { display: flex; justify-content: center; align-items: center; font-family: monospace; font-size: 12px; border-radius: 4px; padding: 2px; }
+        .tab-button { border-bottom: 2px solid transparent; color: #6b7280; }
+        .tab-button.active { border-bottom-color: #4f46e5; color: #4f46e5; font-weight: 600; }
     </style>
 </head>
 <body class="antialiased bg-gray-50">
@@ -41,60 +23,62 @@
                 <div class="flex justify-between items-center py-4">
                     <a href="/" class="text-2xl font-bold text-gray-800">XSMB Stats</a>
                     <nav class="hidden md:flex space-x-4">
-                        <a href="/statistics" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Thống kê</a>
-                        <a href="/scoring" class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Tính điểm</a>
-                        <a href="/simulation" class="bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm font-semibold">Mô phỏng & Phân tích</a>
+                        <a href="/simulation" class="bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm font-semibold">Phân tích & Giả lập</a>
                     </nav>
                 </div>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div id="analysisContainer" class="bg-white p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Phân Tích Cho Ngày Mai</h2>
-                <div id="analysisContent">
-                    <p class="text-gray-500">Đang tải dữ liệu phân tích...</p>
-                </div>
-            </div>
-            <div id="historyContainer" class="bg-white p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Lịch Sử Đối Chiếu</h2>
-                <div id="historyContent" class="overflow-auto max-h-[400px]">
-                     <p class="text-gray-500">Đang tải lịch sử...</p>
-                </div>
-            </div>
+        <div class="mb-8 border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button id="tab-analysis" class="tab-button whitespace-nowrap py-4 px-1 text-sm">Phân tích & Lịch sử</button>
+                <button id="tab-simulation" class="tab-button whitespace-nowrap py-4 px-1 text-sm">Mô phỏng Giả lập</button>
+            </nav>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg h-fit">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Mô phỏng Giả lập</h2>
-                <form id="simulationForm" class="space-y-6">
-                    <div>
-                        <label for="initialCapital" class="block text-sm font-medium text-gray-700">Vốn khởi điểm (k)</label>
-                        <input type="number" id="initialCapital" name="initialCapital" value="10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label for="simulationDays" class="block text-sm font-medium text-gray-700">Số ngày mô phỏng</label>
-                        <input type="number" id="simulationDays" name="simulationDays" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    </div>
-                    <div>
-                        <label for="betAmount" class="block text-sm font-medium text-gray-700">Mức cược / 1 con (k)</label>
-                        <input type="number" id="betAmount" name="betAmount" value="10" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                    </div>
-                    <div class="pt-6 border-t">
-                        <button type="submit" id="runButton" class="w-full inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
-                            <span id="runButtonText">Chạy Mô phỏng</span>
-                            <div id="runSpinner" class="spinner hidden"></div>
-                        </button>
-                    </div>
-                </form>
+        <div id="content-analysis" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Phân Tích (25 số)</h2>
+                    <div id="analysisContent"><p class="text-gray-500">Đang tải...</p></div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Lịch Sử Đối Chiếu</h2>
+                    <div id="historyContent" class="overflow-auto max-h-[500px]"><p class="text-gray-500">Đang tải...</p></div>
+                </div>
             </div>
-
-            <div id="resultsContainer" class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg hidden">
-                 </div>
         </div>
         
+        <div id="content-simulation" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg h-fit">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Thiết lập Giả lập Gấp thếp</h2>
+                    <form id="simulationForm" class="space-y-6">
+                        <div>
+                            <label for="initialCapital" class="block text-sm font-medium text-gray-700">Vốn khởi điểm (k)</label>
+                            <input type="number" id="initialCapital" name="initialCapital" value="10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label for="simulationDays" class="block text-sm font-medium text-gray-700">Số ngày mô phỏng</label>
+                            <input type="number" id="simulationDays" name="simulationDays" value="30" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                         <p class="text-sm text-gray-500">
+                            Chiến lược: Đánh 25 số, cược 10k/số. Nếu thua, tăng cược (bước nhảy 5k) để gỡ lại.
+                        </p>
+                        <div class="pt-6 border-t">
+                            <button type="submit" id="runSimButton" class="w-full inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                                <span id="runSimButtonText">Chạy Giả lập</span>
+                                <div id="runSimSpinner" class="spinner hidden"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div id="simulationResultsContainer" class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg hidden"></div>
+            </div>
+        </div>
+
         <footer class="bg-gray-800 text-white text-center p-4 mt-8">
-            <p>&copy; <%= new Date().getFullYear() %> XSMB Stats. All rights reserved.</p>
+            <p>&copy; <%= new Date().getFullYear() %> XSMB Stats.</p>
         </footer>
     </div>
     <script src="/js/simulation-client.js"></script>

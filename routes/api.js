@@ -49,59 +49,48 @@ router.get('/scoring/forms', (req, res) => {
     }
 });
 
-// === API MỚI CHO TRANG SIMULATION ===
-
-// API lấy phân tích chi tiết cho dự đoán MỚI NHẤT
+// === API CHO PHÂN TÍCH & LỊCH SỬ ===
 router.get('/analysis/latest', async (req, res) => {
     try {
         const predictionsPath = path.join(__dirname, '..', 'data', 'predictions.json');
-        const predictions = JSON.parse(await fs.readFile(predictionsPath, 'utf-8'));
-        
-        const latestPrediction = predictions[predictions.length - 1];
-        
-        if (!latestPrediction) {
-            return res.status(404).json({ error: 'Không tìm thấy dự đoán nào.' });
+        const data = await fs.readFile(predictionsPath, 'utf-8');
+        const predictions = JSON.parse(data);
+        if (predictions.length === 0) {
+            return res.status(404).json({ error: 'Chưa có dự đoán nào.' });
         }
+        const latestPrediction = predictions[predictions.length - 1];
         res.json(latestPrediction);
     } catch (error) {
-        if (error.code === 'ENOENT') {
-             return res.status(404).json({ error: 'Chưa có file dự đoán nào được tạo.' });
-        }
-        console.error('Lỗi khi lấy phân tích mới nhất:', error);
-        res.status(500).json({ error: 'Lỗi server khi phân tích dữ liệu.' });
+        if (error.code === 'ENOENT') return res.status(404).json({ error: 'Chưa có file dự đoán.' });
+        res.status(500).json({ error: 'Lỗi server khi lấy phân tích.' });
     }
 });
 
-// API lấy toàn bộ lịch sử dự đoán
 router.get('/analysis/history', async (req, res) => {
     try {
         const historyPath = path.join(__dirname, '..', 'data', 'predictions.json');
         const data = await fs.readFile(historyPath, 'utf-8');
         res.json(JSON.parse(data));
     } catch (error) {
-        if (error.code === 'ENOENT') {
-            return res.json([]); 
-        }
-        console.error('Lỗi khi đọc lịch sử dự đoán:', error);
-        res.status(500).json({ error: 'Lỗi server khi đọc file lịch sử.' });
+        if (error.code === 'ENOENT') return res.json([]); 
+        res.status(500).json({ error: 'Lỗi server khi đọc lịch sử.' });
     }
 });
 
-// API Chạy mô phỏng (dựa trên phân tích)
+// === API CHO GIẢ LẬP GẤP THẾP ===
 router.post('/simulation/run', (req, res) => {
     try {
         const options = req.body;
         const lotteryData = lotteryService.getRawData();
         if (!lotteryData || lotteryData.length === 0) {
-             throw new Error('Không có dữ liệu xổ số để chạy mô phỏng.');
+             throw new Error("Cache dữ liệu xổ số trống.");
         }
-        const results = simulationService.runSimulation(options, lotteryData);
+        const results = simulationService.runProgressiveSimulation(options, lotteryData);
         res.json(results);
     } catch (error) {
+        console.error('Lỗi khi chạy mô phỏng:', error);
         res.status(400).json({ error: error.message });
     }
 });
-
-router.get('/suggestions', statisticsController.getSuggestions);
 
 module.exports = router;
