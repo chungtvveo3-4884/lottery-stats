@@ -10,6 +10,13 @@ const simulationService = require('../services/simulationService'); // Import se
 const statisticsController = require('../controllers/statisticsController');
 // **[THÊM VÀO]** Import lotteryService để lấy dữ liệu
 const lotteryService = require('../services/lotteryService');
+const suggestionsController = require('../controllers/suggestionsController');
+
+// API: Lấy gợi ý (Bao gồm logic loại trừ mới)
+router.get('/suggestions', suggestionsController.getSuggestions);
+
+// API: Lấy kết quả xổ số gần đây
+router.get('/recent-results', statisticsController.getRecentLotteryResults);
 
 // API: Cung cấp dữ liệu điểm tổng hợp đã được cache
 router.get('/scoring/stats', async (req, res) => {
@@ -29,7 +36,7 @@ router.post('/scoring/search', async (req, res) => {
         if (!searchOptions.startDate || !searchOptions.endDate) {
             return res.status(400).json({ message: 'Thiếu các tham số tìm kiếm bắt buộc.' });
         }
-        
+
         const searchResult = await scoringStatsGenerator.performCustomSearch(searchOptions);
         res.json(searchResult);
     } catch (error) {
@@ -72,7 +79,7 @@ router.get('/analysis/history', async (req, res) => {
         const data = await fs.readFile(historyPath, 'utf-8');
         res.json(JSON.parse(data));
     } catch (error) {
-        if (error.code === 'ENOENT') return res.json([]); 
+        if (error.code === 'ENOENT') return res.json([]);
         res.status(500).json({ error: 'Lỗi server khi đọc lịch sử.' });
     }
 });
@@ -83,7 +90,7 @@ router.post('/simulation/run', (req, res) => {
         const options = req.body;
         const lotteryData = lotteryService.getRawData();
         if (!lotteryData || lotteryData.length === 0) {
-             throw new Error("Cache dữ liệu xổ số trống.");
+            throw new Error("Cache dữ liệu xổ số trống.");
         }
         const results = simulationService.runProgressiveSimulation(options, lotteryData);
         res.json(results);

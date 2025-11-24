@@ -76,20 +76,16 @@ const ALL_DAU_DIT_TIEN = {};
 for (let i = 0; i < 10; i++) {
     const setKey = `DAU_DIT_TIEN_${i}`;
     ALL_DAU_DIT_TIEN[setKey] = [];
-    let current = i.toString().padStart(2, '0');
-    if (i === 0) current = '00'; // Đảm bảo bắt đầu là '00' cho i=0
+    let current = i; // Start with integer i
 
+    // Generate sequence: start, start+11, start+22... until > 99
     for (let j = 0; j < 10; j++) {
-        let numVal = (parseInt(current, 10) + (j * 11)) % 100;
-        // Xử lý trường hợp đặc biệt: 00 + 11*0 = 0 -> '00'
-        if (i === 0 && j === 0) {
-             ALL_DAU_DIT_TIEN[setKey].push('00');
-        } else {
-             ALL_DAU_DIT_TIEN[setKey].push(numVal.toString().padStart(2, '0'));
-        }
+        let numVal = current + (j * 11);
+        if (numVal > 99) break; // Stop if > 99
+
+        ALL_DAU_DIT_TIEN[setKey].push(numVal.toString().padStart(2, '0'));
     }
-    // Sắp xếp lại set để đảm bảo thứ tự
-    ALL_DAU_DIT_TIEN[setKey].sort();
+    // No need to sort as we generate in increasing order
 }
 
 // --- PHÂN LOẠI THEO DẠNG SỐ (CHẴN/LẺ KẾT HỢP) ---
@@ -215,7 +211,7 @@ const TONG_MOI_13_15 = [...TONG_MOI_13, ...TONG_MOI_14, ...TONG_MOI_15].sort();
 const TONG_MOI_14_16 = [...TONG_MOI_14, ...TONG_MOI_15, ...TONG_MOI_16].sort();
 const TONG_MOI_15_17 = [...TONG_MOI_15, ...TONG_MOI_16, ...TONG_MOI_17].sort();
 const TONG_MOI_16_18 = [...TONG_MOI_16, ...TONG_MOI_17, ...TONG_MOI_18].sort();
-const TONG_MOI_17_0= [...TONG_MOI_17, ...TONG_MOI_18, ...TONG_MOI_0].sort();
+const TONG_MOI_17_0 = [...TONG_MOI_17, ...TONG_MOI_18, ...TONG_MOI_0].sort();
 const TONG_MOI_18_1 = [...TONG_MOI_18, ...TONG_MOI_0, ...TONG_MOI_1].sort();
 
 const TONG_MOI_CHAN = ALL_NUMBERS.filter(n => getTongMoi(n) % 2 === 0);
@@ -299,7 +295,7 @@ const SETS = {
     ...ALL_DIT, // DIT_0 ... DIT_9
     ...ALL_DAU_DIT_TIEN, // [MỚI] DAU_DIT_TIEN_0 ... DAU_DIT_TIEN_9
     DAU_TO_DIT_TO, DAU_TO_DIT_NHO, DAU_NHO_DIT_TO, DAU_NHO_DIT_NHO,
-    
+
     // Phức tạp
     DAU_CHAN_LON_HON_4, DAU_CHAN_NHO_HON_4, DIT_CHAN_LON_HON_4, DIT_CHAN_NHO_HON_4,
     DAU_LE_LON_HON_5, DAU_LE_NHO_HON_5, DIT_LE_LON_HON_5, DIT_LE_NHO_HON_5,
@@ -313,10 +309,10 @@ const SETS = {
     DIT_5_DAU_CHAN_LON_4, DIT_5_DAU_CHAN_NHO_4, DIT_5_DAU_LE_LON_5, DIT_5_DAU_LE_NHO_5,
 
     // Bộ số Chữ số (Digits)
-    DIGITS, CHAN_DIGITS, LE_DIGITS, NHO_DIGITS, TO_DIGITS, 
+    DIGITS, CHAN_DIGITS, LE_DIGITS, NHO_DIGITS, TO_DIGITS,
     ...ALL_DIGITS, // DIGIT_0 ... DIGIT_9
     CHAN_LON_HON_4_DIGITS, CHAN_NHO_HON_4_DIGITS, LE_LON_HON_5_DIGITS, LE_NHO_HON_5_DIGITS,
-    
+
     // Bộ số Tổng TT
     TONG_TT_1, TONG_TT_2, TONG_TT_3, TONG_TT_4, TONG_TT_5, TONG_TT_6, TONG_TT_7, TONG_TT_8, TONG_TT_9, TONG_TT_10,
     TONG_TT_1_3, TONG_TT_2_4, TONG_TT_3_5, TONG_TT_4_6, TONG_TT_5_7, TONG_TT_6_8, TONG_TT_7_9, TONG_TT_8_10, TONG_TT_9_1, TONG_TT_10_2,
@@ -326,7 +322,7 @@ const SETS = {
     // Bộ số Tổng Mới
     TONG_MOI_0, TONG_MOI_1, TONG_MOI_2, TONG_MOI_3, TONG_MOI_4, TONG_MOI_5, TONG_MOI_6, TONG_MOI_7, TONG_MOI_8, TONG_MOI_9,
     TONG_MOI_10, TONG_MOI_11, TONG_MOI_12, TONG_MOI_13, TONG_MOI_14, TONG_MOI_15, TONG_MOI_16, TONG_MOI_17, TONG_MOI_18,
-    TONG_MOI_0_2, TONG_MOI_1_3, TONG_MOI_2_4, TONG_MOI_3_5, TONG_MOI_4_6, TONG_MOI_5_7, TONG_MOI_6_8, TONG_MOI_7_9, TONG_MOI_8_10, TONG_MOI_9_11, TONG_MOI_10_12, TONG_MOI_11_13, TONG_MOI_12_14,TONG_MOI_13_15, TONG_MOI_14_16, TONG_MOI_15_17, TONG_MOI_16_18, TONG_MOI_17_0, TONG_MOI_18_1,
+    TONG_MOI_0_2, TONG_MOI_1_3, TONG_MOI_2_4, TONG_MOI_3_5, TONG_MOI_4_6, TONG_MOI_5_7, TONG_MOI_6_8, TONG_MOI_7_9, TONG_MOI_8_10, TONG_MOI_9_11, TONG_MOI_10_12, TONG_MOI_11_13, TONG_MOI_12_14, TONG_MOI_13_15, TONG_MOI_14_16, TONG_MOI_15_17, TONG_MOI_16_18, TONG_MOI_17_0, TONG_MOI_18_1,
     TONG_MOI_CHAN, TONG_MOI_LE,
     TONG_MOI_CHAN_CHAN, TONG_MOI_CHAN_LE, TONG_MOI_LE_CHAN, TONG_MOI_LE_LE,
 
@@ -345,7 +341,7 @@ const SETS = {
 // --- BƯỚC 3: TẠO MAPS TỪ SETS ---
 
 const MAPS = {};
-const INDEX_MAPS = {}; 
+const INDEX_MAPS = {};
 
 // Tạo MAPS và INDEX_MAPS cho tất cả các bộ số
 for (const key in SETS) {
@@ -356,10 +352,10 @@ for (const key in SETS) {
 }
 
 // Tạo DIGIT_SETS và DIGIT_MAPS (để tương thích với code cũ)
-const DIGIT_SETS = { 
-    DIGITS, CHAN_DIGITS, LE_DIGITS, NHO_DIGITS, TO_DIGITS, 
+const DIGIT_SETS = {
+    DIGITS, CHAN_DIGITS, LE_DIGITS, NHO_DIGITS, TO_DIGITS,
     ...ALL_DIGITS, // [MỚI] Thêm DIGIT_0 ... DIGIT_9
-    CHAN_LON_HON_4_DIGITS, CHAN_NHO_HON_4_DIGITS, LE_LON_HON_5_DIGITS, LE_NHO_HON_5_DIGITS 
+    CHAN_LON_HON_4_DIGITS, CHAN_NHO_HON_4_DIGITS, LE_LON_HON_5_DIGITS, LE_NHO_HON_5_DIGITS
 };
 
 const DIGIT_MAPS = {};
@@ -398,14 +394,14 @@ function findPreviousInSet(currentNumber, numberSet, numberMap) {
 // --- BƯỚC 5: EXPORTS ---
 
 module.exports = {
-    SETS, 
-    MAPS, 
-    INDEX_MAPS, 
-    DIGIT_SETS, 
+    SETS,
+    MAPS,
+    INDEX_MAPS,
+    DIGIT_SETS,
     DIGIT_MAPS,
-    findNextInSet, 
+    findNextInSet,
     findPreviousInSet,
-    getTongMoi, 
-    getTongTT, 
+    getTongMoi,
+    getTongTT,
     getHieu
 };

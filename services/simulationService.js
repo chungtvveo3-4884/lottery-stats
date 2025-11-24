@@ -1,6 +1,9 @@
 // services/simulationService.js
-const { SETS, getTongTT, getHieu } = require('../utils/numberAnalysis');
+const { SETS, getTongTT, getHieu, getTongMoi } = require('../utils/numberAnalysis');
 const lotteryService = require('./lotteryService');
+const statisticsService = require('./statisticsService');
+const suggestionsController = require('../controllers/suggestionsController');
+const exclusionService = require('./exclusionService');
 
 // --- CÀI ĐẶT CHIẾN LƯỢC ---
 const BASE_BET = 10;    // 10.000 VND
@@ -26,10 +29,10 @@ function calculateWinLoss(numbersToBet, winningNumber, betAmount, totalLossSoFar
     const totalBetToday = numbersToBet.length * betAmount;
     if (numbersToBet.includes(winningNumber)) {
         const winAmount = betAmount * WIN_RATE;
-        const profit = winAmount - (totalBetToday + totalLossSoFar); 
+        const profit = winAmount - (totalBetToday + totalLossSoFar);
         return {
             isWin: true, profit: profit, winAmount: winAmount,
-            totalBet: totalBetToday, totalLossToDate: 0 
+            totalBet: totalBetToday, totalLossToDate: 0
         };
     } else {
         const profit = -totalBetToday;
@@ -46,7 +49,7 @@ function calculateWinLoss(numbersToBet, winningNumber, betAmount, totalLossSoFar
 const numberPropertiesCache = new Map();
 function buildNumberPropertiesCache() {
     if (numberPropertiesCache.size > 0) return;
-    const allSetKeys = Object.keys(SETS).filter(key => 
+    const allSetKeys = Object.keys(SETS).filter(key =>
         !key.endsWith('_SEQUENCE') && !key.endsWith('_DIGITS') && key !== 'ALL' && key !== 'DIGITS'
     );
     for (let i = 0; i < 100; i++) {
@@ -87,7 +90,7 @@ function getCombinedSuggestions(historicalSpecials) {
     // 1. Lấy thuộc tính của ngày gần nhất làm "Tác nhân"
     const lastDayNumber = historicalSpecials[historicalSpecials.length - 1];
     const triggerProps = getNumberProperties(lastDayNumber);
-    
+
     // 2. Chấm điểm cho từng số 00-99
     for (let i = 0; i < 100; i++) {
         const numStr = i.toString().padStart(2, '0');
@@ -100,7 +103,7 @@ function getCombinedSuggestions(historicalSpecials) {
             finalScore += (baseStats.frequency || 0) * 10; // Tăng trọng số cho tần suất
             finalScore += (baseStats.daysSinceLast || 0); // Thưởng cho các số "gan"
         }
-        
+
         // 2b. Lấy các thuộc tính của số đang xét
         const targetProps = getNumberProperties(numStr);
 
@@ -113,7 +116,7 @@ function getCombinedSuggestions(historicalSpecials) {
                 for (const target of targetProps) {
                     let weight = 0;
                     const targetKey = target.toLowerCase();
-                    
+
                     // Tìm trọng số tương ứng
                     if (statSource.nextDayStats.head && statSource.nextDayStats.head[targetKey]) {
                         weight = statSource.nextDayStats.head[targetKey];
@@ -124,7 +127,7 @@ function getCombinedSuggestions(historicalSpecials) {
                     } else if (statSource.nextDayStats.diff && statSource.nextDayStats.diff[targetKey]) {
                         weight = statSource.nextDayStats.diff[targetKey];
                     }
-                    
+
                     if (weight > 0) {
                         finalScore += weight; // Cộng điểm xu hướng
                         reasons.push(`${trigger} -> ${target} (${weight})`);
@@ -139,86 +142,295 @@ function getCombinedSuggestions(historicalSpecials) {
     const sortedNumbers = [...numberScores.entries()]
         .sort((a, b) => b[1].score - a[1].score) // Sắp xếp theo điểm từ cao đến thấp
         .map(entry => entry[0]);
-        
+
     const topFactors = triggerProps.map(prop => [prop, 1]); // Hiển thị các tác nhân
 
     return {
-        mostLikely: sortedNumbers.slice(0, NUM_COUNT), // Lấy 25 số
+        mostLikely: sortedNumbers, // Trả về danh sách đã sắp xếp (chưa cắt)
         analysisDetails: {
             topFactors: topFactors
         }
     };
 }
 
+// --- LOGIC LOẠI TRỪ (MỚI) ---
+function calculateCurrentStreak(lotteryData, currentIndex, checkFn) {
+    let streak = 0;
+    // Duyệt ngược từ ngày hôm qua (currentIndex)
+    for (let i = currentIndex; i >= 0; i--) {
+        const val = lotteryData[i].special;
+        if (checkFn(val)) {
+            // Nếu ngày này thỏa mãn điều kiện (ví dụ: Đầu 0), streak dừng lại?
+            // KHÔNG: "Streak" ở đây là "Gan" (số ngày CHƯA về).
+            // Nếu gặp số thỏa mãn, nghĩa là nó ĐÃ về, vậy streak tính từ ngày đó đến nay là 0.
+            // Nhưng logic exclusion đang dùng "Streak" là "Chuỗi ngày liên tiếp KHÔNG về" hay "Chuỗi ngày liên tiếp VỀ"?
+            // À, logic exclusion trong suggestionsController là cho "veLienTiep" (Về liên tiếp).
+            // Tức là: Chuỗi ngày liên tiếp mà Đầu 0 XUẤT HIỆN.
 
-// === LOGIC MÔ PHỎNG GIẢ LẬP (GẤP THẾP) ===
-function runProgressiveSimulation(options, lotteryData) {
-    const { simulationDays, initialCapital } = options;
-    if (!simulationDays || !initialCapital) throw new Error('Thiếu Vốn hoặc Số ngày.');
+            // Vậy ta đếm số ngày liên tiếp thỏa mãn checkFn.
+            streak++;
+        } else {
+            break; // Gặp ngày không thỏa mãn -> đứt chuỗi
+        }
+    }
+    return streak;
+}
+
+function getExclusionsForDate(lotteryData, currentIndex, globalStats) {
+    const excludedNumbers = new Set();
+
+    // 1. Check DAU (0-9)
+    for (let val = 0; val <= 9; val++) {
+        const key = `dau_${val}`;
+        if (globalStats[key] && globalStats[key].veLienTiep) {
+            const currentLen = calculateCurrentStreak(lotteryData, currentIndex, (special) => Math.floor(special / 10) === val);
+            if (currentLen > 0 && shouldExclude(currentLen, globalStats[key].veLienTiep)) {
+                // Exclude all numbers with this Head
+                for (let n = 0; n < 100; n++) {
+                    if (Math.floor(n / 10) === val) excludedNumbers.add(n);
+                }
+            }
+        }
+    }
+
+    // 2. Check DIT (0-9)
+    for (let val = 0; val <= 9; val++) {
+        const key = `dit_${val}`;
+        if (globalStats[key] && globalStats[key].veLienTiep) {
+            const currentLen = calculateCurrentStreak(lotteryData, currentIndex, (special) => special % 10 === val);
+            if (currentLen > 0 && shouldExclude(currentLen, globalStats[key].veLienTiep)) {
+                // Exclude all numbers with this Tail
+                for (let n = 0; n < 100; n++) {
+                    if (n % 10 === val) excludedNumbers.add(n);
+                }
+            }
+        }
+    }
+
+    // 3. Check TONG_TT (1-10)
+    for (let val = 1; val <= 10; val++) {
+        const key = `tong_tt_${val}`;
+        if (globalStats[key] && globalStats[key].veLienTiep) {
+            const currentLen = calculateCurrentStreak(lotteryData, currentIndex, (special) => getTongTT(special) === val);
+            if (currentLen > 0 && shouldExclude(currentLen, globalStats[key].veLienTiep)) {
+                const nums = suggestionsController.getNumbersFromCategory(`tong_tt_${val}`);
+                nums.forEach(n => excludedNumbers.add(n));
+            }
+        }
+    }
+
+    // 4. Check HIEU (0-9)
+    for (let val = 0; val <= 9; val++) {
+        const key = `hieu_${val}`;
+        if (globalStats[key] && globalStats[key].veLienTiep) {
+            const currentLen = calculateCurrentStreak(lotteryData, currentIndex, (special) => getHieu(special) === val);
+            if (currentLen > 0 && shouldExclude(currentLen, globalStats[key].veLienTiep)) {
+                const nums = suggestionsController.getNumbersFromCategory(`hieu_${val}`);
+                nums.forEach(n => excludedNumbers.add(n));
+            }
+        }
+    }
+
+    // 5. Check Dong Tien / Dong Lui (dau_dit_tien_0 ... 9)
+    for (let val = 0; val <= 9; val++) {
+        const key = `dau_dit_tien_${val}`;
+        if (globalStats[key]) {
+            const p = { getVal: (n) => n }; // Dummy, logic handled below
+
+            // Dong Tien (tienLienTiep)
+            if (globalStats[key].tienLienTiep) {
+                // Calculate streak: consecutive days where value is in set AND value > prevValue
+                // Wait, calculateTrendStreak uses getValFn.
+                // For Dong Tien sets, the values are specific numbers (e.g., 00, 11, 22...).
+                // But we need to check if the *trend* is progressive within this set.
+                // Actually, `tienLienTiep` in statistics means "Progressive Sequence within the set".
+                // So we check if recent days form a progressive sequence in this set.
+
+                // We need to check if the *current* sequence ending at currentIndex is a progressive sequence in this set.
+                const setKey = `DAU_DIT_TIEN_${val}`;
+                const set = SETS[setKey];
+                if (set) {
+                    const currentLen = exclusionService.calculateTrendStreak(lotteryData, currentIndex, (n) => n, (curr, prev) => {
+                        // Check if both are in set AND curr > prev
+                        return set.includes(curr.toString().padStart(2, '0')) &&
+                            set.includes(prev.toString().padStart(2, '0')) &&
+                            curr > prev;
+                    });
+
+                    if (currentLen > 0 && shouldExclude(currentLen, globalStats[key].tienLienTiep)) {
+                        // Exclude numbers > lastValue in this set
+                        const lastVal = lotteryData[currentIndex].special;
+                        set.forEach(s => {
+                            const n = parseInt(s, 10);
+                            if (n > lastVal) excludedNumbers.add(n);
+                        });
+                    }
+                }
+            }
+
+            // Dong Lui (luiLienTiep)
+            if (globalStats[key].luiLienTiep) {
+                const setKey = `DAU_DIT_TIEN_${val}`;
+                const set = SETS[setKey];
+                if (set) {
+                    const currentLen = exclusionService.calculateTrendStreak(lotteryData, currentIndex, (n) => n, (curr, prev) => {
+                        return set.includes(curr.toString().padStart(2, '0')) &&
+                            set.includes(prev.toString().padStart(2, '0')) &&
+                            curr < prev;
+                    });
+
+                    if (currentLen > 0 && shouldExclude(currentLen, globalStats[key].luiLienTiep)) {
+                        // Exclude numbers < lastValue in this set
+                        const lastVal = lotteryData[currentIndex].special;
+                        set.forEach(s => {
+                            const n = parseInt(s, 10);
+                            if (n < lastVal) excludedNumbers.add(n);
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return excludedNumbers;
+}
+
+function shouldExclude(currentLen, statsData) {
+    const targetLen = currentLen + 1;
+    const gapInfo = statsData.gapStats ? statsData.gapStats[targetLen] : null;
+    const recordLen = statsData.longest && statsData.longest.length > 0 ? statsData.longest[0].length : 0;
+
+    if (currentLen >= recordLen && recordLen > 0) return true;
+    if (currentLen >= recordLen * 0.8 && recordLen > 2) return true;
+
+    if (gapInfo) {
+        if (gapInfo.minGap !== null && gapInfo.lastGap < gapInfo.minGap) return true;
+        if (gapInfo.avgGap > 0 && gapInfo.lastGap < 0.15 * gapInfo.avgGap) return true;
+    }
+    return false;
+}
+
+
+async function runProgressiveSimulation(options, lotteryData) {
+    const { simulationDays: days } = options;
+    if (!days) throw new Error('Thiếu Số ngày mô phỏng.');
     if (!lotteryData || lotteryData.length === 0) throw new Error('Không có dữ liệu.');
 
-    const days = parseInt(simulationDays, 10);
-    const capital = parseInt(initialCapital, 10);
-    const historicalSpecials = lotteryData.map(d => d.special.toString().padStart(2, '0'));
-    
-    const dailyResults = [];
-    let currentCapital = capital;
-    let totalLossSoFar = 0;
+    // [MỚI] Lấy thống kê toàn cục để dùng cho việc loại trừ
+    const globalStats = await statisticsService.getStatsData();
 
-    const startIndex = 3;
-    if (historicalSpecials.length < startIndex + 1) {
-        throw new Error('Không đủ dữ liệu lịch sử (cần ít nhất 4 ngày).');
-    }
-    const endIndex = Math.min(startIndex + days, historicalSpecials.length - 1);
+    // === LOGIC MỚI: LOẠI TRỪ & GẤP THẾP THEO LÃI ===
+    let currentStake = 10000; // Khởi điểm 10k
+    let sessionProfit = 0; // Lãi/Lỗ của chu kỳ hiện tại
+    let totalProfit = 0;
+    let totalCost = 0;
+    let totalRevenue = 0;
+    let winCount = 0;
+    let totalDaysPlayed = 0;
 
-    for (let i = startIndex; i < endIndex; i++) {
-        const historyUpToCurrentDay = historicalSpecials.slice(0, i + 1);
-        const winningNumber = String(Math.floor(Math.random() * 100)).padStart(2, '0');
-        
-        // Phân tích bằng logic mới
-        const { mostLikely } = getCombinedSuggestions(historyUpToCurrentDay);
-        
-        const betAmount = calculateBetAmount(totalLossSoFar);
-        
-        if (currentCapital < (betAmount * NUM_COUNT)) {
-            dailyResults.push({ 
-                day: dailyResults.length + 1,
-                date: "N/A",
-                error: 'Vỡ nợ - Không đủ vốn cược', 
-                betAmount: betAmount,
-                totalBet: (betAmount * NUM_COUNT),
-                profit: 0,
-                endCapital: currentCapital
-            });
-            break;
+    const results = [];
+
+    // Chạy mô phỏng từng ngày
+    // Bắt đầu từ ngày (total - days) đến ngày cuối cùng
+    const startIndex = lotteryData.length - days;
+
+    for (let i = startIndex; i < lotteryData.length; i++) {
+        const todayData = lotteryData[i];
+        const special = parseInt(todayData.special, 10);
+
+        // 1. Lấy danh sách loại trừ cho ngày này
+        // Lưu ý: getExclusionsForDate dùng currentIndex là i-1 (ngày hôm qua) để dự đoán cho ngày i
+        const excludedNumbers = await exclusionService.getExclusions(lotteryData, i - 1, globalStats);
+
+        // 2. Xác định các số sẽ đánh (Tất cả - Loại trừ)
+        const allNumbers = Array.from({ length: 100 }, (_, k) => k);
+        let numbersBet = allNumbers.filter(n => !excludedNumbers.has(n));
+
+        // 3. Kiểm tra điều kiện chơi: Chỉ đánh nếu số loại trừ > 30 (tức là đánh < 70 số)
+        let isSkipped = false;
+        if (excludedNumbers.size <= 30) {
+            isSkipped = true;
+            numbersBet = []; // Không đánh
         }
 
-        const calculation = calculateWinLoss(mostLikely, winningNumber, betAmount, totalLossSoFar);
-        
-        const profitToday = calculation.isWin ? (calculation.winAmount - calculation.totalBet) : calculation.profit;
-        currentCapital += profitToday;
-        totalLossSoFar = calculation.totalLossToDate;
+        // 4. Tính toán tài chính
+        let dailyCost = 0;
+        let dailyRevenue = 0;
+        let isWin = false;
 
-        dailyResults.push({
-            day: dailyResults.length + 1,
-            date: lotteryData[i + 1].date.substring(0, 10),
-            winningNumber,
-            numbersBet: mostLikely,
-            betAmount,
-            totalBet: calculation.totalBet,
-            winAmount: calculation.winAmount,
-            profit: profitToday, // Lãi/lỗ ròng của ngày
-            totalLossSoFar: totalLossSoFar,
-            endCapital: currentCapital
+        if (!isSkipped) {
+            dailyCost = numbersBet.length * currentStake;
+
+            if (numbersBet.includes(special)) {
+                dailyRevenue = 70 * currentStake; // Ăn 1:70
+                isWin = true;
+                winCount++;
+            }
+
+            totalDaysPlayed++;
+        }
+
+        const dailyProfit = dailyRevenue - dailyCost;
+
+        // Cập nhật tổng
+        totalCost += dailyCost;
+        totalRevenue += dailyRevenue;
+        totalProfit += dailyProfit;
+
+        // Cập nhật session profit
+        sessionProfit += dailyProfit;
+
+        // 5. Điều chỉnh mức cược (Progressive)
+        // Nếu đã có lãi trong session -> Reset
+        if (sessionProfit > 0) {
+            currentStake = 10000;
+            sessionProfit = 0; // Reset session mới
+        } else {
+            // Nếu chưa có lãi (hoặc lỗ) -> Tăng cược
+            // Chỉ tăng nếu ngày hôm nay CÓ CHƠI (skipped days don't trigger stake increase usually, 
+            // but logic says "đến khi có lãi", so we keep the debt. 
+            // If we skipped, we didn't lose more, so stake remains same? 
+            // Or should we increase? User said "vẫn đánh... đến khi có lãi". 
+            // If skipped, we can't "đánh". So we keep state.
+            if (!isSkipped) {
+                currentStake += 5000;
+            }
+        }
+
+        results.push({
+            date: todayData.date,
+            special: todayData.special,
+            numbersBet: isSkipped ? [] : numbersBet,
+            excludedCount: excludedNumbers.size,
+            isSkipped,
+            isWin,
+            stake: isSkipped ? 0 : currentStake, // Hiển thị mức cược (nếu chơi)
+            cost: dailyCost,
+            revenue: dailyRevenue,
+            profit: dailyProfit,
+            sessionProfit: sessionProfit, // Để debug
+            totalProfit: totalProfit
         });
     }
 
-    return { dailyResults, initialCapital: capital };
+    return {
+        summary: {
+            days: days,
+            playedDays: totalDaysPlayed,
+            winCount: winCount,
+            winRate: totalDaysPlayed > 0 ? ((winCount / totalDaysPlayed) * 100).toFixed(2) : 0,
+            totalCost,
+            totalRevenue,
+            totalProfit,
+            roi: totalCost > 0 ? ((totalProfit / totalCost) * 100).toFixed(2) : 0
+        },
+        details: results.reverse() // Mới nhất lên đầu
+    };
 }
 
-module.exports = { 
-    getCombinedSuggestions,
+module.exports = {
     calculateBetAmount,
     calculateWinLoss,
-    runProgressiveSimulation
+    runProgressiveSimulation,
+    getExclusionsForDate: exclusionService.getExclusions
 };

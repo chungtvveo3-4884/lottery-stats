@@ -1,0 +1,448 @@
+const statisticsService = require('../services/statisticsService');
+const { SETS, findNextInSet, findPreviousInSet, INDEX_MAPS, getTongTT, getTongMoi, getHieu } = require('../utils/numberAnalysis');
+
+exports.getSuggestions = async (req, res) => {
+    try {
+        const quickStats = await statisticsService.getQuickStats();
+        const latestDate = await statisticsService.getLatestDate();
+        const excludedNumbers = new Set();
+        const explanations = [];
+
+        for (const key in quickStats) {
+            const stat = quickStats[key];
+
+            // Remove strict date check to match frontend display
+            if (!stat.current) continue;
+
+            const currentLen = stat.current.length;
+            const [category, subcategory] = key.split(':');
+            const isSoLePattern = subcategory === 'veSole' || subcategory === 'veSoleMoi';
+
+            // For so le patterns, targetLen = currentLen + 2 (skip every other day)
+            // For other patterns, targetLen = currentLen + 1
+            const targetLen = isSoLePattern ? currentLen + 2 : currentLen + 1;
+
+            const gapInfo = stat.gapStats ? stat.gapStats[targetLen] : null;
+            const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
+
+            // 1. Kiểm tra nếu đã đạt kỷ lục -> Loại
+            if (currentLen >= recordLen && recordLen > 0) {
+                addExcludedNumber(stat, key, `Chuỗi hiện tại(${currentLen} ngày) đã đạt kỷ lục dài nhất(${recordLen} ngày).Xác suất phá kỷ lục là THẤP.`);
+            }
+
+            // 1.5. Kiểm tra nếu gần đạt kỷ lục (>= 80%) -> Loại (NEW)
+            else if (currentLen >= recordLen * 0.8 && recordLen > 2) {
+                const percentage = Math.round(currentLen / recordLen * 100);
+                addExcludedNumber(stat, key,
+                    `Chuỗi hiện tại(${currentLen} ngày) đã đạt ${percentage}% kỷ lục(${recordLen} ngày).Xác suất phá kỷ lục là THẤP.`
+                );
+            }
+
+            // 2. Kiểm tra quy tắc Gap - Sử dụng minGap HOẶC avgGap (NEW: parallel condition)
+            if (gapInfo) {
+                let shouldExclude = false;
+                let explanation = '';
+
+                // Check minGap condition
+                if (gapInfo.minGap !== null && gapInfo.lastGap < gapInfo.minGap) {
+                    shouldExclude = true;
+                    explanation = `Chuỗi hiện tại: ${currentLen} ngày.Khoảng cách ngắn nhất từng xuất hiện cho chuỗi ${targetLen} ngày là ${gapInfo.minGap} ngày.Khoảng cách từ lần cuối đến ngày mai: ${gapInfo.lastGap} ngày < ${gapInfo.minGap} ngày, nên xác suất lên ${targetLen} ngày là THẤP.`;
+                }
+                // Check avgGap condition (parallel, not else-if)
+                else if (gapInfo.avgGap > 0 && gapInfo.lastGap < 0.15 * gapInfo.avgGap) {
+                    shouldExclude = true;
+                    explanation = `Chuỗi hiện tại: ${currentLen} ngày. TB xuất hiện chuỗi ${targetLen} ngày là ${gapInfo.avgGap} ngày. Khoảng cách từ lần cuối đến ngày mai: ${gapInfo.lastGap} ngày < 15% TB (${Math.round(0.15 * gapInfo.avgGap)}), nên xác suất lên ${targetLen} ngày là THẤP.`;
+                }
+
+                if (shouldExclude) {
+                    addExcludedNumber(stat, key, explanation);
+                }
+            }
+        }
+
+        function addExcludedNumber(stat, key, reason) {
+            let nums = [];
+
+            const [category, subcategory] = key.split(':');
+
+            // Xử lý các dạng Tiến/Lùi (Đều hoặc Liên Tiếp) - dự đoán giá trị tiếp theo
+            if (subcategory === 'tienDeuLienTiep' || subcategory === 'luiDeuLienTiep' ||
+                subcategory === 'tienLienTiep' || subcategory === 'luiLienTiep') {
+                nums = predictNextInSequence(stat, category, subcategory);
+            }
+            // Xử lý các dạng về liên tiếp - cùng số
+            else if (subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
+                // Kiểm tra xem đây là dạng gì
+                if (category.startsWith('dau_')) {
+                    // Đầu X về liên tiếp → tất cả số có đầu = X
+                    const digit = category.split('_')[1];
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[0] === digit);
+                } else if (category.startsWith('dit_')) {
+                    // Đít X về liên tiếp → tất cả số có đít = X
+                    const digit = category.split('_')[1];
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[1] === digit);
+                } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
+                    // Tổng/Hiệu về liên tiếp → tất cả số trong dạng đó
+                    // Ví dụ: tong_tt_6_7_8 → tất cả số có tổng 6, 7, hoặc 8
+                    nums = getNumbersFromCategory(category);
+                } else if (stat.current.value) {
+                    // Số cụ thể về liên tiếp
+                    nums = [parseInt(stat.current.value, 10)];
+                } else if (stat.current.values && stat.current.values.length > 0) {
+                    // Trường hợp có values array
+                    nums = stat.current.values.map(v => parseInt(v, 10));
+                } else {
+                    // Fallback: lấy toàn bộ set
+                    nums = getNumbersFromCategory(category);
+                }
+            }
+            // Xử lý các dạng về so le (alternating)
+            else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
+                // Với so le, gợi ý loại trừ số/giá trị đang lặp lại
+                let valuesToExclude = [];
+                if (stat.current.value) {
+                    valuesToExclude = [stat.current.value];
+                } else if (stat.current.values && stat.current.values.length > 0) {
+                    valuesToExclude = stat.current.values;
+                }
+
+                // Nếu category là dạng thuộc tính (Tổng, Đầu, Đít...), cần expand giá trị thành bộ số
+                if (category.startsWith('tong_') || category.startsWith('hieu_') ||
+                    category.startsWith('dau_') || category.startsWith('dit_')) {
+
+                    nums = [];
+                    for (const val of valuesToExclude) {
+                        // Construct a temporary category key for this specific value
+                        // e.g. if category is 'tong_tt_cac_tong' and val is '5', we want numbers for 'tong_tt_5'
+                        let tempCategory = '';
+
+                        if (category.startsWith('tong_tt_')) tempCategory = `tong_tt_${val} `;
+                        else if (category.startsWith('tong_moi_')) tempCategory = `tong_moi_${val} `;
+                        else if (category.startsWith('hieu_')) tempCategory = `hieu_${val} `;
+                        else if (category.startsWith('dau_')) tempCategory = `dau_${val} `;
+                        else if (category.startsWith('dit_')) tempCategory = `dit_${val} `;
+
+                        // Use the existing helper to get numbers for this specific property value
+                        const expandedNums = getNumbersFromCategory(tempCategory);
+                        nums = [...nums, ...expandedNums];
+                    }
+                    // Deduplicate
+                    nums = [...new Set(nums)];
+                } else {
+                    // Nếu là số cụ thể (không phải thuộc tính), dùng trực tiếp
+                    nums = valuesToExclude.map(v => parseInt(v, 10));
+                }
+            }
+            // Xử lý các dạng khác - toàn bộ set
+            else {
+                nums = getNumbersFromCategory(category);
+            }
+
+            // Fallback: nếu nums rỗng, thử lấy từ category
+            if (nums.length === 0) {
+                nums = getNumbersFromCategory(category);
+            }
+
+            // Filter out null, undefined, and NaN values
+            if (nums.length > 0) {
+                nums = nums.filter(n => n !== null && n !== undefined && !isNaN(n) && typeof n === 'number');
+            }
+
+            // Luôn thêm explanation nếu có lý do, kể cả khi không có số cụ thể (để cảnh báo)
+            if (nums.length > 0) {
+                nums.forEach(n => excludedNumbers.add(n));
+            }
+
+            explanations.push({
+                type: 'exclude',
+                title: `${stat.description} `,
+                explanation: reason,
+                numbers: nums.length > 0 ? nums : null // Pass null if no numbers, frontend handles it
+            });
+        }
+
+        function predictNextInSequence(stat, category, subcategory) {
+            // Lấy lastValue từ values hoặc value
+            let lastValue = null;
+            if (stat.current.values && stat.current.values.length > 0) {
+                lastValue = stat.current.values[stat.current.values.length - 1];
+            } else if (stat.current.value) {
+                lastValue = stat.current.value;
+            } else {
+                return [];
+            }
+
+            const isProgressive = subcategory.includes('tien'); // tienDeuLienTiep or tienLienTiep
+            const isRegressive = subcategory.includes('lui'); // luiDeuLienTiep or luiLienTiep
+
+            // Xác định loại sequence và loại trừ TẤT CẢ số phù hợp
+            const nums = [];
+
+            if (category.startsWith('dau_dit_')) {
+                // Đầu-Đít tiến/lùi: loại trừ tất cả số có đầu-đít >= hoặc <= lastValue
+                const lastNum = parseInt(lastValue, 10);
+                if (isNaN(lastNum)) return [];
+
+                for (let i = 0; i < 100; i++) {
+                    const numStr = i.toString().padStart(2, '0');
+                    const dau = parseInt(numStr[0]);
+                    const dit = parseInt(numStr[1]);
+                    const dauDit = dau * 10 + dit; // Tạo số 2 chữ số từ đầu và đít
+
+                    if (isProgressive && dauDit >= lastNum) {
+                        nums.push(i);
+                    } else if (isRegressive && dauDit <= lastNum) {
+                        nums.push(i);
+                    }
+                }
+            } else if (category.startsWith('dau_')) {
+                // Đầu tiến/lùi: loại trừ tất cả số có đầu >= hoặc <= lastValue
+                const lastDau = parseInt(lastValue, 10);
+                if (isNaN(lastDau)) return [];
+
+                for (let i = 0; i < 100; i++) {
+                    const dau = Math.floor(i / 10);
+                    if (isProgressive && dau >= lastDau) {
+                        nums.push(i);
+                    } else if (isRegressive && dau <= lastDau) {
+                        nums.push(i);
+                    }
+                }
+            } else if (category.startsWith('dit_')) {
+                // Đít tiến/lùi: loại trừ tất cả số có đít >= hoặc <= lastValue
+                const lastDit = parseInt(lastValue, 10);
+                if (isNaN(lastDit)) return [];
+
+                for (let i = 0; i < 100; i++) {
+                    const dit = i % 10;
+                    if (isProgressive && dit >= lastDit) {
+                        nums.push(i);
+                    } else if (isRegressive && dit <= lastDit) {
+                        nums.push(i);
+                    }
+                }
+            } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_')) {
+                // Tổng tiến/lùi: loại trừ tất cả số có tổng >= hoặc <= lastValue
+                const lastTong = parseInt(lastValue, 10);
+                if (isNaN(lastTong)) return [];
+
+                const getTong = category.startsWith('tong_tt_') ? getTongTT : getTongMoi;
+                for (let i = 0; i < 100; i++) {
+                    const tong = getTong(i);
+                    if (isProgressive && tong >= lastTong) {
+                        nums.push(i);
+                    } else if (isRegressive && tong <= lastTong) {
+                        nums.push(i);
+                    }
+                }
+            } else if (category.startsWith('hieu_')) {
+                // Hiệu tiến/lùi: loại trừ tất cả số có hiệu >= hoặc <= lastValue
+                const lastHieu = parseInt(lastValue, 10);
+                if (isNaN(lastHieu)) return [];
+
+                for (let i = 0; i < 100; i++) {
+                    const hieu = getHieu(i);
+                    if (isProgressive && hieu >= lastHieu) {
+                        nums.push(i);
+                    } else if (isRegressive && hieu <= lastHieu) {
+                        nums.push(i);
+                    }
+                }
+            } else {
+                // Số cụ thể tiến/lùi: loại trừ tất cả số >= hoặc <= lastValue
+                const lastNum = parseInt(lastValue, 10);
+                if (isNaN(lastNum)) return [];
+
+                for (let i = 0; i < 100; i++) {
+                    if (isProgressive && i >= lastNum) {
+                        nums.push(i);
+                    } else if (isRegressive && i <= lastNum) {
+                        nums.push(i);
+                    }
+                }
+            }
+
+            return nums;
+        }
+        const targetDiff = parseInt(nextVal, 10);
+        resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
+            .filter(n => getHieu(String(n).padStart(2, '0')) === targetDiff));
+    }
+            // Với Đồng Tiến
+            else if (category.startsWith('dau_dit_tien_')) {
+        resultNumbers.push(parseInt(nextVal, 10));
+    }
+    // Với Đầu/Đít
+    else if (category.startsWith('dau_')) {
+        const targetDigit = nextVal;
+        resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
+            .filter(n => String(n).padStart(2, '0')[0] === targetDigit));
+    }
+    else if (category.startsWith('dit_')) {
+        const targetDigit = nextVal;
+        resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
+            .filter(n => String(n).padStart(2, '0')[1] === targetDigit));
+    }
+}
+
+if (resultNumbers.length > 0) {
+    return [...new Set(resultNumbers)]; // Remove duplicates if any
+}
+
+// Fallback cuối cùng
+return getNumbersFromCategory(category);
+    }
+
+// Helper function: Tìm số tiếp theo trong set CÓ WRAP
+function findNextInSequenceWithWrap(currentValue, numberSet, isProgressive) {
+    const sortedSet = [...numberSet].sort((a, b) => parseInt(a) - parseInt(b));
+    const currentIndex = sortedSet.indexOf(currentValue);
+
+    if (currentIndex === -1) return null;
+
+    if (isProgressive) {
+        if (currentIndex === sortedSet.length - 1) return sortedSet[0]; // Wrap to first
+        return sortedSet[currentIndex + 1];
+    } else {
+        if (currentIndex === 0) return sortedSet[sortedSet.length - 1]; // Wrap to last
+        return sortedSet[currentIndex - 1];
+    }
+}
+
+// Helper function: Lấy TẤT CẢ các số lớn hơn/nhỏ hơn trong set (cho Liên Tiếp) - CÓ WRAP
+function getAllGreaterOrSmaller(currentValue, numberSet, isProgressive) {
+    // Sort numberSet correctly based on numeric value
+    const sortedSet = [...numberSet].sort((a, b) => parseInt(a) - parseInt(b));
+    const currentIndex = sortedSet.indexOf(currentValue);
+
+    if (currentIndex === -1) return [];
+
+    let result = [];
+    if (isProgressive) {
+        // Tiến: Lấy tất cả số lớn hơn
+        const greater = sortedSet.slice(currentIndex + 1);
+        // Nếu đã ở cuối, wrap về đầu
+        // Ví dụ: Tiến từ 8 (trong 0,2,4,6,8) -> wrap về 0,2,4,6
+        if (greater.length === 0) {
+            result = sortedSet.slice(0, currentIndex);
+        } else {
+            result = greater;
+        }
+    } else {
+        // Lùi: Lấy tất cả số nhỏ hơn
+        const smaller = sortedSet.slice(0, currentIndex);
+        // Nếu đã ở đầu, wrap về cuối
+        // Ví dụ: Lùi từ 0 (trong 0,2,4,6,8) -> wrap về 2,4,6,8 (KHÔNG bao gồm 0)
+        if (smaller.length === 0) {
+            result = sortedSet.slice(currentIndex + 1);
+        } else {
+            result = smaller;
+        }
+    }
+
+    // Safety check: Đảm bảo không bao gồm giá trị hiện tại
+    return result.filter(v => v !== currentValue);
+}
+
+function getNumbersFromCategory(category) {
+    let setKey = category.toUpperCase();
+
+    // Handle specific mappings
+    if (category.startsWith('dau_')) {
+        setKey = 'DAU_' + category.split('_')[1].toUpperCase();
+    } else if (category.startsWith('dit_')) {
+        setKey = 'DIT_' + category.split('_')[1].toUpperCase();
+    } else if (category.startsWith('tong_tt_')) {
+        setKey = 'TONG_TT_' + category.replace('tong_tt_', '').toUpperCase();
+    } else if (category.startsWith('tong_moi_')) {
+        setKey = 'TONG_MOI_' + category.replace('tong_moi_', '').toUpperCase();
+    } else if (category.startsWith('hieu_')) {
+        setKey = 'HIEU_' + category.replace('hieu_', '').toUpperCase();
+    } else if (category.startsWith('dau_dit_tien_')) {
+        setKey = 'DAU_DIT_TIEN_' + category.split('_')[3];
+    } else if (category === 'chanChan') {
+        setKey = 'CHAN_CHAN';
+    } else if (category === 'chanLe') {
+        setKey = 'CHAN_LE';
+    } else if (category === 'leChan') {
+        setKey = 'LE_CHAN';
+    } else if (category === 'leLe') {
+        setKey = 'LE_LE';
+    }
+
+    // 1. Try direct lookup
+    if (SETS[setKey]) {
+        return SETS[setKey].map(n => parseInt(n, 10));
+    }
+
+    // 2. Try dynamic group parsing (e.g., TONG_TT_5_6_7 or TONG_TT_5_7 as range)
+    // Check for prefixes that support grouping
+    const groupPrefixes = [
+        { prefix: 'TONG_TT_', max: 10, min: 1 },
+        { prefix: 'TONG_MOI_', max: 18, min: 0 },
+        { prefix: 'HIEU_', max: 9, min: 0 }
+    ];
+
+    for (const config of groupPrefixes) {
+        const { prefix, max, min } = config;
+        if (setKey.startsWith(prefix)) {
+            const suffix = setKey.replace(prefix, '');
+            // Check if suffix contains underscores (indicating a group)
+            if (suffix.includes('_')) {
+                const parts = suffix.split('_').map(p => parseInt(p, 10));
+                let targetNums = [];
+
+                // Case A: Explicit list (e.g., 5_6_7) - handled by loop below if we treat it as list
+                // Case B: Range (e.g., 5_7 -> 5, 6, 7) - common in this codebase
+
+                // If exactly 2 parts, treat as range (START_END)
+                if (parts.length === 2) {
+                    const start = parts[0];
+                    const end = parts[1];
+
+                    // Generate sequence with wrap
+                    let current = start;
+                    while (current !== end) {
+                        targetNums.push(current);
+                        current++;
+                        if (current > max) current = min;
+                    }
+                    targetNums.push(end);
+                } else {
+                    // Treat as explicit list
+                    targetNums = parts;
+                }
+
+                // Fetch sets for each number
+                let combinedNums = [];
+                for (const num of targetNums) {
+                    const individualKey = prefix + num;
+                    if (SETS[individualKey]) {
+                        combinedNums = [...combinedNums, ...SETS[individualKey]];
+                    }
+                }
+
+                if (combinedNums.length > 0) {
+                    // Deduplicate and return
+                    return [...new Set(combinedNums)].map(n => parseInt(n, 10));
+                }
+            }
+        }
+    }
+
+    return [];
+}
+
+res.json({
+    excludedNumbers: Array.from(excludedNumbers).sort((a, b) => a - b),
+    explanations: explanations,
+    numbersToBet: []
+});
+
+} catch (error) {
+    console.error('Error generating suggestions:', error);
+    res.status(500).json({ error: 'Failed to generate suggestions' });
+}
+};

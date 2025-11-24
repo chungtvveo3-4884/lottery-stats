@@ -1,5 +1,5 @@
 const statisticsService = require('../services/statisticsService');
-const suggestionService = require('../services/suggestionService'); 
+const suggestionService = require('../services/suggestionService');
 
 /**
  * Handler chung để lấy dữ liệu thống kê
@@ -16,9 +16,9 @@ exports.getStats = async (req, res) => {
 
         // Truyền đúng tham số 'exactLength' vào bộ lọc
         const filters = { startDate, endDate, minLength: exactLength };
-        
+
         const results = await statisticsService.getFilteredStreaks(category, subcategory, filters);
-        
+
         res.json(results);
     } catch (error) {
         console.error('Lỗi xử lý yêu cầu thống kê:', error);
@@ -44,11 +44,22 @@ exports.getSuggestions = async (req, res) => {
         // Chỉ cần lấy chuỗi nóng và thống kê tổng thể
         const recentStreaks = await statisticsService.getRecentStreaks();
         const overallStats = await statisticsService.getQuickStats();
-        
+
         const suggestions = await suggestionService.generateSuggestions(recentStreaks, overallStats);
         res.json(suggestions);
     } catch (error) {
         console.error('Lỗi khi tạo gợi ý:', error);
         res.status(500).json({ message: "Lỗi máy chủ nội bộ khi tạo gợi ý" });
+    }
+};
+
+exports.getRecentLotteryResults = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 7;
+        const results = await statisticsService.getRecentResults(limit);
+        res.json(results);
+    } catch (error) {
+        console.error('Lỗi khi lấy kết quả xổ số gần đây:', error);
+        res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
     }
 };

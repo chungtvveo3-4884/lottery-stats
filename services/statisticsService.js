@@ -27,13 +27,13 @@ async function getStatsData() {
             fs.readFile(HEAD_TAIL_STATS_PATH, 'utf-8').catch(() => '{}'),
             fs.readFile(SUM_DIFFERENCE_STATS_PATH, 'utf-8').catch(() => '{}')
         ]);
-        
+
         const numberStats = JSON.parse(numberStatsRaw);
         const headTailStats = JSON.parse(headTailStatsRaw);
         const sumDiffStats = JSON.parse(sumDiffStatsRaw);
 
         // Nạp dữ liệu vào cache
-        cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats }; 
+        cachedStats = { ...numberStats, ...headTailStats, ...sumDiffStats };
         console.log('[CACHE] Đã nạp thành công dữ liệu statistic mới vào cache.');
         return cachedStats;
 
@@ -74,12 +74,29 @@ async function getLatestDate() {
     }
 }
 
+/**
+ * Lấy kết quả xổ số gần đây (mặc định 7 ngày)
+ */
+async function getRecentResults(limit = 7) {
+    try {
+        const rawData = await fs.readFile(RAW_DATA_PATH, 'utf-8');
+        const data = JSON.parse(rawData);
+
+        // Lấy N ngày cuối cùng (theo thứ tự thời gian)
+        const recentData = data.slice(-limit);
+        return recentData;
+    } catch (error) {
+        console.error('Lỗi khi lấy kết quả gần đây:', error);
+        return [];
+    }
+}
+
 
 /**
  * Hàm tiện ích để chuyển đổi chuỗi ngày 'dd/mm/yyyy' thành đối tượng Date
  */
 function parseDate(dateString) {
-    if(!dateString) return null;
+    if (!dateString) return null;
     const parts = dateString.split('/');
     if (parts.length !== 3) return null;
     // new Date(year, monthIndex, day)
@@ -108,18 +125,18 @@ async function getFilteredStreaks(category, subcategory, filters = {}) {
 
     if (filters.startDate) {
         const start = parseDate(filters.startDate);
-        if(start) finalStreaks = finalStreaks.filter(s => parseDate(s.startDate) >= start);
+        if (start) finalStreaks = finalStreaks.filter(s => parseDate(s.startDate) >= start);
     }
     if (filters.endDate) {
         const end = parseDate(filters.endDate);
-        if(end) finalStreaks = finalStreaks.filter(s => parseDate(s.endDate) <= end);
+        if (end) finalStreaks = finalStreaks.filter(s => parseDate(s.endDate) <= end);
     }
     if (filters.minLength && filters.minLength !== 'all') {
         // === SỬA LỖI CHÍNH TẠI ĐÂY ===
         // Thay đổi toán tử so sánh từ >= thành == để lọc chính xác.
         finalStreaks = finalStreaks.filter(s => s.length == filters.minLength);
     }
-    
+
     return {
         description: statsData.description,
         streaks: finalStreaks
@@ -134,6 +151,7 @@ async function getQuickStats() {
     const allStats = await getStatsData();
     const quickStats = {};
     latestDate = await getLatestDate();
+    const today = latestDate ? parseDate(latestDate) : new Date();
 
     const analyzeCategory = (key, categoryData) => {
         if (!categoryData || !Array.isArray(categoryData.streaks) || categoryData.streaks.length === 0) {
@@ -142,19 +160,54 @@ async function getQuickStats() {
 
         const streaks = [...categoryData.streaks].sort((a, b) => b.length - a.length);
         const longest = streaks.filter(s => s.length === streaks[0].length);
-        
+
         let secondLongest = [];
         const longestLength = longest[0].length;
-        for(let i=0; i < streaks.length; i++){
-            if(streaks[i].length < longestLength){
+        for (let i = 0; i < streaks.length; i++) {
+            if (streaks[i].length < longestLength) {
                 const secondLength = streaks[i].length;
                 secondLongest = streaks.filter(s => s.length === secondLength);
                 break;
             }
         }
-        
-        const current = latestDate ? categoryData.streaks.find(s => s.endDate === latestDate) : null;
 
+        // Xác định chuỗi hiện tại (đang diễn ra)
+        let current = null;
+        if (latestDate) {
+            const isSoLe = key.toLowerCase().includes('sole');
+            if (isSoLe) {
+                // Với so le: Chỉ lấy chuỗi có endDate = latestDate - 1 (ngày hôm qua)
+                const yesterday = new Date(today);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = `${String(yesterday.getDate()).padStart(2, '0')}/${String(yesterday.getMonth() + 1).padStart(2, '0')}/${yesterday.getFullYear()}`;
+
+                const streak = categoryData.streaks.find(s => s.endDate === yesterdayStr);
+                if (streak) {
+                    // Thêm kết quả ngày hôm nay vào fullSequence để hiển thị
+                    current = { ...streak };
+                    // Lấy dữ liệu số của ngày hôm nay
+                    const lotteryService = require('./lotteryService');
+                    const rawData = lotteryService.getRawData();
+                    if (rawData && rawData.length > 0) {
+                        const latestDayData = rawData.find(d => d.date === latestDate);
+                        if (latestDayData && latestDayData.special) {
+                            // Thêm vào fullSequence
+                            if (!current.fullSequence) current.fullSequence = [];
+                            current.fullSequence.push({
+                                date: latestDate,
+                                value: latestDayData.special,
+                                isLatest: true // Đánh dấu là ngày mới nhất
+                            });
+                        }
+                    }
+                }
+            } else {
+                // Với dạng khác: Chuỗi đang diễn ra = kết thúc đúng ngày mới nhất
+                current = categoryData.streaks.find(s => s.endDate === latestDate);
+            }
+        }
+
+        // Tính toán khoảng cách trung bình chung (như cũ)
         const streaksByDate = [...categoryData.streaks].sort((a, b) => parseDate(a.startDate) - parseDate(b.startDate));
         let totalInterval = 0;
         let daysSinceLast = 'N/A';
@@ -168,18 +221,84 @@ async function getQuickStats() {
                 totalInterval += diffDays;
             }
         }
-        
+
         const averageInterval = streaksByDate.length > 1 ? Math.round(totalInterval / (streaksByDate.length - 1)) : 0;
-        
+
         if (latestDate && streaksByDate.length > 0) {
             const lastStreakEndDate = parseDate(streaksByDate[streaksByDate.length - 1].endDate);
-            const today = parseDate(latestDate);
-            if(today && lastStreakEndDate){
+            if (today && lastStreakEndDate) {
                 const diffTime = Math.abs(today - lastStreakEndDate);
                 daysSinceLast = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             }
         }
 
+        // === TÍNH TOÁN GAP STATS CHI TIẾT CHO TỪNG ĐỘ DÀI ===
+        const gapStats = {};
+        const maxLen = longestLength > 0 ? longestLength : 0;
+        const calcLimit = maxLen + 1;
+
+        // Detect if this is a "so le" pattern
+        const isSoLePattern = key.includes('veSole') || key.includes('veSoleMoi');
+
+        for (let len = 2; len <= calcLimit; len++) {
+            // CHỈ lấy các chuỗi có độ dài CHÍNH XÁC = len (không phải >= len)
+            const exactStreaks = categoryData.streaks
+                .filter(s => s.length === len)
+                .sort((a, b) => parseDate(a.endDate) - parseDate(b.endDate));
+
+            if (exactStreaks.length < 2) {
+                let lastGap = 0;
+                if (exactStreaks.length === 1) {
+                    const lastEnd = parseDate(exactStreaks[0].endDate);
+                    if (exactStreaks[0].endDate !== latestDate) {
+                        const tomorrow = new Date(today);
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        lastGap = Math.ceil((tomorrow - lastEnd) / 86400000);
+                    }
+                }
+                gapStats[len] = { avgGap: 0, lastGap, minGap: null, count: exactStreaks.length, pastCount: exactStreaks.length };
+                continue;
+            }
+
+            // Calculate individual gaps between consecutive streaks
+            const gaps = [];
+            for (let i = 0; i < exactStreaks.length - 1; i++) {
+                const gap = Math.ceil((parseDate(exactStreaks[i + 1].endDate) - parseDate(exactStreaks[i].endDate)) / 86400000);
+                gaps.push(gap);
+            }
+
+            // Filter gaps based on pattern type to exclude consecutive streaks
+            let filteredGaps;
+            if (isSoLePattern) {
+                // For so le: exclude gaps <= 2 (consecutive streaks that should be merged)
+                filteredGaps = gaps.filter(g => g > 2);
+            } else {
+                // For regular patterns: exclude gap = 1 (consecutive streaks)
+                filteredGaps = gaps.filter(g => g > 1);
+            }
+
+            // Calculate avgGap and minGap
+            const avgGap = filteredGaps.length > 0
+                ? Math.round(filteredGaps.reduce((sum, g) => sum + g, 0) / filteredGaps.length)
+                : 0;
+            const minGap = filteredGaps.length > 0 ? Math.min(...filteredGaps) : null;
+
+            // Tính lastGap: Từ chuỗi cuối cùng (không tính chuỗi hiện tại) đến NGÀY MAI
+            let lastGap = 0;
+            const pastStreaks = exactStreaks.filter(s => s.endDate !== latestDate);
+
+            if (pastStreaks.length > 0) {
+                const lastPastStreak = pastStreaks[pastStreaks.length - 1];
+                const lastPastEnd = parseDate(lastPastStreak.endDate);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                lastGap = Math.ceil((tomorrow - lastPastEnd) / 86400000);
+            } else {
+                lastGap = 0;
+            }
+
+            gapStats[len] = { avgGap, lastGap, minGap, count: exactStreaks.length, pastCount: pastStreaks.length };
+        }
 
         quickStats[key] = {
             description: categoryData.description,
@@ -187,7 +306,8 @@ async function getQuickStats() {
             secondLongest,
             current,
             averageInterval,
-            daysSinceLast
+            daysSinceLast,
+            gapStats
         };
     };
 
@@ -232,7 +352,7 @@ async function getRecentStreaks(days = 30) {
             recentStreaks.streaks[currentLength].push({
                 statName: key,
                 statDescription: streakInfo.description,
-                details: [streakInfo.current] 
+                details: [streakInfo.current]
             });
         }
     }
@@ -247,7 +367,7 @@ async function getStreakStats(statName, exactLength) {
     try {
         const allStreaks = await getAllStreaks();
         const streakData = allStreaks[statName];
-        
+
         if (!streakData || !streakData.streaks) {
             return { runs: [] };
         }
@@ -289,6 +409,8 @@ module.exports = {
     clearCache,
     getAllStreaks,
     getRecentStreaks,
+    getRecentResults,
     getLatestLotteryResult, // <-- ĐÃ THÊM VÀO EXPORT
-    getStreakStats // Thêm dòng này
+    getStreakStats, // Thêm dòng này
+    getLatestDate // Add this line
 };
