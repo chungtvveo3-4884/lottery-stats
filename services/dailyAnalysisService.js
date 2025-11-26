@@ -116,44 +116,114 @@ async function analyzeAndSavePrediction() {
     // User yêu cầu "vẫn đánh 10000 VND với bước nhảy 5000". Logic calculateBetAmount hiện tại có thể khác.
     // Tuy nhiên, để nhất quán với simulation, ta nên dùng logic progressive của simulationService.
     // Nhưng dailyAnalysisService chạy độc lập mỗi ngày, state được lưu trong predictions.json.
-    // Ta cần lưu state "sessionProfit" hoặc tương tự.
-    // Hiện tại predictions.json lưu "totalLossToDate".
-    // Hãy tạm giữ logic betAmount cũ nếu user không yêu cầu đổi logic tính tiền cho phần Daily Prediction cụ thể.
-    // User nói: "vẫn đánh 10000 VND với bước nhảy 5000 đến khi có lãi" -> Đây là logic mới.
-    // Logic cũ calculateBetAmount là Martingale (gấp thếp khi thua).
-    // Logic mới là +5k khi thua.
-    // Ta cần cập nhật calculateBetAmount trong simulationService nếu muốn dùng chung.
-    // Nhưng simulationService.runProgressiveSimulation có logic riêng bên trong loop.
-    // Ta nên update calculateBetAmount để phản ánh logic mới này nếu có thể, hoặc viết logic mới ở đây.
+    const numbersToBet = allNumbers.filter(n => !excludedNumbers.has(parseInt(n)));
 
-    // Logic mới:
-    // Nếu lastPrediction thắng hoặc chưa có (lãi > 0) -> 10k.
-    // Nếu lastPrediction thua (lãi <= 0) -> lastBet + 5k.
-    // Cần check profit của phiên hiện tại.
-    // predictions.json không lưu sessionProfit.
-    // Tạm thời để đơn giản: Nếu totalLossToDate > 0 (tức là đang lỗ) -> Tăng cược?
-    // User: "đến khi có lãi".
-    // Logic: Start 10k. Loss -> +5k. Win -> Reset 10k (nếu lãi cover hết lỗ).
-    // Thôi cứ để betAmountForTomorrow = 10 (10k) nếu isSkipped, hoặc tính theo logic cũ tạm thời.
-    // Quan trọng là danh sách số.
+    // 3. Tính tiền cược (Gấp thếp)
+    // Cần lấy totalLossToDate từ ngày gần nhất CÓ KẾT QUẢ
+    // Tìm ngày gần nhất có result
+    let lastLoss = 0;
+    for (let i = predictions.length - 1; i >= 0; i--) {
+        if (predictions[i].result) {
+            lastLoss = predictions[i].result.totalLossToDate;
+            break;
+        }
+    }
+
+    const betAmount = calculateBetAmount(lastLoss);
 
     const newPrediction = {
         date: predictionDateStr,
-        basedOn: historicalSpecials.slice(-3),
-        betAmount: 10, // Tạm để 10k, logic tăng tiền cần state phức tạp hơn
-        danh: { numbers: numbersBet },
+        danh: {
+            numbers: numbersToBet,
+            count: numbersToBet.length
+        },
+        betAmount: betAmount,
         analysisDetails: {
             excludedCount: excludedNumbers.size,
-            isSkipped: isSkipped,
-            topFactors: [] // Không còn dùng topFactors của scoring
+            // Có thể thêm chi tiết loại trừ vào đây nếu cần
         },
-        result: null
+        result: null // Chưa có kết quả
     };
 
-    predictions.push(newPrediction);
+    // [MỚI] Ghi đè nếu đã tồn tại, thay vì bỏ qua
+    const existingIndex = predictions.findIndex(p => p.date === predictionDateStr);
+    if (existingIndex !== -1) {
+        console.log(`[Daily Analysis] Cập nhật dự đoán cho ngày ${predictionDateStr}.`);
+        predictions[existingIndex] = newPrediction;
+    } else {
+        predictions.push(newPrediction);
+    }
+
     await fs.writeFile(PREDICTIONS_PATH, JSON.stringify(predictions, null, 2));
-    console.log(`[Daily Analysis] >>> THÀNH CÔNG: Đã thêm dự đoán cho ngày ${predictionDateStr}.`);
+    console.log(`[Daily Analysis] Đã lưu dự đoán cho ngày ${predictionDateStr}.`);
     console.log('[Daily Analysis] === KẾT THÚC PHÂN TÍCH ===');
 }
 
-module.exports = { checkAndUpdateHistory, analyzeAndSavePrediction };
+/**
+ * [MỚI] Đồng bộ lại toàn bộ lịch sử dự đoán với kết quả thực tế
+ * Được gọi khi khởi động server
+ */
+async function syncPredictionHistory() {
+    console.log('[Daily Analysis] === BẮT ĐẦU ĐỒNG BỘ LỊCH SỬ ===');
+    let predictions = await readJsonFile(PREDICTIONS_PATH);
+    if (predictions.length === 0) {
+        console.log('[Daily Analysis] Lịch sử trống.');
+        return;
+    }
+
+    const rawData = lotteryService.getRawData();
+    if (!rawData || rawData.length === 0) {
+        console.log('[Daily Analysis] Chưa có dữ liệu xổ số để đồng bộ.');
+        return;
+    }
+
+    // Map date -> special for fast lookup
+    // rawData date is ISO string, we need YYYY-MM-DD
+    const dateToResultMap = new Map(rawData.map(d => [d.date.substring(0, 10), d.special]));
+
+    let totalLossSoFar = 0;
+    let updatedCount = 0;
+
+    // Sắp xếp predictions theo ngày tăng dần để tính lũy kế đúng
+    predictions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    for (let i = 0; i < predictions.length; i++) {
+        const pred = predictions[i];
+        const actualSpecial = dateToResultMap.get(pred.date);
+
+        if (actualSpecial !== undefined) {
+            // Có kết quả -> Tính toán lại
+            const winningNumber = actualSpecial.toString().padStart(2, '0');
+
+            // Tính toán lại win/loss dựa trên totalLossSoFar tích lũy
+            const calculation = calculateWinLoss(pred.danh.numbers, winningNumber, pred.betAmount, totalLossSoFar);
+
+            // Cập nhật result
+            pred.result = {
+                winningNumber,
+                totalBet: calculation.totalBet,
+                winAmount: calculation.winAmount,
+                profit: calculation.profit,
+                totalLossToDate: calculation.totalLossToDate
+            };
+
+            // Cập nhật totalLossSoFar cho vòng lặp sau
+            totalLossSoFar = calculation.totalLossToDate;
+            updatedCount++;
+        } else {
+            // Chưa có kết quả (ngày tương lai hoặc hôm nay chưa xổ)
+            // Giữ nguyên dự đoán, nhưng đảm bảo result là null
+            pred.result = null;
+            // totalLossSoFar không đổi (vì chưa biết thắng thua)
+        }
+    }
+
+    await fs.writeFile(PREDICTIONS_PATH, JSON.stringify(predictions, null, 2));
+    console.log(`[Daily Analysis] === ĐỒNG BỘ HOÀN TẤT (${updatedCount} ngày đã cập nhật) ===`);
+}
+
+module.exports = {
+    checkAndUpdateHistory,
+    analyzeAndSavePrediction,
+    syncPredictionHistory
+};

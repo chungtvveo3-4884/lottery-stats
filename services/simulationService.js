@@ -310,6 +310,52 @@ function shouldExclude(currentLen, statsData) {
     return false;
 }
 
+/**
+ * Parse date from dd/mm/yyyy format to Date object
+ */
+function parseDateDDMMYYYY(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/');
+    if (parts.length !== 3) return null;
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+}
+
+/**
+ * Filter stats to only include streaks that ended before a given date
+ * This simulates having only historical data up to that point
+ */
+function filterStatsBeforeDate(globalStats, targetDateISO) {
+    const targetDate = new Date(targetDateISO);
+    const filteredStats = {};
+
+    for (const key in globalStats) {
+        const categoryData = globalStats[key];
+
+        if (!categoryData || !categoryData.streaks) {
+            filteredStats[key] = categoryData;
+            continue;
+        }
+
+        // Filter streaks to only those that ended before targetDate
+        const filteredStreaks = categoryData.streaks.filter(streak => {
+            if (!streak.endDate) return false;
+            const endDate = parseDateDDMMYYYY(streak.endDate);
+            if (!endDate) return false;
+            return endDate < targetDate;
+        });
+
+        filteredStats[key] = {
+            ...categoryData,
+            streaks: filteredStreaks,
+            current: (categoryData.current && categoryData.current.endDate)
+                ? (parseDateDDMMYYYY(categoryData.current.endDate) < targetDate ? categoryData.current : null)
+                : null
+        };
+    }
+
+    return filteredStats;
+}
+
 
 async function runProgressiveSimulation(options, lotteryData) {
     const { simulationDays: days } = options;
@@ -338,9 +384,13 @@ async function runProgressiveSimulation(options, lotteryData) {
         const todayData = lotteryData[i];
         const special = parseInt(todayData.special, 10);
 
-        // 1. Lấy danh sách loại trừ cho ngày này
+        // QUAN TRỌNG: Filter stats để chỉ sử dụng streaks kết thúc TRƯỚC ngày i
+        // Điều này mô phỏng việc chỉ có thông tin lịch sử đến ngày i-1
+        const historicalStats = filterStatsBeforeDate(globalStats, todayData.date);
+
+        // 1. Lấy danh sách loại trừ cho ngày này dựa trên historical stats
         // Lưu ý: getExclusionsForDate dùng currentIndex là i-1 (ngày hôm qua) để dự đoán cho ngày i
-        const excludedNumbers = await exclusionService.getExclusions(lotteryData, i - 1, globalStats);
+        const excludedNumbers = await exclusionService.getExclusions(lotteryData, i - 1, historicalStats);
 
         // 2. Xác định các số sẽ đánh (Tất cả - Loại trừ)
         const allNumbers = Array.from({ length: 100 }, (_, k) => k);

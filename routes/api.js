@@ -85,14 +85,14 @@ router.get('/analysis/history', async (req, res) => {
 });
 
 // === API CHO GIẢ LẬP GẤP THẾP ===
-router.post('/simulation/run', (req, res) => {
+router.post('/simulation/run', async (req, res) => {
     try {
         const options = req.body;
         const lotteryData = lotteryService.getRawData();
         if (!lotteryData || lotteryData.length === 0) {
             throw new Error("Cache dữ liệu xổ số trống.");
         }
-        const results = simulationService.runProgressiveSimulation(options, lotteryData);
+        const results = await simulationService.runProgressiveSimulation(options, lotteryData);
         res.json(results);
     } catch (error) {
         console.error('Lỗi khi chạy mô phỏng:', error);

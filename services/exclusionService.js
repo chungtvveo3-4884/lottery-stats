@@ -90,15 +90,19 @@ function getAllGreaterOrSmaller(currentValue, numberSet, isProgressive, wrap = t
     if (isProgressive) {
         const greater = sortedSet.slice(currentIndex + 1);
         if (greater.length === 0 && wrap) {
-            result = sortedSet.slice(0, currentIndex);
+            // Forward wrap: Return Min value ONLY
+            result = [sortedSet[0]];
         } else {
+            // Normal forward: Return ALL greater values
             result = greater;
         }
     } else {
         const smaller = sortedSet.slice(0, currentIndex);
         if (smaller.length === 0 && wrap) {
-            result = sortedSet.slice(currentIndex + 1);
+            // Backward wrap: Return Max value ONLY
+            result = [sortedSet[sortedSet.length - 1]];
         } else {
+            // Normal backward: Return ALL smaller values
             result = smaller;
         }
     }

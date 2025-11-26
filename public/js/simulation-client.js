@@ -236,8 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/simulation/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             if (!response.ok) { const err = await response.json(); throw new Error(err.error || 'Lỗi không xác định'); }
-            const { dailyResults, initialCapital } = await response.json();
-            renderSimulationResults(dailyResults, initialCapital);
+            const result = await response.json();
+            console.log('[Simulation] API response:', result);
+            renderSimulationResults(result);
         } catch (error) {
             simulationResultsContainer.innerHTML = `<div class="p-4 text-red-600 bg-red-100 rounded-md"><b>Lỗi:</b> ${error.message}</div>`;
             simulationResultsContainer.classList.remove('hidden');
@@ -246,46 +247,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderSimulationResults(results, initialCapital) {
+    function renderSimulationResults(result) {
         simulationResultsContainer.classList.remove('hidden');
-        if (!results || results.length === 0) {
+
+        // API returns { summary, details }
+        const { summary, details } = result;
+
+        if (!details || details.length === 0) {
             simulationResultsContainer.innerHTML = `<p class="p-4 text-yellow-600 bg-yellow-100 rounded-md">Không đủ dữ liệu lịch sử để chạy mô phỏng.</p>`;
             return;
         }
 
-        const finalCapital = results[results.length - 1].endCapital;
-        const totalProfit = finalCapital - initialCapital;
+        // summary already has all needed data
+        const results = details; // Use details array for iteration
 
         let tableHtml = `<table class="w-full text-sm">
                             <thead class="bg-gray-100 sticky top-0"><tr>
                                 <th class="p-2 text-center">Ngày</th><th class="p-2 text-center">Số Về</th>
                                 <th class="p-2 text-right">Cược/Số</th><th class="p-2 text-right">Tổng Cược</th>
-                                <th class="p-2 text-right">Lãi/Lỗ (Ngày)</th><th class="p-2 text-right">Vốn Cuối</th>
+                                <th class="p-2 text-right">Lãi/Lỗ (Ngày)</th><th class="p-2 text-right">Lợi nhuận tích lũy</th>
                             </tr></thead>
                             <tbody>`;
 
         results.forEach(r => {
-            if (r.error) {
-                tableHtml += `<tr class="border-b"><td colspan="6" class="p-2 text-center font-bold text-red-700 bg-red-100">${r.error} (Cần cược ${r.totalBet.toLocaleString()}k)</td></tr>`;
+            // New API structure: { date, special, numbersBet, excludedCount, isSkipped, isWin, stake, cost, revenue, profit, totalProfit }
+            if (r.isSkipped) {
+                tableHtml += `<tr class="border-b"><td colspan="6" class="p-2 text-center text-gray-500 bg-gray-50">Ngày ${r.date.split('T')[0]}: Bỏ qua (Loại trừ < 30 số)</td></tr>`;
                 return;
             }
 
-            const isWin = r.winAmount > 0;
-            const dailyProfit = r.profit; // Đây là lãi/lỗ ròng của ngày
+            const isWin = r.isWin;
+            const dailyProfit = r.profit;
+            const formattedDate = new Date(r.date).toLocaleDateString('vi-VN');
 
             tableHtml += `
                 <tr class="border-b">
-                    <td class="p-2 text-center">${r.day}</td>
-                    <td class="p-2 text-center font-mono ${isWin ? 'text-green-600' : 'text-red-600'}">${r.winningNumber}</td>
-                    <td class="p-2 text-right">${r.betAmount.toLocaleString()}k</td>
-                    <td class="p-2 text-right">${r.totalBet.toLocaleString()}k</td>
-                    <td class="p-2 text-right font-semibold ${dailyProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${dailyProfit.toLocaleString()}k</td>
-                    <td class="p-2 text-right font-bold ${r.endCapital <= 0 ? 'text-red-700' : ''}">${r.endCapital.toLocaleString()}k</td>
+                    <td class="p-2 text-center">${formattedDate}</td>
+                    <td class="p-2 text-center font-mono ${isWin ? 'text-green-600 font-bold' : 'text-red-600'}">${r.special}</td>
+                    <td class="p-2 text-right">${(r.stake / 1000).toLocaleString()}k</td>
+                    <td class="p-2 text-right">${(r.cost / 1000).toLocaleString()}k</td>
+                    <td class="p-2 text-right font-semibold ${dailyProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${(dailyProfit / 1000).toLocaleString()}k</td>
+                    <td class="p-2 text-right font-bold ${r.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${(r.totalProfit / 1000).toLocaleString()}k</td>
                 </tr>
                 <tr>
                     <td colspan="6" class="p-2 bg-gray-50">
-                        <details><summary class="text-xs cursor-pointer">Xem 25 số đã đánh (Lỗ dồn: ${r.totalLossSoFar.toLocaleString()}k)</summary>
-                        <div class="number-grid p-2 mt-2 bg-gray-200 rounded-md">${r.numbersBet.map(n => `<div class="number-item ${n === r.winningNumber ? 'bg-green-500 text-white' : 'bg-white'}">${n}</div>`).join('')}</div>
+                        <details><summary class="text-xs cursor-pointer">Xem ${r.numbersBet.length} số đã đánh (Loại trừ: ${r.excludedCount})</summary>
+                        <div class="number-grid p-2 mt-2 bg-gray-200 rounded-md">${r.numbersBet.map(n => `<div class="number-item ${n === r.special ? 'bg-green-500 text-white font-bold' : 'bg-white'}">${String(n).padStart(2, '0')}</div>`).join('')}</div>
                         </details>
                     </td>
                 </tr>`;
@@ -294,9 +301,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         simulationResultsContainer.innerHTML = `
             <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Kết quả Giả lập</h2>
-            <div class="grid grid-cols-2 gap-4 text-center mb-8">
-                <div class="p-4 bg-gray-100 rounded-lg shadow"><p class="text-sm">Vốn cuối kỳ</p><p class="text-2xl font-bold ${finalCapital > 0 ? 'text-green-600' : 'text-red-600'}">${finalCapital.toLocaleString()}k</p></div>
-                <div class="p-4 bg-gray-100 rounded-lg shadow"><p class="text-sm">Lãi/Lỗ</p><p class="text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${totalProfit.toLocaleString()}k</p></div>
+            <div class="grid grid-cols-4 gap-4 text-center mb-8">
+                <div class="p-4 bg-blue-100 rounded-lg shadow"><p class="text-sm">Số ngày chơi</p><p class="text-2xl font-bold text-blue-600">${summary.playedDays}/${summary.days}</p></div>
+                <div class="p-4 bg-green-100 rounded-lg shadow"><p class="text-sm">Thắng</p><p class="text-2xl font-bold text-green-600">${summary.winCount} (${summary.winRate}%)</p></div>
+                <div class="p-4 bg-gray-100 rounded-lg shadow"><p class="text-sm">Tổng chi phí</p><p class="text-2xl font-bold">${(summary.totalCost / 1000).toLocaleString()}k</p></div>
+                <div class="p-4 bg-gray-100 rounded-lg shadow"><p class="text-sm">Lãi/Lỗ</p><p class="text-2xl font-bold ${summary.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}">${(summary.totalProfit / 1000).toLocaleString()}k (ROI: ${summary.roi}%)</p></div>
             </div>
             <div class="mb-8" style="height: 300px;"><canvas id="simulationChart"></canvas></div>
             <div class="overflow-auto max-h-[500px]">${tableHtml}</div>`;
@@ -304,8 +313,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (simulationChart) simulationChart.destroy();
         const chartCanvas = document.getElementById('simulationChart');
         if (chartCanvas) {
+            const chartLabels = results.map(r => new Date(r.date).toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' }));
+            const chartData = results.map(r => r.totalProfit / 1000);
+
             simulationChart = new Chart(chartCanvas, {
-                type: 'line', data: { labels: [`Bắt đầu`, ...results.map(r => `Ngày ${r.day}`)], datasets: [{ label: 'Vốn', data: [initialCapital, ...results.map(r => r.endCapital)], borderColor: 'rgb(22, 163, 74)', backgroundColor: 'rgba(22, 163, 74, 0.1)', fill: true, tension: 0.1 }] },
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Lợi nhuận tích lũy (k)',
+                        data: chartData,
+                        borderColor: 'rgb(22, 163, 74)',
+                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }

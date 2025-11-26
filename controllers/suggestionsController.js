@@ -70,10 +70,174 @@ exports.getSuggestions = async (req, res) => {
             }
         }
 
+        function getCategoryName(category, subcategory, originalKey = null) {
+            // Check original key first (for keys like cacSoLuiDeuLienTiep)
+            if (originalKey) {
+                const directMapping = {
+                    // Các số
+                    'cacSoTienLienTiep': 'Các số - Tiến liên tiếp',
+                    'cacSoTienDeuLienTiep': 'Các số - Tiến Đều',
+                    'cacSoLuiLienTiep': 'Các số - Lùi liên tiếp',
+                    'cacSoLuiDeuLienTiep': 'Các số - Lùi Đều',
+                    'tienLuiSoLe': 'Các số - Tiến Lùi So Le (>= 4 ngày)',
+                    'luiTienSoLe': 'Các số - Lùi Tiến So Le (>= 4 ngày)',
+                    // 1 số
+                    'motSoVeLienTiep': '1 số - Về liên tiếp',
+                    'motSoVeSole': '1 số - Về so le',
+                    'motSoVeSoleMoi': '1 số - Về so le Mới',
+                    // Cặp số
+                    'capSoVeSoLe': 'Cặp số - Về so le',
+                    // Các đầu/đít
+                    'cacDauTien': 'Các Đầu - Tiến liên tiếp',
+                    'cacDauTienDeu': 'Các Đầu - Tiến Đều',
+                    'cacDauLui': 'Các Đầu - Lùi liên tiếp',
+                    'cacDauLuiDeu': 'Các Đầu - Lùi Đều',
+                    'cacDitTien': 'Các Đít - Tiến liên tiếp',
+                    'cacDitTienDeu': 'Các Đít - Tiến Đều',
+                    'cacDitLui': 'Các Đít - Lùi liên tiếp',
+                    'cacDitLuiDeu': 'Các Đít - Lùi Đều',
+                    // 1 đầu/đít
+                    'motDauVeLienTiep': '1 Đầu - Về liên tiếp',
+                    'motDauVeSole': '1 Đầu - Về so le',
+                    'motDauVeSoleMoi': '1 Đầu - Về so le Mới',
+                    'motDitVeLienTiep': '1 Đít - Về liên tiếp',
+                    'motDitVeSole': '1 Đít - Về so le',
+                    'motDitVeSoleMoi': '1 Đít - Về so le Mới'
+                };
+
+                if (directMapping[originalKey]) {
+                    return directMapping[originalKey];
+                }
+            }
+
+            // Build full key for lookup
+            const fullKey = subcategory ? `${category}:${subcategory}` : category;
+
+            // Pattern-based mapping for category:subcategory format
+            let catName = category;
+
+            // Tổng TT
+            if (category.startsWith('tong_tt_')) {
+                const suffix = category.replace('tong_tt_', '');
+                if (suffix === 'cac_tong') catName = 'Tổng TT - Các tổng';
+                else if (suffix === 'chan') catName = 'Tổng TT - Chẵn';
+                else if (suffix === 'le') catName = 'Tổng TT - Lẻ';
+                else if (suffix.match(/^\d+$/)) catName = `Tổng TT - Tổng ${suffix}`;
+                else if (suffix.includes('_')) {
+                    const parts = suffix.split('_');
+                    catName = `Tổng TT - Dạng tổng (${parts.join(',')})`;
+                }
+                else catName = `Tổng TT - ${suffix}`;
+            }
+            // Tổng Mới
+            else if (category.startsWith('tong_moi_')) {
+                const suffix = category.replace('tong_moi_', '');
+                if (suffix === 'cac_tong') catName = 'Tổng Mới - Các tổng';
+                else if (suffix === 'chan') catName = 'Tổng Mới - Chẵn';
+                else if (suffix === 'le') catName = 'Tổng Mới - Lẻ';
+                else if (suffix.match(/^\d+$/)) catName = `Tổng Mới - Tổng ${suffix}`;
+                else catName = `Tổng Mới - ${suffix}`;
+            }
+            // Hiệu
+            else if (category.startsWith('hieu_')) {
+                const suffix = category.replace('hieu_', '');
+                if (suffix === 'cac_hieu') catName = 'Hiệu - Các hiệu';
+                else if (suffix === 'chan') catName = 'Hiệu - Chẵn';
+                else if (suffix === 'le') catName = 'Hiệu - Lẻ';
+                else if (suffix.match(/^\d+$/)) catName = `Hiệu - Hiệu ${suffix}`;
+                else catName = `Hiệu - ${suffix}`;
+            }
+            // Đầu Đít Tiến
+            else if (category.startsWith('dau_dit_tien_')) {
+                const num = category.replace('dau_dit_tien_', '');
+                catName = `Dạng Đồng Tiến ${num} (0${num},${parseInt(num) + 1}${num}...)`;
+            }
+            // Composite patterns - PHẢI CHECK TRƯỚC dau_/dit_ vì chúng cũng start with dau_/dit_
+            else if (category === 'chanChan') catName = 'Dạng Chẵn-Chẵn';
+            else if (category === 'chanLe') catName = 'Dạng Chẵn-Lẻ';
+            else if (category === 'leChan') catName = 'Dạng Lẻ-Chẵn';
+            else if (category === 'leLe') catName = 'Dạng Lẻ-Lẻ';
+            else if (category === 'dau_nho_dit_nho') catName = 'Đầu nhỏ-Đít nhỏ';
+            else if (category === 'dau_nho_dit_to') catName = 'Đầu nhỏ-Đít to';
+            else if (category === 'dau_to_dit_nho') catName = 'Đầu to-Đít nhỏ';
+            else if (category === 'dau_to_dit_to') catName = 'Đầu to-Đít to';
+            else if (category === 'dau_chan_dit_chan') catName = 'Đầu chẵn-Đít chẵn';
+            else if (category === 'dau_chan_dit_le') catName = 'Đầu chẵn-Đít lẻ';
+            else if (category === 'dau_le_dit_chan') catName = 'Đầu lẻ-Đít chẵn';
+            else if (category === 'dau_le_dit_le') catName = 'Đầu lẻ-Đít lẻ';
+            // Đầu (PHẢI SAU composite patterns)
+            else if (category.startsWith('dau_')) {
+                const suffix = category.replace('dau_', '');
+                if (suffix.match(/^\d$/)) catName = `Đầu ${suffix}`;
+                else if (suffix === 'chan') catName = 'Đầu Chẵn';
+                else if (suffix === 'le') catName = 'Đầu Lẻ';
+                else if (suffix === 'nho') catName = 'Đầu Nhỏ';
+                else if (suffix === 'to') catName = 'Đầu To';
+                else catName = `Đầu - ${suffix}`;
+            }
+            // Đít (PHẢI SAU composite patterns)
+            else if (category.startsWith('dit_')) {
+                const suffix = category.replace('dit_', '');
+                if (suffix.match(/^\d$/)) catName = `Đít ${suffix}`;
+                else if (suffix === 'chan') catName = 'Đít Chẵn';
+                else if (suffix === 'le') catName = 'Đít Lẻ';
+                else if (suffix === 'nho') catName = 'Đít Nhỏ';
+                else if (suffix === 'to') catName = 'Đít To';
+                else catName = `Đít - ${suffix}`;
+            }
+
+            // Add subcategory suffix if present
+            if (subcategory) {
+                if (subcategory === 'veLienTiep') return `${catName} - Về liên tiếp`;
+                if (subcategory === 'veSole') return `${catName} - Về so le`;
+                if (subcategory === 'veSoleMoi') return `${catName} - Về so le mới`;
+                if (subcategory === 'veCungGiaTri') return `${catName} - Về cùng giá trị`;
+                if (subcategory === 'tienDeuLienTiep') return `${catName} - Tiến Đều`;
+                if (subcategory === 'luiDeuLienTiep') return `${catName} - Lùi Đều`;
+                if (subcategory === 'tienLienTiep') return `${catName} - Tiến liên tiếp`;
+                if (subcategory === 'luiLienTiep') return `${catName} - Lùi liên tiếp`;
+                if (subcategory === 'dongTien') return `${catName} - Đồng tiến`;
+                if (subcategory === 'dongLui') return `${catName} - Đồng lùi`;
+                return `${catName} - ${subcategory}`;
+            }
+
+            return catName;
+        }
+
         function addExcludedNumber(stat, key, reason) {
             let nums = [];
 
-            const [category, subcategory] = key.split(':');
+            // Parse key - handle both formats:
+            // Format 1: "category:subcategory" (e.g., "tong_tt_cac_tong:luiDeuLienTiep")
+            // Format 2: "categorySubcategory" (e.g., "cacSoLuiDeuLienTiep", "cacDauLuiDeu")
+            let category, subcategory;
+
+            if (key.includes(':')) {
+                [category, subcategory] = key.split(':');
+            } else {
+                // Extract subcategory from end of key
+                const patterns = [
+                    'LuiDeuLienTiep', 'TienDeuLienTiep',
+                    'LuiLienTiep', 'TienLienTiep',
+                    'LuiDeu', 'TienDeu',
+                    'VeLienTiep', 'VeCungGiaTri', 'VeSole', 'VeSoleMoi',
+                    'DongTien', 'DongLui'
+                ];
+
+                for (const pattern of patterns) {
+                    if (key.endsWith(pattern)) {
+                        subcategory = pattern.charAt(0).toLowerCase() + pattern.slice(1); // Convert to camelCase
+                        category = key.slice(0, -pattern.length);
+                        break;
+                    }
+                }
+
+                if (!subcategory) {
+                    console.warn(`[Suggestions] Unable to parse key: ${key}`);
+                    category = key;
+                    subcategory = '';
+                }
+            }
 
             // Xử lý các dạng Tiến/Lùi (Đều hoặc Liên Tiếp) - dự đoán giá trị tiếp theo
             if (subcategory === 'tienDeuLienTiep' || subcategory === 'luiDeuLienTiep' ||
@@ -162,15 +326,18 @@ exports.getSuggestions = async (req, res) => {
 
             // Luôn thêm explanation nếu có lý do, kể cả khi không có số cụ thể (để cảnh báo)
             if (nums.length > 0) {
+                // Chỉ thêm vào danh sách loại trừ nếu có số cụ thể
                 nums.forEach(n => excludedNumbers.add(n));
+                explanations.push({
+                    type: 'exclude',
+                    title: getCategoryName(category, subcategory, key),
+                    explanation: reason,
+                    numbers: nums
+                });
+            } else {
+                // Nếu không dự đoán được số nào, log warning và KHÔNG thêm vào danh sách
+                console.warn(`[Suggestions] Warning: Excluded triggered for ${key} but no numbers predicted. Skipping.`);
             }
-
-            explanations.push({
-                type: 'exclude',
-                title: `${stat.description} `,
-                explanation: reason,
-                numbers: nums.length > 0 ? nums : null // Pass null if no numbers, frontend handles it
-            });
         }
 
         function predictNextInSequence(stat, category, subcategory) {
@@ -354,7 +521,21 @@ exports.getSuggestions = async (req, res) => {
                     return SETS[setKey] || [];
                 }
 
-                // 6. Đầu/Đít đơn (cho Dong Tien/Dong Lui)
+                // 6. Special cases: cacSo, cacDau, cacDit
+                if (cat === 'cacSo') {
+                    // All numbers 00-99
+                    return Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
+                }
+                if (cat === 'cacDau') {
+                    // All head digits 0-9
+                    return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                }
+                if (cat === 'cacDit') {
+                    // All tail digits 0-9
+                    return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                }
+
+                // 7. Đầu/Đít đơn (cho Dong Tien/Dong Lui)
                 if (cat.startsWith('dau_') && !cat.includes('_')) return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
                 if (cat.startsWith('dit_') && !cat.includes('_')) return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
@@ -386,6 +567,12 @@ exports.getSuggestions = async (req, res) => {
 
                 if (compositePatterns.includes(cat)) return strVal;
                 if (cat.startsWith('dau_dit_tien_')) return strVal; // Đồng tiến dùng cả số
+
+                // Special cases
+                if (cat === 'cacSo') return strVal; // Full 2-digit number
+                if (cat === 'cacDau') return strVal[0]; // Head digit
+                if (cat === 'cacDit') return strVal[1]; // Tail digit
+
                 if (cat.startsWith('tong_tt_')) return String(getTongTT(strVal));
                 if (cat.startsWith('tong_moi_')) return String(getTongMoi(strVal));
                 if (cat.startsWith('hieu_')) return String(getHieu(strVal));
@@ -417,19 +604,11 @@ exports.getSuggestions = async (req, res) => {
                     nextValues = getAllGreaterOrSmaller(lastValueToPredict, numberSet, isDongTien, false);
                 } else {
                     // Liên Tiếp:
-                    // Trả về TẤT CẢ các số lớn hơn/nhỏ hơn trong set (KHÔNG WRAP cho Dong Tien, CÓ WRAP cho Lien Tiep khac?)
-                    // Logic cũ cho Lien Tiep là KHÔNG WRAP (vì nó gọi getAllGreaterOrSmaller mặc định wrap=true, nhưng logic bên trong wrap khi hết đường).
-                    // Tuy nhiên, với "Đồng Tiến" (Progressive Trend), ta muốn strict increase.
-
-                    if (category.startsWith('dau_dit_tien_')) {
-                        // Đồng Tiến: Xử lý như sequence thông thường nhưng lấy TẤT CẢ số lớn hơn (KHÔNG WRAP)
-                        // Trước đây dùng findNextInSequenceWithWrap -> chỉ trả về 1 số -> SAI
-                        // Giờ dùng getAllGreaterOrSmaller với wrap=false
-                        nextValues = getAllGreaterOrSmaller(lastValueToPredict, numberSet, isProgressive, false);
-                    } else {
-                        // Các dạng khác: Lấy tất cả giá trị lớn hơn/nhỏ hơn (giữ nguyên behavior cũ, wrap=true mặc định)
-                        nextValues = getAllGreaterOrSmaller(lastValueToPredict, numberSet, isProgressive);
-                    }
+                    // TẤT CẢ các dạng đều xoay vòng (wrap=true)
+                    // Logic trong getAllGreaterOrSmaller đã đúng:
+                    // - Normal: Trả về TẤT CẢ giá trị lớn hơn/nhỏ hơn
+                    // - Wrap (đạt min/max): Trả về DUY NHẤT 1 giá trị (boundary đối diện)
+                    nextValues = getAllGreaterOrSmaller(lastValueToPredict, numberSet, isProgressive, true);
                 }
             } else {
                 // Fallback cho các dạng chưa support sequence (trả về full set)
@@ -481,6 +660,23 @@ exports.getSuggestions = async (req, res) => {
                 // Với Đồng Tiến
                 else if (category.startsWith('dau_dit_tien_')) {
                     resultNumbers.push(parseInt(nextVal, 10));
+                }
+                // Special cases: cacSo, cacDau, cacDit
+                else if (category === 'cacSo') {
+                    // nextVal is already a 2-digit number string
+                    resultNumbers.push(parseInt(nextVal, 10));
+                }
+                else if (category === 'cacDau') {
+                    // nextVal is a digit, get all numbers with that head
+                    const targetDigit = nextVal;
+                    resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[0] === targetDigit));
+                }
+                else if (category === 'cacDit') {
+                    // nextVal is a digit, get all numbers with that tail
+                    const targetDigit = nextVal;
+                    resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[1] === targetDigit));
                 }
                 // Với Composite patterns - CHECK TRƯỚC dau_/dit_ để tránh match nhầm
                 else if (compositePatterns.includes(category)) {
@@ -540,30 +736,21 @@ exports.getSuggestions = async (req, res) => {
                 const greater = sortedSet.slice(currentIndex + 1);
                 // Nếu đã ở cuối, wrap về đầu (nếu cho phép)
                 if (greater.length === 0 && wrap) {
-                    result = sortedSet.slice(0, currentIndex);
+                    // Forward wrap: Return Min value ONLY
+                    result = [sortedSet[0]];
                 } else {
+                    // Normal forward: Return ALL greater values
                     result = greater;
-                    if (wrap && greater.length > 0) {
-                        // Logic cũ: Nếu wrap=true và có greater, nó chỉ trả về greater.
-                        // Nhưng nếu wrap=true (cho Liên Tiếp thông thường), ta có muốn wrap không?
-                        // Với "Tiến Liên Tiếp" (e.g. Đầu), 8 -> 9 -> 0?
-                        // Nếu 8->9, next là 0?
-                        // getAllGreaterOrSmaller được dùng để lấy TẬP HỢP các số CÓ THỂ về.
-                        // Nếu wrap=true, nghĩa là ta dự đoán nó có thể về bất kỳ số nào lớn hơn HOẶC wrap.
-                        // Nhưng logic cũ:
-                        // if (greater.length === 0) result = sortedSet.slice(0, currentIndex);
-                        // else result = greater;
-                        // Nghĩa là nó CHỈ wrap khi đã hết đường tiến.
-                        // Điều này có vẻ đúng cho logic cũ.
-                    }
                 }
             } else {
                 // Lùi: Lấy tất cả số nhỏ hơn
                 const smaller = sortedSet.slice(0, currentIndex);
                 // Nếu đã ở đầu, wrap về cuối (nếu cho phép)
                 if (smaller.length === 0 && wrap) {
-                    result = sortedSet.slice(currentIndex + 1);
+                    // Backward wrap: Return Max value ONLY
+                    result = [sortedSet[sortedSet.length - 1]];
                 } else {
+                    // Normal backward: Return ALL smaller values
                     result = smaller;
                 }
             }
@@ -583,7 +770,12 @@ exports.getSuggestions = async (req, res) => {
         if (excludedNumbers.size <= 30) {
             isSkipped = true;
             numbersBet = []; // Không đánh
-            explanations.push(`Số lượng loại trừ (${excludedNumbers.size}) <= 30. BỎ QUA.`);
+            explanations.push({
+                type: 'exclude',
+                title: 'Thông báo',
+                explanation: `Số lượng loại trừ (${excludedNumbers.size}) <= 30. BỎ QUA.`,
+                numbers: []
+            });
         }
 
         res.json({

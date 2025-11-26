@@ -94,14 +94,7 @@ const startServer = async () => {
     try {
         console.log('--- Khởi động server: Cập nhật dữ liệu và nạp cache lần đầu ---');
 
-        // [MỚI] Xóa predictions.json khi khởi động lại server
-        const predictionsPath = path.join(__dirname, 'data', 'predictions.json');
-        try {
-            await fs.promises.writeFile(predictionsPath, '[]');
-            console.log('✅ Đã xóa lịch sử dự đoán (predictions.json) để bắt đầu phiên mới.');
-        } catch (err) {
-            console.error('⚠️ Không thể xóa predictions.json:', err.message);
-        }
+
 
         // Chờ cho việc cập nhật và nạp cache lần đầu hoàn tất
         await updateJsonFile();
