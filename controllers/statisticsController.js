@@ -63,3 +63,35 @@ exports.getRecentLotteryResults = async (req, res) => {
         res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
     }
 };
+
+/**
+ * Handler để lấy thông tin về Potential Streaks (Chuỗi có thể xảy ra)
+ */
+exports.getPotentialStreaks = async (req, res) => {
+    try {
+        const potentialStreakService = require('../services/potentialStreakService');
+
+        // Lấy số mới nhất từ database
+        const recentResults = await statisticsService.getRecentResults(1);
+        if (!recentResults || recentResults.length === 0) {
+            return res.status(404).json({ message: 'Không tìm thấy kết quả xổ số' });
+        }
+
+        const latestNumber = String(recentResults[0].special).padStart(2, '0');
+
+        // Phân tích potential streaks
+        const result = await potentialStreakService.getPotentialStreakExclusions(latestNumber);
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error('Lỗi khi phân tích potential streaks:', error);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi máy chủ nội bộ khi phân tích potential streaks",
+            error: error.message
+        });
+    }
+};

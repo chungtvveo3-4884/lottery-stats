@@ -1,5 +1,3 @@
-// app.js (Đã cập nhật và sửa lỗi)
-
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -7,6 +5,8 @@ const cron = require('node-cron');
 const { updateJsonFile } = require('./updateData');
 const statisticsRoutes = require('./routes/statistics');
 const apiRoutes = require('./routes/api');
+const distributionRoutes = require('./routes/distributionRoutes');
+const predictionRoutes = require('./routes/predictionRoutes');
 
 // ====> THÊM LẠI CÁC SERVICE <====
 const lotteryService = require('./services/lotteryService');
@@ -31,6 +31,8 @@ app.set('view engine', 'html');
 
 // --- API & App Routes ---
 app.use('/api', apiRoutes);
+app.use('/api/distribution', distributionRoutes);
+app.use('/api/prediction', predictionRoutes);
 app.use('/statistics', statisticsRoutes);
 
 // ====> THÊM LẠI CÁC API ENDPOINT BỊ THIẾU <====
@@ -72,11 +74,14 @@ app.get('/scoring', async (req, res) => {
     try {
         const scoringData = await scoringService.getScoringStats();
         res.render('scoring-form.html', {
-            scoringData: scoringData || {}
+            scoringData: scoringData || { results: [], scoringForms: [] }
         });
     } catch (error) {
         console.error('Lỗi khi render trang scoring:', error);
-        res.status(500).send("Đã xảy ra lỗi khi tải trang tính điểm.");
+        // Render with empty data instead of 500 error
+        res.render('scoring-form.html', {
+            scoringData: { results: [], scoringForms: [] }
+        });
     }
 });
 
@@ -86,6 +91,10 @@ app.get('/simulation', (req, res) => {
 
 app.get('/settings', (req, res) => {
     res.render('settings.html');
+});
+
+app.get('/distribution', (req, res) => {
+    res.render('distribution.html');
 });
 
 

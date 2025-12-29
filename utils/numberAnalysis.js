@@ -148,6 +148,7 @@ const DIT_5_DAU_LE_LON_5 = ALL_NUMBERS.filter(n => n.endsWith('5') && parseInt(n
 const DIT_5_DAU_LE_NHO_5 = ALL_NUMBERS.filter(n => n.endsWith('5') && parseInt(n[0]) % 2 !== 0 && parseInt(n[0]) < 5);
 
 // --- TỔNG TRUYỀN THỐNG (TT) ---
+const TONG_TT_0 = ALL_NUMBERS.filter(n => getTongTT(n) === 0); // Only 00
 const TONG_TT_1 = ALL_NUMBERS.filter(n => getTongTT(n) === 1);
 const TONG_TT_2 = ALL_NUMBERS.filter(n => getTongTT(n) === 2);
 const TONG_TT_3 = ALL_NUMBERS.filter(n => getTongTT(n) === 3);
@@ -314,7 +315,7 @@ const SETS = {
     CHAN_LON_HON_4_DIGITS, CHAN_NHO_HON_4_DIGITS, LE_LON_HON_5_DIGITS, LE_NHO_HON_5_DIGITS,
 
     // Bộ số Tổng TT
-    TONG_TT_1, TONG_TT_2, TONG_TT_3, TONG_TT_4, TONG_TT_5, TONG_TT_6, TONG_TT_7, TONG_TT_8, TONG_TT_9, TONG_TT_10,
+    TONG_TT_0, TONG_TT_1, TONG_TT_2, TONG_TT_3, TONG_TT_4, TONG_TT_5, TONG_TT_6, TONG_TT_7, TONG_TT_8, TONG_TT_9, TONG_TT_10,
     TONG_TT_1_3, TONG_TT_2_4, TONG_TT_3_5, TONG_TT_4_6, TONG_TT_5_7, TONG_TT_6_8, TONG_TT_7_9, TONG_TT_8_10, TONG_TT_9_1, TONG_TT_10_2,
     TONG_TT_CHAN, TONG_TT_LE,
     TONG_TT_CHAN_CHAN, TONG_TT_CHAN_LE, TONG_TT_LE_CHAN, TONG_TT_LE_LE,
@@ -393,6 +394,47 @@ function findPreviousInSet(currentNumber, numberSet, numberMap) {
 
 // --- BƯỚC 5: EXPORTS ---
 
+// Helper to identify categories for a number
+function identifyCategories(numberStr) {
+    const categories = [];
+
+    for (const [setKey, numbers] of Object.entries(SETS)) {
+        if (!numbers.includes(numberStr)) continue;
+
+        let statsKey = null;
+        const lowerKey = setKey.toLowerCase();
+
+        if (setKey.startsWith('DAU_') && setKey.length === 5) statsKey = lowerKey;
+        else if (setKey.startsWith('DIT_') && setKey.length === 5) statsKey = lowerKey;
+        else if (setKey.startsWith('TONG_TT_')) statsKey = lowerKey;
+        else if (setKey.startsWith('TONG_MOI_')) statsKey = lowerKey;
+        else if (setKey.startsWith('HIEU_')) statsKey = lowerKey;
+        else if (['CHAN_CHAN', 'CHAN_LE', 'LE_CHAN', 'LE_LE'].includes(setKey)) {
+            // CHAN_CHAN -> chanChan
+            const parts = lowerKey.split('_');
+            statsKey = parts[0] + parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+        } else if (!setKey.includes('DIGIT') && !setKey.includes('ALL')) {
+            // Composite patterns (excluding DIGITS and ALL collections)
+            statsKey = lowerKey;
+        }
+
+        if (statsKey) categories.push(statsKey);
+    }
+
+    return categories;
+}
+
+// Helper to extract value for comparison (for Progressive patterns)
+function extractValueForComparison(numberStr, category) {
+    const n = parseInt(numberStr, 10);
+    if (category.startsWith('dau')) return Math.floor(n / 10);
+    if (category.startsWith('dit')) return n % 10;
+    if (category.startsWith('tong_tt')) return getTongTT(numberStr);
+    if (category.startsWith('tong_moi')) return getTongMoi(numberStr);
+    if (category.startsWith('hieu')) return getHieu(numberStr);
+    return null;
+}
+
 module.exports = {
     SETS,
     MAPS,
@@ -403,5 +445,7 @@ module.exports = {
     findPreviousInSet,
     getTongMoi,
     getTongTT,
-    getHieu
+    getHieu,
+    identifyCategories,
+    extractValueForComparison
 };

@@ -300,13 +300,12 @@ function shouldExclude(currentLen, statsData) {
     const gapInfo = statsData.gapStats ? statsData.gapStats[targetLen] : null;
     const recordLen = statsData.longest && statsData.longest.length > 0 ? statsData.longest[0].length : 0;
 
+    // Check if reached record
     if (currentLen >= recordLen && recordLen > 0) return true;
-    if (currentLen >= recordLen * 0.8 && recordLen > 2) return true;
 
-    if (gapInfo) {
-        if (gapInfo.minGap !== null && gapInfo.lastGap < gapInfo.minGap) return true;
-        if (gapInfo.avgGap > 0 && gapInfo.lastGap < 0.15 * gapInfo.avgGap) return true;
-    }
+    // Check if lastGap < minGap (no buffer, 0%)
+    if (gapInfo && gapInfo.minGap !== null && gapInfo.lastGap < gapInfo.minGap) return true;
+
     return false;
 }
 
@@ -390,15 +389,17 @@ async function runProgressiveSimulation(options, lotteryData) {
 
         // 1. Lấy danh sách loại trừ cho ngày này dựa trên historical stats
         // Lưu ý: getExclusionsForDate dùng currentIndex là i-1 (ngày hôm qua) để dự đoán cho ngày i
-        const excludedNumbers = await exclusionService.getExclusions(lotteryData, i - 1, historicalStats);
+        // Sử dụng getSmartExclusions để tự động chọn logic dựa trên config
+        const excludedNumbers = await exclusionService.getSmartExclusions(lotteryData, i - 1, historicalStats, options);
 
         // 2. Xác định các số sẽ đánh (Tất cả - Loại trừ)
         const allNumbers = Array.from({ length: 100 }, (_, k) => k);
         let numbersBet = allNumbers.filter(n => !excludedNumbers.has(n));
 
-        // 3. Kiểm tra điều kiện chơi: Chỉ đánh nếu số loại trừ > 30 (tức là đánh < 70 số)
+        // 3. Kiểm tra điều kiện chơi: Chỉ đánh nếu số loại trừ >= 40 (tức là đánh <= 60 số)
         let isSkipped = false;
-        if (excludedNumbers.size <= 30) {
+        const MIN_EXCLUSION_COUNT = 40;
+        if (excludedNumbers.size < MIN_EXCLUSION_COUNT) {
             isSkipped = true;
             numbersBet = []; // Không đánh
         }
@@ -482,5 +483,5 @@ module.exports = {
     calculateBetAmount,
     calculateWinLoss,
     runProgressiveSimulation,
-    getExclusionsForDate: exclusionService.getExclusions
+    getExclusionsForDate: exclusionService.getSmartExclusions
 };

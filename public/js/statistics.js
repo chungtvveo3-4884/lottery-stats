@@ -68,7 +68,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const initializePage = () => {
+    let currentConfig = {
+        GAP_STRATEGY: 'COMBINED',
+        GAP_BUFFER_PERCENT: 0
+    };
+
+    const fetchConfig = async () => {
+        try {
+            const response = await fetch(`${BASE_URL}/api/config`);
+            if (response.ok) {
+                const data = await response.json();
+                currentConfig = { ...currentConfig, ...data };
+                console.log('Config loaded:', currentConfig);
+            }
+        } catch (error) {
+            console.error('Error fetching config:', error);
+        }
+    };
+
+    const initializePage = async () => {
+        await fetchConfig(); // Load config first
+
         for (const groupName in STATS_OPTIONS) {
             const optgroup = document.createElement('optgroup');
             optgroup.label = groupName;
@@ -210,7 +230,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (stat && !stat.error) {
                     if (stat.current) {
                         const recordLength = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
-                        allCurrentStreaks.push({ ...stat.current, key: key, description: stat.description, recordLength: recordLength, gapStats: stat.gapStats });
+                        allCurrentStreaks.push({
+                            ...stat.current,
+                            key: key,
+                            description: stat.description,
+                            recordLength: recordLength,
+                            gapStats: stat.gapStats,
+                            exactGapStats: stat.exactGapStats,
+                            extensionGapStats: stat.extensionGapStats
+                        });
                     }
                     renderRecordAccordionItem(key, stat);
                 }
@@ -227,6 +255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const renderCurrentStreaks = (streaksByLength, totalCount) => {
+        console.log('[DEBUG] streaksByLength:', streaksByLength);
         const sortedLengths = Object.keys(streaksByLength).sort((a, b) => b - a);
         if (totalCount > 0) {
             currentStreaksSection.classList.remove('d-none');
@@ -257,83 +286,148 @@ document.addEventListener('DOMContentLoaded', async () => {
                                         <div class="mt-auto pt-2">
                                            <div class="flex flex-wrap gap-1">${renderFullSequence(streak, streak.description)}</div>
                                         </div>
-                                        ${(() => {
-                            const isSoLePattern = streak.key && (streak.key.includes('veSole') || streak.key.includes('veSoleMoi'));
-                            // For so le patterns, nextLen = currentLen + 2 (skip every other day)
-                            // For other patterns, nextLen = currentLen + 1
+                        ${(() => {
+                            // Check for Tiến Lùi So Le pattern (special handling)
+                            const isTienLuiSoLeByKey = streak.key && (streak.key.includes('tienLuiSoLe') || streak.key.includes('luiTienSoLe'));
+                            const isTienLuiSoLeByDesc = streak.description && (streak.description.includes('Tiến-Lùi') || streak.description.includes('Lùi-Tiến'));
+                            const isTienLuiSoLePattern = isTienLuiSoLeByKey || isTienLuiSoLeByDesc;
+
+                            // Check for so le pattern - check both key and description (excluding Tiến Lùi So Le)
+                            const isSoLeByKey = streak.key && (streak.key.includes('veSole') || streak.key.includes('veSoleMoi')) && !isTienLuiSoLePattern;
+                            const isSoLeByDesc = streak.description && streak.description.toLowerCase().includes('so le') && !isTienLuiSoLePattern;
+                            const isSoLePattern = isSoLeByKey || isSoLeByDesc;
+
+                            // Tiến Lùi So Le: step = 1, So Le thường: step = 2
                             const nextLen = isSoLePattern ? parseInt(length) + 2 : parseInt(length) + 1;
                             const currentLen = parseInt(length);
-
-                            // Check if reached record
                             const hasReachedRecord = currentLen >= streak.recordLength && streak.recordLength > 0;
 
-                            // Try to get gap stats for nextLen, fallback to currentLen
-                            const gapData = (streak.gapStats && streak.gapStats[nextLen])
-                                ? { stats: streak.gapStats[nextLen], len: nextLen }
-                                : (streak.gapStats && streak.gapStats[currentLen])
-                                    ? { stats: streak.gapStats[currentLen], len: currentLen }
-                                    : null;
-
-                            if (gapData) {
-                                const g = gapData.stats;
-                                const displayLen = gapData.len;
-
-                                // Use config values
-                                const GAP_THRESHOLD = AppConfig.get('GAP_THRESHOLD_PERCENT');
-                                const USE_MIN_GAP = AppConfig.get('USE_MIN_GAP');
-                                const SHOW_BACKGROUNDS = AppConfig.get('SHOW_PROBABILITY_BACKGROUNDS');
-                                const HIGHLIGHT_GAP = AppConfig.get('HIGHLIGHT_LAST_GAP');
-
-                                // Use minGap OR configurable % of avgGap for all patterns
-                                const isLowProb = (USE_MIN_GAP && g.minGap !== null && g.lastGap < g.minGap) ||
-                                    (g.avgGap > 0 && g.lastGap < GAP_THRESHOLD * g.avgGap);
-
-                                // If reached record, show yellow badge; otherwise show normal badges
-                                const probBadge = hasReachedRecord
-                                    ? `<span class="inline-block bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🏆 Đạt kỷ lục</span>`
-                                    : (isLowProb
-                                        ? `<span class="inline-block bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Khó lên ${nextLen} ngày</span>`
-                                        : `<span class="inline-block bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Dễ Tiếp Tục</span>`);
-
-                                // Determine background color based on probability
-                                const cardBg = SHOW_BACKGROUNDS
-                                    ? (hasReachedRecord ? 'bg-yellow-50' : (isLowProb ? 'bg-red-50' : 'bg-white'))
-                                    : 'bg-white';
-
-                                // Highlight lastGap based on conditions
-                                let lastGapClass = 'font-bold';
-                                let lastGapText = g.lastGap;
-
-                                // CRITICAL CASE: Always show strong warning if lastGap < minGap (regardless of HIGHLIGHT_GAP)
-                                if (USE_MIN_GAP && g.minGap !== null && g.lastGap < g.minGap && isLowProb) {
-                                    // Strong red warning with icon and border for critical low gap
-                                    lastGapClass = 'font-bold text-red-700 bg-red-200 px-2 py-1 rounded border-2 border-red-400';
-                                    lastGapText = `⚠️ ${g.lastGap}`;
-                                } else if (HIGHLIGHT_GAP) {
-                                    // Normal highlighting based on settings
-                                    if (!isLowProb && !hasReachedRecord) {
-                                        // Green highlight for "Dễ Tiếp Tục" case
-                                        lastGapClass = 'font-bold text-green-600 bg-green-100 px-1 rounded';
-                                    }
-                                }
-
-                                // Build gap info display
-                                let gapInfoHtml = `
-                                                    <div class="mt-2 pt-2 border-t border-gray-100 text-xs ${cardBg} -mx-4 -mb-4 p-4 rounded-b-lg">
-                                                        <div class="flex justify-between"><span>TB giữa các chuỗi ${displayLen} ngày:</span> <strong>${g.avgGap}</strong></div>`;
-
-                                if (g.minGap !== null) {
-                                    gapInfoHtml += `<div class="flex justify-between"><span>Khoảng cách ngắn nhất:</span> <strong>${g.minGap}</strong></div>`;
-                                }
-
-                                gapInfoHtml += `<div class="flex justify-between"><span>Cách lần cuối:</span> <span class="${lastGapClass}">${lastGapText}</span></div>
-                                                        <div class="text-center">${probBadge}</div>
-                                                    </div>`;
-
-                                return gapInfoHtml;
+                            // Debug log for so le detection
+                            if (isSoLeByDesc) {
+                                console.log('[DEBUG SO LE]', {
+                                    key: streak.key,
+                                    description: streak.description,
+                                    length: length,
+                                    isSoLeByKey: isSoLeByKey,
+                                    isSoLeByDesc: isSoLeByDesc,
+                                    isSoLePattern: isSoLePattern,
+                                    nextLen: nextLen
+                                });
                             }
-                            // Last resort fallback: if no gapStats at all, still show record badge if applicable
-                            else if (hasReachedRecord) {
+
+                            const gapInfoGE = (streak.gapStats && streak.gapStats[nextLen]) ? streak.gapStats[nextLen] : null;
+                            const gapInfoExact = (streak.exactGapStats && streak.exactGapStats[nextLen]) ? streak.exactGapStats[nextLen] : null;
+
+                            // Extension gap: gap from current length to next level
+                            const streakLen = streak.length;
+                            const extGapInfo = (streak.extensionGapStats && streak.extensionGapStats[streakLen]) ? streak.extensionGapStats[streakLen] : null;
+
+                            // Use config values
+                            const GAP_BUFFER = currentConfig.GAP_BUFFER_PERCENT !== undefined ? currentConfig.GAP_BUFFER_PERCENT : 0;
+                            const STRATEGY = currentConfig.GAP_STRATEGY || 'COMBINED';
+
+                            let geHtml = '';
+                            let exactHtml = '';
+                            let extGapHtml = '';
+                            let isLowProbGE = false;
+                            let isLowProbExact = false;
+                            let isLowProbExt = false;
+
+                            if (gapInfoGE) {
+                                const threshold = gapInfoGE.minGap !== null ? gapInfoGE.minGap * (1 + GAP_BUFFER) : 0;
+                                const isLow = gapInfoGE.minGap !== null && gapInfoGE.lastGap < threshold;
+                                if (isLow) isLowProbGE = true;
+
+                                geHtml = `<div class="text-[10px] mt-1 border-t border-gray-100 pt-1">
+                                    <div class="flex justify-between">
+                                        <span>Chuỗi lớn hơn (>=${nextLen}):</span>
+                                        <span class="${isLow ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                            Lần cuối ${gapInfoGE.lastGap} ${isLow ? '<' : '>='} ${Math.round(threshold)}
+                                        </span>
+                                    </div>
+                                    <div class="flex gap-2 text-[9px] mt-0.5">
+                                        <span class="text-green-600">MIN: ${gapInfoGE.minGap !== null && gapInfoGE.minGap !== undefined ? gapInfoGE.minGap + '(' + (gapInfoGE.minCount || 1) + ')' : '-(0)'}</span>
+                                        <span class="text-yellow-600">AVG: ${gapInfoGE.avgGap || '-'}</span>
+                                        <span class="text-red-600">MAX: ${gapInfoGE.maxGap !== null && gapInfoGE.maxGap !== undefined ? gapInfoGE.maxGap + '(' + (gapInfoGE.maxCount || 1) + ')' : '-(0)'}</span>
+                                    </div>
+                                </div>`;
+                            }
+
+                            if (gapInfoExact) {
+                                const threshold = gapInfoExact.minGap !== null ? gapInfoExact.minGap * (1 + GAP_BUFFER) : 0;
+                                const isLow = gapInfoExact.minGap !== null && gapInfoExact.lastGap < threshold;
+                                if (isLow) isLowProbExact = true;
+
+                                exactHtml = `<div class="text-[10px] mt-1 border-t border-gray-100 pt-1">
+                                    <div class="flex justify-between">
+                                        <span>Chuỗi chính xác (=${nextLen}):</span>
+                                        <span class="${isLow ? 'text-red-600 font-bold' : 'text-green-600'}">
+                                            Lần cuối ${gapInfoExact.lastGap} ${isLow ? '<' : '>='} ${Math.round(threshold)}
+                                        </span>
+                                    </div>
+                                    <div class="flex gap-2 text-[9px] mt-0.5">
+                                        <span class="text-green-600">MIN: ${gapInfoExact.minGap !== null && gapInfoExact.minGap !== undefined ? gapInfoExact.minGap + '(' + (gapInfoExact.minCount || 1) + ')' : '-(0)'}</span>
+                                        <span class="text-yellow-600">AVG: ${gapInfoExact.avgGap || '-'}</span>
+                                        <span class="text-red-600">MAX: ${gapInfoExact.maxGap !== null && gapInfoExact.maxGap !== undefined ? gapInfoExact.maxGap + '(' + (gapInfoExact.maxCount || 1) + ')' : '-(0)'}</span>
+                                    </div>
+                                </div>`;
+                            }
+
+                            // Extension Gap: gap from current length to next level
+                            if (extGapInfo && extGapInfo.minGap !== null) {
+                                const step = isSoLePattern ? 2 : 1;
+                                const isLow = extGapInfo.lastGap < extGapInfo.minGap;
+                                if (isLow) isLowProbExt = true;
+
+                                extGapHtml = `<div class="text-[10px] mt-1 border-t border-blue-200 pt-1 bg-blue-50 -mx-1 px-1">
+                                    <div class="flex justify-between">
+                                        <span class="text-blue-700">Kéo dài (${streakLen}→${streakLen + step}):</span>
+                                        <span class="${isLow ? 'text-red-600 font-bold' : 'text-blue-600'}">
+                                            Lần cuối ${extGapInfo.lastGap} ${isLow ? '<' : '>='} ${extGapInfo.minGap}
+                                        </span>
+                                    </div>
+                                    <div class="flex gap-2 text-[9px] mt-0.5">
+                                        <span class="text-green-600">MIN: ${extGapInfo.minGap !== null && extGapInfo.minGap !== undefined ? extGapInfo.minGap + '(' + (extGapInfo.minCount || 1) + ')' : '-(0)'}</span>
+                                        <span class="text-yellow-600">AVG: ${extGapInfo.avgGap || '-'}</span>
+                                        <span class="text-red-600">MAX: ${extGapInfo.maxGap !== null && extGapInfo.maxGap !== undefined ? extGapInfo.maxGap + '(' + (extGapInfo.maxCount || 1) + ')' : '-(0)'}</span>
+                                        <span class="text-gray-500">(${extGapInfo.count} lần)</span>
+                                    </div>
+                                </div>`;
+                            }
+
+                            let isLowProb = false;
+                            if (STRATEGY === 'GE') isLowProb = isLowProbGE;
+                            else if (STRATEGY === 'EXACT') isLowProb = isLowProbExact;
+                            else isLowProb = isLowProbGE && isLowProbExact; // COMBINED
+
+                            // Include Extension Gap in low prob calculation
+                            const isLowProbFinal = isLowProb || isLowProbExt;
+
+                            // Badge - show different messages based on condition
+                            let probBadge;
+                            if (hasReachedRecord) {
+                                probBadge = `<span class="inline-block bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🏆 Đạt kỷ lục</span>`;
+                            } else if (isLowProbExt && !isLowProb) {
+                                // Only extension gap is low
+                                const step = isSoLePattern ? 2 : 1;
+                                probBadge = `<span class="inline-block bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">⚠️ Khó kéo dài ${streakLen}→${streakLen + step}</span>`;
+                            } else if (isLowProbFinal) {
+                                probBadge = `<span class="inline-block bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Khó lên ${nextLen} ngày</span>`;
+                            } else {
+                                probBadge = `<span class="inline-block bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Dễ Tiếp Tục</span>`;
+                            }
+
+                            const cardBg = hasReachedRecord ? 'bg-yellow-50' : (isLowProbFinal ? 'bg-red-50' : 'bg-white');
+
+                            if (gapInfoGE || gapInfoExact || extGapInfo) {
+                                return `
+                                    <div class="mt-2 pt-2 border-t border-gray-100 text-xs ${cardBg} -mx-4 -mb-4 p-4 rounded-b-lg">
+                                        ${geHtml}
+                                        ${exactHtml}
+                                        ${extGapHtml}
+                                        <div class="text-center mt-2">${probBadge}</div>
+                                    </div>`;
+                            } else if (hasReachedRecord) {
                                 return `
                                     <div class="mt-2 pt-2 border-t border-gray-100 text-xs bg-yellow-50 -mx-4 -mb-4 p-4 rounded-b-lg">
                                         <div class="text-center">
@@ -354,6 +448,139 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // Helper to detect pattern type
+    const detectPatternType = (key) => {
+        if (key.includes('tienLuiSoLe') || key.includes('luiTienSoLe')) {
+            return 'tienLuiSoLe'; // Min 4
+        } else if ((key.includes('veSole') || key.includes('veSoleMoi')) &&
+            !key.includes('tienLuiSoLe') && !key.includes('luiTienSoLe')) {
+            return 'soLe'; // Odd only (3, 5, 7...) min 3
+        }
+        return 'default'; // Min 2
+    };
+
+    // Filter gap entries based on pattern type
+    const filterGapEntries = (entries, patternType) => {
+        return entries.filter(([len, data]) => {
+            if (data.count === 0) return false;
+            const length = parseInt(len);
+
+            if (patternType === 'tienLuiSoLe') {
+                // Tiến-Lùi So Le: chỉ hiển thị >= 4
+                return length >= 4;
+            } else if (patternType === 'soLe') {
+                // So Le: chỉ hiển thị số lẻ và >= 3
+                return length >= 3 && length % 2 === 1;
+            }
+            // Default: >= 2
+            return length >= 2;
+        });
+    };
+
+    const renderGapTable = (stats, operator, key = '') => {
+        const patternType = detectPatternType(key);
+        const filteredEntries = filterGapEntries(Object.entries(stats), patternType);
+
+        if (filteredEntries.length === 0) {
+            return '<p class="text-xs text-gray-500">Không có dữ liệu phù hợp</p>';
+        }
+
+        return `
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-xs text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-2 py-1">Độ dài</th>
+                            <th scope="col" class="px-2 py-1 text-green-700">MIN</th>
+                            <th scope="col" class="px-2 py-1 text-yellow-700">AVG</th>
+                            <th scope="col" class="px-2 py-1 text-red-700">MAX</th>
+                            <th scope="col" class="px-2 py-1">Lần cuối</th>
+                            <th scope="col" class="px-2 py-1">SL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredEntries
+                .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                .map(([len, data]) => {
+                    const minDisplay = data.minGap !== null && data.minGap !== undefined ? `${data.minGap}(${data.minCount || 1})` : '-(0)';
+                    const maxDisplay = data.maxGap !== null && data.maxGap !== undefined ? `${data.maxGap}(${data.maxCount || 1})` : '-(0)';
+                    return `
+                                <tr class="bg-white border-b hover:bg-gray-50">
+                                    <td class="px-2 py-1 font-medium text-gray-900">${operator} ${len}</td>
+                                    <td class="px-2 py-1 font-semibold text-green-600">${minDisplay}</td>
+                                    <td class="px-2 py-1 font-semibold text-yellow-600">${data.avgGap || '-'}</td>
+                                    <td class="px-2 py-1 font-semibold text-red-600">${maxDisplay}</td>
+                                    <td class="px-2 py-1">${data.lastGap}</td>
+                                    <td class="px-2 py-1">${data.count}</td>
+                                </tr>
+                            `;
+                }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    };
+
+    // Render Extension Gap Table (gap from N to N+step)
+    const renderExtensionGapTable = (stats, key) => {
+        const patternType = detectPatternType(key);
+        const isSoLe = patternType === 'soLe';
+        const isTienLuiSoLe = patternType === 'tienLuiSoLe';
+        const step = isSoLe ? 2 : 1;
+
+        // Filter based on pattern type
+        const filteredEntries = Object.entries(stats).filter(([len, data]) => {
+            if (data.count === 0 && data.lastGap === 0) return false;
+            const length = parseInt(len);
+
+            if (isTienLuiSoLe) {
+                return length >= 4;
+            } else if (isSoLe) {
+                return length >= 3 && length % 2 === 1;
+            }
+            return length >= 2;
+        });
+
+        if (filteredEntries.length === 0) {
+            return '<p class="text-xs text-gray-500">Không có dữ liệu phù hợp</p>';
+        }
+
+        return `
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-xs text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-blue-50">
+                        <tr>
+                            <th scope="col" class="px-2 py-1">Từ→Đến</th>
+                            <th scope="col" class="px-2 py-1 text-green-700">MIN</th>
+                            <th scope="col" class="px-2 py-1 text-yellow-700">AVG</th>
+                            <th scope="col" class="px-2 py-1 text-red-700">MAX</th>
+                            <th scope="col" class="px-2 py-1">Lần cuối</th>
+                            <th scope="col" class="px-2 py-1">SL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredEntries
+                .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+                .map(([len, data]) => {
+                    const fromLen = parseInt(len);
+                    const toLen = fromLen + step;
+                    const isLow = data.minGap !== null && data.lastGap < data.minGap;
+                    const minDisplay = data.minGap !== null && data.minGap !== undefined ? `${data.minGap}(${data.minCount || 1})` : '-(0)';
+                    const maxDisplay = data.maxGap !== null && data.maxGap !== undefined ? `${data.maxGap}(${data.maxCount || 1})` : '-(0)';
+                    return `
+                                <tr class="bg-white border-b hover:bg-gray-50">
+                                    <td class="px-2 py-1 font-medium text-gray-900">${fromLen}→${toLen}</td>
+                                    <td class="px-2 py-1 font-semibold text-green-600">${minDisplay}</td>
+                                    <td class="px-2 py-1 font-semibold text-yellow-600">${data.avgGap || '-'}</td>
+                                    <td class="px-2 py-1 font-semibold text-red-600">${maxDisplay}</td>
+                                    <td class="px-2 py-1 ${isLow ? 'text-red-600 font-bold' : ''}">${data.lastGap || '-'}</td>
+                                    <td class="px-2 py-1">${data.count}</td>
+                                </tr>
+                            `;
+                }).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    };
     const renderRecordAccordionItem = (key, stat) => {
         const safeKey = key.replace(/:/g, '-');
         const longestInfo = stat.longest && stat.longest.length > 0 ? `${stat.longest[0].length} ngày (${stat.longest.length})` : 'N/A';
@@ -361,42 +588,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         const avgIntervalInfo = stat.averageInterval !== null ? `${stat.averageInterval} ngày` : 'N/A';
         const sinceLastInfo = stat.daysSinceLast !== null ? `${stat.daysSinceLast} ngày` : 'N/A';
 
-        const gapStatsTable = (stat.gapStats) ? `
+        const gapStatsSection = (stat.gapStats) ? `
             <div class="mt-3 col-span-1 md:col-span-2">
-                <h6 class="text-xs font-bold text-gray-700 mb-1">SỐ NGÀY XHTB GIỮA CÁC CHUỖI:</h6>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-xs text-left text-gray-500">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-2 py-1">Độ dài</th>
-                                <th scope="col" class="px-2 py-1">TB xuất hiện</th>
-                                <th scope="col" class="px-2 py-1">Ngắn nhất</th>
-                                <th scope="col" class="px-2 py-1">Lần cuối</th>
-                                <th scope="col" class="px-2 py-1">Số lần</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.entries(stat.gapStats)
-                .filter(([len, data]) => data.count > 0)
-                .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-                .map(([len, data]) => `
-                                <tr class="bg-white border-b">
-                                    <td class="px-2 py-1 font-medium text-gray-900">Chuỗi ${len} ngày</td>
-                                    <td class="px-2 py-1">${data.avgGap} ngày</td>
-                                    <td class="px-2 py-1 font-semibold text-blue-600">${data.minGap !== null ? data.minGap + ' ngày' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${data.lastGap} ngày</td>
-                                    <td class="px-2 py-1">${data.count}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <h6 class="text-xs font-bold text-gray-700 mb-1">GAP STATS (GE >= Len):</h6>
+                        ${renderGapTable(stat.gapStats, '>=', key)}
+                    </div>
+                    <div>
+                        <h6 class="text-xs font-bold text-gray-700 mb-1">EXACT GAP STATS (== Len):</h6>
+                        ${stat.exactGapStats ? renderGapTable(stat.exactGapStats, '==', key) : '<p class="text-xs text-gray-500">Không có dữ liệu</p>'}
+                    </div>
+                    <div>
+                        <h6 class="text-xs font-bold text-blue-700 mb-1">EXTENSION GAP (N→N+step):</h6>
+                        ${stat.extensionGapStats ? renderExtensionGapTable(stat.extensionGapStats, key) : '<p class="text-xs text-gray-500">Không có dữ liệu</p>'}
+                    </div>
                 </div>
             </div>
         ` : '';
 
         const itemHtml = `
                     <div x-data="{ open: false }">
-                        <div @click="open = !open" class="record-accordion-button p-4 flex flex-wrap justify-between items-center cursor-pointer hover:bg-gray-50">
+                        <div @click="open = !open" class="record-accordion-button p-4 flex flex-wrap justify-between items-center cursor-pointer hover:bg-gray-50 border-b border-gray-100">
                              <span class="w-full lg:w-2/5 font-semibold text-gray-700 text-left">${stat.description}</span>
                              <div class="flex-grow grid grid-cols-4 gap-x-4 text-sm text-gray-500 text-left">
                                  <span><i class="bi bi-trophy"></i> KL: ${longestInfo}</span>
@@ -405,11 +618,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                                  <span><i class="bi bi-hourglass-split"></i> Cuối: ${sinceLastInfo}</span>
                              </div>
                         </div>
-                        <div x-show="open" x-transition class="bg-gray-50 p-4 accordion-content-highlight" :class="{ 'expanded': open }">
+                        <div x-show="open" x-transition class="bg-gray-50 p-4 accordion-content-highlight border-b border-gray-200" :class="{ 'expanded': open }">
                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                ${gapStatsTable}
-                                <div>${renderStreakDetails('Kỷ lục', stat.longest, stat.description)}</div>
-                                <div>${renderStreakDetails('Dài nhì', stat.secondLongest, stat.description)}</div>
+                                ${gapStatsSection}
+                                <div class="mt-4">${renderStreakDetails('Kỷ lục', stat.longest, stat.description)}</div>
+                                <div class="mt-4">${renderStreakDetails('Dài nhì', stat.secondLongest, stat.description)}</div>
                             </div>
                         </div>
                     </div>
@@ -478,8 +691,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isTongTT = desc.includes('tổng tt');
         const isTongMoi = desc.includes('tổng mới');
         const isHieu = desc.includes('hiệu');
+        const isTienLuiSoLe = desc.includes('tiến lùi') || desc.includes('lùi tiến');
 
-        return streak.fullSequence.map(day => {
+        return streak.fullSequence.map((day, index) => {
+            // Check if this is the latest day (not part of actual streak)
+            const isLatest = day.isLatest === true;
+            const isInStreak = streakDates.has(day.date);
+
             let subText = '';
             if (isTongTT) {
                 subText = `<span class="block text-blue-600 font-semibold">T${getTongTT(day.value)}</span>`;
@@ -487,11 +705,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 subText = `<span class="block text-blue-600 font-semibold">T${getTongMoi(day.value)}</span>`;
             } else if (isHieu) {
                 subText = `<span class="block text-green-600 font-semibold">H${getHieu(day.value)}</span>`;
+            } else if (isTienLuiSoLe && index > 0 && isInStreak) {
+                // For tienLuiSoLe, show arrow indicating direction (only for streak items)
+                // Find previous streak item index
+                let prevIndex = index - 1;
+                while (prevIndex >= 0 && !streakDates.has(streak.fullSequence[prevIndex].date)) {
+                    prevIndex--;
+                }
+
+                if (prevIndex >= 0) {
+                    const prevValue = parseInt(streak.fullSequence[prevIndex].value, 10);
+                    const currValue = parseInt(day.value, 10);
+                    const arrow = currValue > prevValue ? '↑' : (currValue < prevValue ? '↓' : '→');
+                    subText = `<span class="block text-purple-600 font-bold">${arrow}</span>`;
+                }
             }
+
+            // Determine background color
+            let bgClass = 'bg-gray-200';
+            if (isInStreak && !isLatest) {
+                bgClass = 'highlight';
+            } else if (isLatest) {
+                bgClass = 'bg-gray-300 border-2 border-dashed border-gray-400';
+            } else if (!isInStreak) {
+                // Intermediate day (skipped day in so le pattern)
+                // Show with dashed border to indicate it doesn't affect the pattern
+                bgClass = 'bg-gray-100 border-2 border-dashed border-gray-300 opacity-75';
+            }
+
             return `
-                        <div class="text-center p-1 rounded-md text-xs ${streakDates.has(day.date) ? 'highlight' : 'bg-gray-200'}">
+                        <div class="text-center p-1 rounded-md text-xs ${bgClass}">
                             <span class="font-mono text-base">${day.value}</span>
-                            ${subText} 
+                            ${subText}
                             <span class="block text-gray-500">${day.date.substring(0, 5)}</span>
                         </div>`;
         }).join('');

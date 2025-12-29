@@ -7,9 +7,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function loadSuggestions() {
         try {
-            // Build URL with config params
-            const config = AppConfig.current;
-            const url = `/api/suggestions?gapThreshold=${config.GAP_THRESHOLD_PERCENT}&useMinGap=${config.USE_MIN_GAP}`;
+            // 1. Fetch config from server to ensure sync with settings
+            let config = {};
+            try {
+                const configRes = await fetch('/api/config');
+                if (configRes.ok) {
+                    config = await configRes.json();
+                }
+            } catch (e) {
+                console.error('Error fetching config:', e);
+            }
+
+            // 2. Determine which API to use based on config
+            const useConfidence = config.USE_CONFIDENCE_SCORE !== false;
+            const strategy = config.EXCLUSION_STRATEGY || 'BALANCED';
+            const gapStrategy = config.GAP_STRATEGY || 'COMBINED';
+            const gapBuffer = config.GAP_BUFFER_PERCENT !== undefined ? config.GAP_BUFFER_PERCENT : 0;
+
+            let url;
+            if (useConfidence) {
+                // Use new confidence-based API
+                url = `/api/suggestions/confidence?strategy=${strategy}`;
+            } else {
+                // Use legacy API
+                url = `/api/suggestions?gapStrategy=${gapStrategy}&gapBuffer=${gapBuffer}`;
+            }
 
             const response = await fetch(url);
             if (!response.ok) {
@@ -42,14 +64,59 @@ document.addEventListener('DOMContentLoaded', function () {
             numbersToBetHtml = '<span class="text-gray-500">Không có số nào được đề xuất để ôm.</span>';
         }
 
-        // Phần tổng hợp các số LOẠI TRỪ
+        // Phần tổng hợp các số LOẠI TRỪ (với màu theo tier)
         let excludedNumbersHtml = '';
         if (data.excludedNumbers && data.excludedNumbers.length > 0) {
+            // Tạo map từ số -> tier để hiển thị màu đúng
+            const numberToTier = {};
+            if (data.exclusionsByTier) {
+                const tierOrder = ['red', 'purple', 'orange', 'light_red'];
+                tierOrder.forEach(tier => {
+                    if (data.exclusionsByTier[tier]) {
+                        data.exclusionsByTier[tier].forEach(num => {
+                            if (!numberToTier[num]) {
+                                numberToTier[num] = tier;
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Định nghĩa màu theo tier (không còn light_orange)
+            const tierColors = {
+                red: 'bg-red-600',
+                purple: 'bg-purple-600',
+                orange: 'bg-orange-500',
+                light_red: 'bg-red-400'
+            };
+
             excludedNumbersHtml = '<div class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">';
             data.excludedNumbers.forEach(num => {
-                excludedNumbersHtml += `<div class="flex justify-center"><span class="inline-block bg-red-600 text-white text-base font-bold px-3 py-2 rounded shadow-sm w-12 text-center">${String(num).padStart(2, '0')}</span></div>`;
+                const tier = numberToTier[num] || 'red';
+                const colorClass = tierColors[tier] || 'bg-red-600';
+                excludedNumbersHtml += `<div class="flex justify-center"><span class="inline-block ${colorClass} text-white text-base font-bold px-3 py-2 rounded shadow-sm w-12 text-center">${String(num).padStart(2, '0')}</span></div>`;
             });
             excludedNumbersHtml += '</div>';
+
+            // Thêm legend cho tier (không còn light_orange)
+            if (data.tierInfo) {
+                const lightRedLabel = data.tierInfo.lightRedThreshold
+                    ? `Đỏ nhạt ${data.tierInfo.lightRedThreshold} (${data.tierInfo.countByTier?.light_red || 0})`
+                    : `Đỏ nhạt (${data.tierInfo.countByTier?.light_red || 0})`;
+
+                excludedNumbersHtml += `
+                    <div class="mt-4 flex flex-wrap gap-3 text-sm">
+                        <span class="flex items-center"><span class="w-3 h-3 rounded bg-red-600 mr-1"></span>Đỏ (${data.tierInfo.countByTier?.red || 0})</span>
+                        <span class="flex items-center"><span class="w-3 h-3 rounded bg-purple-600 mr-1"></span>Tím (${data.tierInfo.countByTier?.purple || 0})</span>
+                        <span class="flex items-center"><span class="w-3 h-3 rounded bg-orange-500 mr-1"></span>Cam (${data.tierInfo.countByTier?.orange || 0})</span>
+                        <span class="flex items-center"><span class="w-3 h-3 rounded bg-red-400 mr-1"></span>${lightRedLabel}</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">
+                        Tổng: ${data.excludedCount || 0} số | Yêu cầu tối thiểu: ${data.tierInfo.minRequired || 40} số | 
+                        Các tier đã áp dụng: ${data.tierInfo.appliedTiers?.join(', ') || 'N/A'}
+                    </div>
+                `;
+            }
         } else {
             excludedNumbersHtml = '<span class="text-gray-500 italic">Không có số nào bị loại trừ hôm nay.</span>';
         }
@@ -69,10 +136,41 @@ document.addEventListener('DOMContentLoaded', function () {
                     titleClass = 'text-green-800';
                     numberBadgeClass = 'bg-green-600';
                 } else if (isExclude) {
-                    cardBorderClass = 'border-red-500';
-                    headerBgClass = 'bg-red-100';
-                    titleClass = 'text-red-800';
-                    numberBadgeClass = 'bg-red-600';
+                    // Xác định tier từ data (nếu có) hoặc từ explanation text
+                    const tier = item.tier;
+                    const isPotential = item.explanation && item.explanation.includes('Chuỗi tiềm năng');
+
+                    if (tier === 'purple' || isPotential) {
+                        // PURPLE - Tiềm năng
+                        cardBorderClass = 'border-purple-500';
+                        headerBgClass = 'bg-purple-100';
+                        titleClass = 'text-purple-800';
+                        numberBadgeClass = 'bg-purple-600';
+                    } else if (tier === 'light_red') {
+                        // LIGHT RED - Đỏ nhạt
+                        cardBorderClass = 'border-red-300';
+                        headerBgClass = 'bg-red-50';
+                        titleClass = 'text-red-700';
+                        numberBadgeClass = 'bg-red-400';
+                    } else if (tier === 'orange') {
+                        // ORANGE - Cam
+                        cardBorderClass = 'border-orange-500';
+                        headerBgClass = 'bg-orange-100';
+                        titleClass = 'text-orange-800';
+                        numberBadgeClass = 'bg-orange-500';
+                    } else if (tier === 'light_orange') {
+                        // LIGHT ORANGE - Cam nhạt
+                        cardBorderClass = 'border-orange-300';
+                        headerBgClass = 'bg-orange-50';
+                        titleClass = 'text-orange-700';
+                        numberBadgeClass = 'bg-orange-400';
+                    } else {
+                        // RED (default) - Đỏ đậm
+                        cardBorderClass = 'border-red-500';
+                        headerBgClass = 'bg-red-100';
+                        titleClass = 'text-red-800';
+                        numberBadgeClass = 'bg-red-600';
+                    }
                 } else {
                     cardBorderClass = 'border-yellow-500';
                     headerBgClass = 'bg-yellow-100';
@@ -103,47 +201,28 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Gộp tất cả lại với UI Collapsible (Mặc định đóng)
+        // Gộp tất cả lại - KHÔNG có collapsible nested (parent đã có)
+        const strategyInfo = data.strategyInfo || {};
+        const methodLabel = strategyInfo.method === 'VOTING' ? 'Bình chọn' : 'Confidence';
+
+        // Update header count
+        const countSpan = document.getElementById('exclusion-count');
+        if (countSpan) {
+            countSpan.textContent = `(${data.excludedNumbers?.length || 0} số - ${strategyInfo.strategy || 'BALANCED'})`;
+        }
+
         const finalHtml = `
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-                <button id="toggleSuggestionsBtn" class="w-full flex items-center justify-between p-4 bg-red-50 hover:bg-red-100 transition-colors text-left group">
-                    <span class="text-lg font-bold text-red-700 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                        </svg>
-                        GỢI Ý LOẠI TRỪ (BẤM ĐỂ XEM CHI TIẾT)
-                    </span>
-                    <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500 transform transition-transform duration-200" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-                
-                <div id="suggestionsContent" class="hidden border-t border-gray-200 p-4 bg-white">
-                    <div class="mb-6">
-                        <h6 class="font-bold text-gray-800 mb-3">CÁC SỐ NÊN ÔM (LOẠI TRỪ - KHÓ VỀ):</h6>
-                        ${excludedNumbersHtml}
-                    </div>
-                    
-                    <hr class="my-4">
-                    <h5 class="text-lg font-bold text-gray-900 mb-3">GIẢI THÍCH CHI TIẾT:</h5>
-                    ${explanationsHtml}
-                </div>
+            <div class="mb-6">
+                <h6 class="font-bold text-gray-800 mb-3">CÁC SỐ LOẠI TRỪ (KHÓ VỀ):</h6>
+                ${excludedNumbersHtml}
             </div>
+            
+            <hr class="my-4">
+            <h5 class="text-lg font-bold text-gray-900 mb-3">GIẢI THÍCH CHI TIẾT:</h5>
+            ${explanationsHtml}
         `;
 
         suggestionsContainer.innerHTML = finalHtml;
         suggestionsContainer.style.display = 'block';
-
-        // Add toggle functionality
-        const btn = document.getElementById('toggleSuggestionsBtn');
-        const content = document.getElementById('suggestionsContent');
-        const icon = document.getElementById('toggleIcon');
-
-        if (btn && content && icon) {
-            btn.addEventListener('click', () => {
-                content.classList.toggle('hidden');
-                icon.classList.toggle('rotate-180');
-            });
-        }
     }
 });

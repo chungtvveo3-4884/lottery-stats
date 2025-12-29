@@ -6,8 +6,17 @@
 const AppConfig = {
     // Default values
     defaults: {
-        GAP_THRESHOLD_PERCENT: 0.15,
+        // NEW: Exclusion Strategy Settings
+        USE_CONFIDENCE_SCORE: true,
+        EXCLUSION_STRATEGY: 'BALANCED',
+        // Gap Settings
+        GAP_STRATEGY: 'COMBINED',
+        GAP_BUFFER_PERCENT: 0,
+        GAP_THRESHOLD_PERCENT: 0.3,
         USE_MIN_GAP: true,
+        MIN_GAP_PERCENT: 0.3,
+        INITIAL_BET_AMOUNT: 10,
+        BET_STEP_AMOUNT: 5,
         SHOW_PROBABILITY_BACKGROUNDS: true,
         HIGHLIGHT_LAST_GAP: true
     },

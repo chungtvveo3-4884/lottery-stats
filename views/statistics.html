@@ -24,22 +24,22 @@
 
 <body class="antialiased">
     <div class="container mx-auto max-w-7xl px-4 py-8">
-        <header class="bg-white shadow-md sticky top-0 z-10">
+        <header class="bg-white shadow-md sticky top-0 z-10 mb-8">
             <div class="container mx-auto px-4">
                 <div class="flex justify-between items-center py-4">
-                    <a href="/" class="text-2xl font-bold text-gray-800">XSMB Thống Kê</a>
-                    <nav class="hidden md:flex space-x-4">
+                    <a href="/" class="text-2xl font-bold text-gray-800">XSMB Stats</a>
+                    <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto">
                         <a href="/statistics"
-                            class="bg-blue-100 text-blue-600 px-3 py-2 rounded-md text-sm font-semibold">Thống kê</a>
+                            class="bg-blue-100 text-blue-600 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-semibold whitespace-nowrap">Thống
+                            kê</a>
                         <a href="/scoring"
-                            class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Tính
+                            class="text-gray-600 hover:text-blue-500 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap">Tính
                             điểm</a>
                         <a href="/simulation"
-                            class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">Mô
+                            class="text-gray-600 hover:text-blue-500 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap">Mô
                             phỏng</a>
                         <a href="/settings"
-                            class="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium">⚙️ Cài
-                            đặt</a>
+                            class="text-gray-600 hover:text-blue-500 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium whitespace-nowrap">⚙️</a>
                     </nav>
                 </div>
             </div>
@@ -105,20 +105,9 @@
             </div>
         </div>
 
-        <div id="suggestions-section" x-data="{ open: true }" class="bg-white rounded-lg shadow-md mb-8"
-            style="display: none;">
-            <div @click="open = !open" class="flex justify-between items-center p-4 cursor-pointer">
-                <h3 class="text-xl font-semibold text-gray-800 flex items-center">
-                    <i class="bi bi-lightbulb-fill text-yellow-500 me-2"></i> Gợi Ý Loại Trừ
-                </h3>
-                <i class="bi" :class="open ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-            </div>
-            <div x-show="open" x-transition class="accordion-content-highlight" :class="{ 'expanded': open }">
-                <div class="border-t border-gray-200 p-6">
-                    <div id="suggestions-container"></div>
-                </div>
-            </div>
-        </div>
+
+        <!-- Phần Gợi Ý Loại Trừ đã được chuyển sang trang Distribution -->
+
 
         <div id="current-streaks-section" x-data="{ open: true }" class="bg-white rounded-lg shadow-md mb-8 d-none">
             <div @click="open = !open" class="flex justify-between items-center p-4 cursor-pointer">

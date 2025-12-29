@@ -174,7 +174,9 @@ async function getQuickStats() {
         // Xác định chuỗi hiện tại (đang diễn ra)
         let current = null;
         if (latestDate) {
-            const isSoLe = key.toLowerCase().includes('sole');
+            const isSoLe = key.toLowerCase().includes('sole') && !key.includes('tienLuiSoLe') && !key.includes('luiTienSoLe');
+            const isTienLuiSoLe = key.includes('tienLuiSoLe') || key.includes('luiTienSoLe');
+
             if (isSoLe) {
                 // Với so le: Chỉ lấy chuỗi có endDate = latestDate - 1 (ngày hôm qua)
                 const yesterday = new Date(today);
@@ -183,24 +185,35 @@ async function getQuickStats() {
 
                 const streak = categoryData.streaks.find(s => s.endDate === yesterdayStr);
                 if (streak) {
-                    // Thêm kết quả ngày hôm nay vào fullSequence để hiển thị
-                    current = { ...streak };
-                    // Lấy dữ liệu số của ngày hôm nay
+                    // CRITICAL FIX: Deep copy fullSequence to avoid modifying the cached object
+                    current = {
+                        ...streak,
+                        fullSequence: streak.fullSequence ? [...streak.fullSequence] : []
+                    };
+
+                    // Thêm ngày hôm nay vào fullSequence (để hiển thị, nhưng KHÔNG dùng cho dự đoán)
                     const lotteryService = require('./lotteryService');
                     const rawData = lotteryService.getRawData();
                     if (rawData && rawData.length > 0) {
-                        const latestDayData = rawData.find(d => d.date === latestDate);
+                        const latestDayData = rawData.find(d => {
+                            const dDate = new Date(d.date);
+                            const dStr = `${String(dDate.getDate()).padStart(2, '0')}/${String(dDate.getMonth() + 1).padStart(2, '0')}/${dDate.getFullYear()}`;
+                            return dStr === latestDate;
+                        });
+
                         if (latestDayData && latestDayData.special) {
-                            // Thêm vào fullSequence
-                            if (!current.fullSequence) current.fullSequence = [];
                             current.fullSequence.push({
                                 date: latestDate,
                                 value: latestDayData.special,
-                                isLatest: true // Đánh dấu là ngày mới nhất
+                                isLatest: true // Đánh dấu là ngày mới nhất (KHÔNG thuộc chuỗi)
                             });
                         }
                     }
                 }
+            } else if (isTienLuiSoLe) {
+                // Với Tiến Lùi So Le: Chỉ lấy chuỗi kết thúc hôm nay (như các dạng khác)
+                // VÀ phải có độ dài >= 4 (theo yêu cầu người dùng)
+                current = categoryData.streaks.find(s => s.endDate === latestDate && s.length >= 4);
             } else {
                 // Với dạng khác: Chuỗi đang diễn ra = kết thúc đúng ngày mới nhất
                 current = categoryData.streaks.find(s => s.endDate === latestDate);
@@ -234,70 +247,219 @@ async function getQuickStats() {
 
         // === TÍNH TOÁN GAP STATS CHI TIẾT CHO TỪNG ĐỘ DÀI ===
         const gapStats = {};
+        const exactGapStats = {}; // NEW: Thống kê cho độ dài chính xác
         const maxLen = longestLength > 0 ? longestLength : 0;
         const calcLimit = maxLen + 1;
 
         // Detect if this is a "so le" pattern
-        const isSoLePattern = key.includes('veSole') || key.includes('veSoleMoi');
+        const isSoLePattern = (key.includes('veSole') || key.includes('veSoleMoi')) &&
+            key !== 'tienLuiSoLe' && key !== 'luiTienSoLe';
 
-        for (let len = 2; len <= calcLimit; len++) {
-            // CHỈ lấy các chuỗi có độ dài CHÍNH XÁC = len (không phải >= len)
-            const exactStreaks = categoryData.streaks
-                .filter(s => s.length === len)
-                .sort((a, b) => parseDate(a.endDate) - parseDate(b.endDate));
+        // Helper function to calculate stats for a set of streaks
+        // currentStreakInfo: the ongoing current streak (if any) to exclude from calculations
+        const calculateGapStatsForStreaks = (streaks, isSoLe, currentStreakInfo = null) => {
+            // Filter out the current streak from calculations
+            const filteredStreaks = currentStreakInfo
+                ? streaks.filter(s => !(s.startDate === currentStreakInfo.startDate && s.endDate === currentStreakInfo.endDate))
+                : streaks;
 
-            if (exactStreaks.length < 2) {
+            // Calculate cutoff date (1 day before current streak started) to exclude overlapping streaks
+            let cutoffDate = null;
+            if (currentStreakInfo && currentStreakInfo.startDate) {
+                cutoffDate = new Date(parseDate(currentStreakInfo.startDate));
+                cutoffDate.setDate(cutoffDate.getDate() - 1);
+            }
+
+            // Only include streaks that ended before the cutoff (if there's a current streak)
+            const validStreaks = cutoffDate
+                ? filteredStreaks.filter(s => parseDate(s.endDate) <= cutoffDate)
+                : filteredStreaks;
+
+            if (validStreaks.length < 1) {
+                return { avgGap: 0, lastGap: 0, minGap: null, count: 0, pastCount: 0 };
+            }
+
+            if (validStreaks.length < 2) {
                 let lastGap = 0;
-                if (exactStreaks.length === 1) {
-                    const lastEnd = parseDate(exactStreaks[0].endDate);
-                    if (exactStreaks[0].endDate !== latestDate) {
-                        const tomorrow = new Date(today);
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        lastGap = Math.ceil((tomorrow - lastEnd) / 86400000);
-                    }
+                const lastEnd = parseDate(validStreaks[0].endDate);
+
+                // Calculate lastGap to current streak's start (if exists) or to tomorrow
+                if (currentStreakInfo && currentStreakInfo.startDate) {
+                    lastGap = Math.ceil((parseDate(currentStreakInfo.startDate) - lastEnd) / 86400000);
+                } else {
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    lastGap = Math.ceil((tomorrow - lastEnd) / 86400000);
                 }
-                gapStats[len] = { avgGap: 0, lastGap, minGap: null, count: exactStreaks.length, pastCount: exactStreaks.length };
-                continue;
+
+                return { avgGap: 0, lastGap, minGap: null, count: validStreaks.length, pastCount: validStreaks.length };
             }
 
             // Calculate individual gaps between consecutive streaks
+            // Gap = startDate of next streak - endDate of previous streak
             const gaps = [];
-            for (let i = 0; i < exactStreaks.length - 1; i++) {
-                const gap = Math.ceil((parseDate(exactStreaks[i + 1].endDate) - parseDate(exactStreaks[i].endDate)) / 86400000);
+            for (let i = 0; i < validStreaks.length - 1; i++) {
+                const prevEnd = parseDate(validStreaks[i].endDate);
+                const nextStart = parseDate(validStreaks[i + 1].startDate);
+                const gap = Math.ceil((nextStart - prevEnd) / 86400000);
                 gaps.push(gap);
             }
 
-            // Filter gaps based on pattern type to exclude consecutive streaks
+            // Filter gaps based on pattern type
             let filteredGaps;
-            if (isSoLePattern) {
-                // For so le: exclude gaps <= 2 (consecutive streaks that should be merged)
+            if (isSoLe) {
                 filteredGaps = gaps.filter(g => g > 2);
             } else {
-                // For regular patterns: exclude gap = 1 (consecutive streaks)
                 filteredGaps = gaps.filter(g => g > 1);
             }
 
-            // Calculate avgGap and minGap
             const avgGap = filteredGaps.length > 0
                 ? Math.round(filteredGaps.reduce((sum, g) => sum + g, 0) / filteredGaps.length)
                 : 0;
+
             const minGap = filteredGaps.length > 0 ? Math.min(...filteredGaps) : null;
+            const maxGap = filteredGaps.length > 0 ? Math.max(...filteredGaps) : null;
 
-            // Tính lastGap: Từ chuỗi cuối cùng (không tính chuỗi hiện tại) đến NGÀY MAI
+            // Count how many times minGap and maxGap appear
+            const minCount = filteredGaps.filter(g => g === minGap).length;
+            const maxCount = filteredGaps.filter(g => g === maxGap).length;
+
+            // Calculate lastGap: From the last valid streak to current streak's start (or tomorrow if no current)
             let lastGap = 0;
-            const pastStreaks = exactStreaks.filter(s => s.endDate !== latestDate);
+            const lastValidStreak = validStreaks[validStreaks.length - 1];
+            const lastValidEnd = parseDate(lastValidStreak.endDate);
 
-            if (pastStreaks.length > 0) {
-                const lastPastStreak = pastStreaks[pastStreaks.length - 1];
-                const lastPastEnd = parseDate(lastPastStreak.endDate);
+            if (currentStreakInfo && currentStreakInfo.startDate) {
+                // Gap from last past streak END to current streak START
+                lastGap = Math.ceil((parseDate(currentStreakInfo.startDate) - lastValidEnd) / 86400000);
+            } else {
+                // No current streak - gap to tomorrow
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                lastGap = Math.ceil((tomorrow - lastPastEnd) / 86400000);
-            } else {
-                lastGap = 0;
+                lastGap = Math.ceil((tomorrow - lastValidEnd) / 86400000);
             }
 
-            gapStats[len] = { avgGap, lastGap, minGap, count: exactStreaks.length, pastCount: pastStreaks.length };
+            return { avgGap, lastGap, minGap, maxGap, minCount, maxCount, count: validStreaks.length, pastCount: validStreaks.length };
+        };
+
+        // NEW: Calculate extension gap - gap from streak of length N to streak of length N+step
+        // This measures how long it typically takes for a streak to "extend" to the next level
+        const calculateExtensionGap = (allStreaks, fromLen, step, isSoLe, currentStreakInfo) => {
+            const toLen = fromLen + step;
+
+            // Get all streaks with length >= fromLen, sorted by date
+            const sortedStreaks = allStreaks
+                .filter(s => s.length >= fromLen)
+                .sort((a, b) => parseDate(a.endDate) - parseDate(b.endDate));
+
+            if (sortedStreaks.length < 1) {
+                return { minGap: null, avgGap: 0, lastGap: 0, count: 0, lastStoppedDate: null };
+            }
+
+            // Find gaps from streaks of exactly fromLen to streaks of >= toLen
+            const extensionGaps = [];
+
+            for (let i = 0; i < sortedStreaks.length - 1; i++) {
+                const currentStreak = sortedStreaks[i];
+
+                // Only consider streaks that are exactly fromLen (not longer)
+                // These are the ones that "stopped" at fromLen
+                if (currentStreak.length === fromLen) {
+                    // Find the next streak that is >= toLen
+                    for (let j = i + 1; j < sortedStreaks.length; j++) {
+                        const nextStreak = sortedStreaks[j];
+                        if (nextStreak.length >= toLen) {
+                            const gap = Math.ceil(
+                                (parseDate(nextStreak.startDate) - parseDate(currentStreak.endDate)) / 86400000
+                            );
+                            // Only count meaningful gaps
+                            const minValidGap = isSoLe ? 2 : 1;
+                            if (gap > minValidGap) {
+                                extensionGaps.push(gap);
+                            }
+                            break; // Found the next extension, move to next fromLen streak
+                        }
+                    }
+                }
+            }
+
+            // Calculate lastGap: from the last streak that stopped at exactly fromLen to today
+            // IMPORTANT: Must exclude streaks that are part of or overlap with current streak
+            let lastGap = 0;
+            let lastStoppedDate = null;
+
+            // Find the most recent streak that stopped at exactly fromLen
+            // Must end BEFORE the current streak started (if there's an ongoing current streak of >= fromLen)
+            let cutoffDate = null;
+
+            // Use the passed currentStreakInfo (if it exists and has length >= fromLen)
+            if (currentStreakInfo && currentStreakInfo.length >= fromLen && currentStreakInfo.startDate) {
+                // Cutoff date = 1 day before current streak started
+                // This ensures we don't count streaks that overlap with current one
+                cutoffDate = new Date(parseDate(currentStreakInfo.startDate));
+                cutoffDate.setDate(cutoffDate.getDate() - 1);
+            }
+
+            const stoppedStreaks = sortedStreaks
+                .filter(s => {
+                    // Must be exactly fromLen
+                    if (s.length !== fromLen) return false;
+                    // Must not be the current streak (check by startDate and endDate)
+                    if (currentStreakInfo &&
+                        s.startDate === currentStreakInfo.startDate &&
+                        s.endDate === currentStreakInfo.endDate) {
+                        return false;
+                    }
+                    // If there's a cutoff, must end before it
+                    if (cutoffDate && parseDate(s.endDate) > cutoffDate) return false;
+                    return true;
+                })
+                .sort((a, b) => parseDate(b.endDate) - parseDate(a.endDate)); // Most recent first
+
+            if (stoppedStreaks.length > 0) {
+                const lastStopped = stoppedStreaks[0];
+                lastStoppedDate = lastStopped.endDate;
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                lastGap = Math.ceil((tomorrow - parseDate(lastStopped.endDate)) / 86400000);
+            }
+
+            if (extensionGaps.length === 0) {
+                return { minGap: null, maxGap: null, avgGap: 0, lastGap, count: 0, minCount: 0, maxCount: 0, lastStoppedDate };
+            }
+
+            const minGap = Math.min(...extensionGaps);
+            const maxGap = Math.max(...extensionGaps);
+            const avgGap = Math.round(extensionGaps.reduce((sum, g) => sum + g, 0) / extensionGaps.length);
+
+            // Count how many times minGap and maxGap appear
+            const minCount = extensionGaps.filter(g => g === minGap).length;
+            const maxCount = extensionGaps.filter(g => g === maxGap).length;
+
+            return { minGap, maxGap, avgGap, lastGap, count: extensionGaps.length, minCount, maxCount, lastStoppedDate };
+        };
+
+        // Extension gap stats: gap from N to N+1 (or N+2 for solo patterns)
+        const extensionGapStats = {};
+        const step = isSoLePattern ? 2 : 1; // So le patterns extend by 2 days
+
+        for (let len = 2; len <= calcLimit; len++) {
+            // 1. Greater or Equal (>= len)
+            const geStreaks = categoryData.streaks
+                .filter(s => s.length >= len)
+                .sort((a, b) => parseDate(a.endDate) - parseDate(b.endDate));
+            // Pass current streak info for proper lastGap calculation
+            gapStats[len] = calculateGapStatsForStreaks(geStreaks, isSoLePattern, current);
+
+            // 2. Exact Length (== len)
+            const exactStreaks = categoryData.streaks
+                .filter(s => s.length === len)
+                .sort((a, b) => parseDate(a.endDate) - parseDate(b.endDate));
+            exactGapStats[len] = calculateGapStatsForStreaks(exactStreaks, isSoLePattern, current);
+
+            // 3. Extension Gap: from len to len+step
+            // Pass current streak info for proper cutoff calculation
+            extensionGapStats[len] = calculateExtensionGap(categoryData.streaks, len, step, isSoLePattern, current);
         }
 
         quickStats[key] = {
@@ -307,7 +469,9 @@ async function getQuickStats() {
             current,
             averageInterval,
             daysSinceLast,
-            gapStats
+            gapStats,
+            exactGapStats,
+            extensionGapStats // NEW: Gap from streak N to streak N+step
         };
     };
 

@@ -46,16 +46,23 @@ function createStreakObject(data, dateMap, streak, typeSpecificData = {}) {
     const startIndex = dateMap.get(firstItem.date);
     const endIndex = dateMap.get(lastItem.date);
     if (startIndex === undefined || endIndex === undefined) return null;
-    // Lấy fullSequence dựa trên index thực tế, không phải độ dài chuỗi tìm được
-    const actualFullSequence = data.slice(startIndex, endIndex + 1);
+
+    const fullSequence = data.slice(startIndex, endIndex + 1);
+
+    // Calculate day span
+    const [d1, m1, y1] = firstItem.date.split('/').map(Number);
+    const [d2, m2, y2] = lastItem.date.split('/').map(Number);
+    const date1 = new Date(y1, m1 - 1, d1);
+    const date2 = new Date(y2, m2 - 1, d2);
+    const daySpan = Math.floor((date2 - date1) / (1000 * 60 * 60 * 24)) + 1;
+
     return {
         startDate: firstItem.date,
         endDate: lastItem.date,
-        // Độ dài fullSequence mới là độ dài thực tế
-        length: actualFullSequence.length,
+        length: daySpan,
         values: streak.map(item => item.value),
         dates: streak.map(item => item.date),
-        fullSequence: actualFullSequence, // Sử dụng fullSequence đúng
+        fullSequence,
         ...typeSpecificData
     };
 }
@@ -176,16 +183,33 @@ function findAlternatingValueStreaks(data, dateMap, { valueExtractor, descriptio
 
 
 // [FIXED] Sửa lại logic để không bỏ sót chuỗi
+// [FIXED] Hàm này giờ dùng cho "Về so le" (Thường) -> Strict Alternating (A - !A - A)
+// Chỉ chấp nhận chuỗi có số ngày là số lẻ
 function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     const allStreaks = [];
+
+    const getDaySpan = (startDate, endDate) => {
+        const [d1, m1, y1] = startDate.split('/').map(Number);
+        const [d2, m2, y2] = endDate.split('/').map(Number);
+        const date1 = new Date(y1, m1 - 1, d1);
+        const date2 = new Date(y2, m2 - 1, d2);
+        return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24)) + 1;
+    };
+
     for (let i = 0; i < data.length - 2; i++) {
-        if (!condition(data[i])) continue;
+        // Strict: Day A matches, Day B does NOT match
+        if (!condition(data[i]) || condition(data[i + 1])) continue;
 
         let streak = [data[i]];
         let currentIndex = i;
         while (currentIndex < data.length - 2) {
             const nextIndex = currentIndex + 2;
-            if (data[currentIndex + 1] && data[nextIndex] && isConsecutive(data[currentIndex].date, data[currentIndex + 1].date) && isConsecutive(data[currentIndex + 1].date, data[nextIndex].date) && condition(data[nextIndex])) {
+            // Strict: Day B (currentIndex+1) does NOT match, Day C (nextIndex) matches
+            if (data[currentIndex + 1] && data[nextIndex] &&
+                isConsecutive(data[currentIndex].date, data[currentIndex + 1].date) &&
+                isConsecutive(data[currentIndex + 1].date, data[nextIndex].date) &&
+                !condition(data[currentIndex + 1]) && // Strict check
+                condition(data[nextIndex])) {
                 streak.push(data[nextIndex]);
                 currentIndex = nextIndex;
             } else {
@@ -193,15 +217,28 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
             }
         }
         if (streak.length >= 2) {
-            allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
+            const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
+            if (span % 2 === 1) {
+                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
+            }
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
-// [FIXED] Sửa lại logic để không bỏ sót chuỗi
+// [FIXED] Hàm này giờ dùng cho "Về so le (mới)" -> Loose Alternating (A - ? - A)
+// Chỉ chấp nhận chuỗi có số ngày là số lẻ
 function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     const allStreaks = [];
+
+    const getDaySpan = (startDate, endDate) => {
+        const [d1, m1, y1] = startDate.split('/').map(Number);
+        const [d2, m2, y2] = endDate.split('/').map(Number);
+        const date1 = new Date(y1, m1 - 1, d1);
+        const date2 = new Date(y2, m2 - 1, d2);
+        return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24)) + 1;
+    };
+
     for (let i = 0; i < data.length - 2; i++) {
         if (!numberMap.has(data[i].value)) continue;
 
@@ -211,7 +248,11 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
             const nextIndex = currentIndex + 2;
             const dayB = data[currentIndex + 1];
             const dayC = data[nextIndex];
-            if (dayB && dayC && isConsecutive(data[currentIndex].date, dayB.date) && isConsecutive(dayB.date, dayC.date) && !numberMap.has(dayB.value) && numberMap.has(dayC.value)) {
+            // Loose: Only check if Day C matches. Day B is ignored (can be anything)
+            if (dayB && dayC &&
+                isConsecutive(data[currentIndex].date, dayB.date) &&
+                isConsecutive(dayB.date, dayC.date) &&
+                numberMap.has(dayC.value)) { // Loose check
                 streak.push(dayC);
                 currentIndex = nextIndex;
             } else {
@@ -219,12 +260,83 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
             }
         }
         if (streak.length >= 2) {
-            allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
+            const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
+            if (span % 2 === 1) {
+                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
+            }
         }
     }
     return { streaks: allStreaks.filter(Boolean) };
 }
 
+
+// --- [MỚI] HÀM TÌM CHUỖI TIẾN LÙI SO LE CHO MỘT DẠNG CỤ THỂ ---
+/**
+ * Tìm chuỗi tiến-lùi so le cho Tổng/Hiệu
+ * @param {Array} data - Dữ liệu lottery
+ * @param {Map} dateMap - Map date -> index
+ * @param {Object} options - { typeCondition, valueExtractor, descriptionPrefix, startProgressive, minLength }
+ * @returns {Object} { description, streaks }
+ */
+function findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
+    typeCondition,
+    valueExtractor,
+    descriptionPrefix,
+    startProgressive = true,
+    minLength = 4
+}) {
+    const allStreaks = [];
+    const direction = startProgressive ? "Tiến-Lùi" : "Lùi-Tiến";
+    const description = `${descriptionPrefix} - ${direction} So Le`;
+
+    for (let i = 0; i < data.length - minLength + 1; i++) {
+        // Bắt buộc ngày đầu phải thuộc dạng
+        if (!typeCondition(data[i])) continue;
+
+        let currentStreak = [data[i]];
+        let expectedProgressive = startProgressive;
+
+        for (let j = i; j < data.length - 1; j++) {
+            const currentItem = data[j];
+            const nextItem = data[j + 1];
+
+            // Nếu không liên tiếp HOẶC ngày tiếp theo không thuộc dạng -> dừng
+            if (!isConsecutive(currentItem.date, nextItem.date) || !typeCondition(nextItem)) {
+                break;
+            }
+
+            // Lấy giá trị để so sánh
+            const val1 = valueExtractor(currentItem);
+            const val2 = valueExtractor(nextItem);
+
+            // Parse to int for comparison
+            const intVal1 = parseInt(val1, 10);
+            const intVal2 = parseInt(val2, 10);
+
+            if (isNaN(intVal1) || isNaN(intVal2)) break;
+
+            const isProgressive = intVal2 > intVal1;
+            const isRegressive = intVal2 < intVal1;
+
+            if ((expectedProgressive && isProgressive) || (!expectedProgressive && isRegressive)) {
+                currentStreak.push(nextItem);
+                expectedProgressive = !expectedProgressive;
+            } else {
+                break;
+            }
+        }
+
+        if (currentStreak.length >= minLength) {
+            allStreaks.push(createStreakObject(data, dateMap, currentStreak, {
+                direction,
+                values: currentStreak.map(item => valueExtractor(item))
+            }));
+            i += currentStreak.length - 2;
+        }
+    }
+
+    return { description, streaks: allStreaks.filter(Boolean) };
+}
 
 function findSequence(data, dateMap, { isProgressive, isUniform, valueExtractor, numberSet, indexMap, typeCondition, description }) {
     const allStreaks = [];
@@ -282,10 +394,17 @@ function analyzeNumberSet(data, dateMap, { typeName, descriptionPrefix }) {
             description: `${descriptionPrefix} - Về so le (mới)`,
             ...findAlternatingTypeStreaksNew(data, dateMap, MAPS[typeName] || new Map())
         },
-        tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Tiến liên tiếp` }),
-        tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
-        luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
-        luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
+        tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: INDEX_MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Tiến liên tiếp` }),
+        tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: INDEX_MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
+        luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: INDEX_MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
+        luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor: getValue, numberSet: SETS[typeName], indexMap: INDEX_MAPS[typeName], typeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
+        // [MỚI] Tiến-Lùi So Le
+        tienLuiSoLe: findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
+            typeCondition, valueExtractor: getValue, descriptionPrefix, startProgressive: true, minLength: 4
+        }),
+        luiTienSoLe: findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
+            typeCondition, valueExtractor: getValue, descriptionPrefix, startProgressive: false, minLength: 4
+        }),
     };
 }
 
@@ -321,6 +440,13 @@ function analyzeValueSequence(data, dateMap, { valueExtractor, valueSet, valueMa
         tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Tiến Đều` }),
         luiLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: false, valueExtractor, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi liên tiếp` }),
         luiDeuLienTiep: findSequence(data, dateMap, { isProgressive: false, isUniform: true, valueExtractor, numberSet: valueSet, indexMap: valueMap, typeCondition: effectiveTypeCondition, description: `${descriptionPrefix} - Lùi Đều` }),
+        // [MỚI] Tiến-Lùi So Le
+        tienLuiSoLe: findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
+            typeCondition: effectiveTypeCondition, valueExtractor, descriptionPrefix, startProgressive: true, minLength: 4
+        }),
+        luiTienSoLe: findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
+            typeCondition: effectiveTypeCondition, valueExtractor, descriptionPrefix, startProgressive: false, minLength: 4
+        }),
     });
 
     return results;
