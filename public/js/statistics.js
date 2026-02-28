@@ -854,7 +854,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const understandVersionBtn = document.getElementById('understandVersionBtn');
 
     if (versionModal && closeVersionModalBtn && understandVersionBtn) {
-        const v2PopupShown = localStorage.getItem('v2_popup_shown_2026_02_25');
+        const v2PopupShown = localStorage.getItem('v2_1_popup_shown_2026_03_01');
 
         if (!v2PopupShown) {
             versionModal.classList.remove('hidden');
@@ -862,7 +862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const closeModal = () => {
             versionModal.classList.add('hidden');
-            localStorage.setItem('v2_popup_shown_2026_02_25', 'true');
+            localStorage.setItem('v2_1_popup_shown_2026_03_01', 'true');
         };
 
         closeVersionModalBtn.addEventListener('click', closeModal);
