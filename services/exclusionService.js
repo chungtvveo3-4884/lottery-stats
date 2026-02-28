@@ -115,7 +115,7 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
             category = category.replace('[TIỀM NĂNG] ', '');
         }
 
-        const isSoLePattern = subcategory === 'veSole' || subcategory === 'veSoleMoi';
+        const isSoLePattern = (subcategory === 'veSole' || subcategory === 'veSoleMoi') && key !== 'tienLuiSoLe' && key !== 'luiTienSoLe';
         const isTrendPattern = subcategory === 'tienDeuLienTiep' || subcategory === 'luiDeuLienTiep' ||
             subcategory === 'tienLienTiep' || subcategory === 'luiLienTiep' ||
             subcategory === 'dongTien' || subcategory === 'dongLui' ||
@@ -127,73 +127,24 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
         const gapInfoGE = stat.gapStats ? stat.gapStats[targetLen] : null;
         const gapInfoExact = stat.exactGapStats ? stat.exactGapStats[targetLen] : null;
         const extensionGapInfo = stat.extensionGapStats ? stat.extensionGapStats[currentLen] : null;
-        const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
+        const recordLen = stat.computedMaxStreak || stat.longest?.[0]?.length || 0;
 
         let shouldExclude = false;
         let tier = null; // 'red', 'light_red', 'orange', 'light_orange'
 
-        // 1. Check if reached record -> RED tier
-        if (currentLen >= recordLen && recordLen > 0) {
+        const lotteryService = require('./lotteryService');
+        const totalYears = lotteryService.getTotalYears();
+        const targetCount = gapInfoExact ? gapInfoExact.count : 0;
+        const targetFreqYear = targetCount / totalYears;
+
+        // --- YÊU CẦU MỚI: Chỉ loại trừ khi đã đạt kỷ lục hoặc TỚI HẠN Kỷ lục (freq <= 1.5) ---
+        if (targetFreqYear <= 1.5 || (currentLen >= recordLen && recordLen > 0)) {
             shouldExclude = true;
             tier = 'red';
         }
 
-        // 1.5. Kiểm tra nếu SẮP đạt kỷ lục VÀ kỷ lục đó chỉ xuất hiện 1 lần trong quá khứ
-        else if (currentLen + 1 === recordLen && recordLen > 0) {
-            const gapStatsForRecord_GE = stat.gapStats ? stat.gapStats[recordLen] : null;
-            const gapStatsForRecord_Exact = stat.exactGapStats ? stat.exactGapStats[recordLen] : null;
-
-            const recordOnlyOnce_GE = gapStatsForRecord_GE &&
-                (gapStatsForRecord_GE.avgGap === 0 || gapStatsForRecord_GE.count <= 1);
-            const recordOnlyOnce_Exact = gapStatsForRecord_Exact &&
-                (gapStatsForRecord_Exact.avgGap === 0 || gapStatsForRecord_Exact.count <= 1);
-
-            if (recordOnlyOnce_GE || recordOnlyOnce_Exact) {
-                shouldExclude = true;
-                tier = 'red';
-            }
-        }
-
-        // 2. Check gap rules with multi-tier logic (nếu chưa có tier)
-        if (!tier) {
-            // Tính các ngưỡng (chỉ min, không còn avg vì LIGHT_RED sẽ tính động sau)
-            let excludeGE_min = false;
-            let excludeExact_min = false;
-            let excludeExtension = false;
-
-            // Check GE - Min threshold
-            if (gapInfoGE && gapInfoGE.minGap !== null) {
-                const minThreshold = gapInfoGE.minGap * (1 + GAP_BUFFER_PERCENT);
-                if (gapInfoGE.lastGap < minThreshold) excludeGE_min = true;
-            }
-
-            // Check Exact - Min threshold
-            if (gapInfoExact && gapInfoExact.minGap !== null) {
-                const minThreshold = gapInfoExact.minGap * (1 + GAP_BUFFER_PERCENT);
-                if (gapInfoExact.lastGap < minThreshold) excludeExact_min = true;
-            }
-
-            // Check Extension Gap - gap from current length to next level
-            if (extensionGapInfo && extensionGapInfo.minGap !== null && extensionGapInfo.count >= 3) {
-                // Only check if we have at least 3 data points for reliability
-                if (extensionGapInfo.lastGap < extensionGapInfo.minGap) {
-                    excludeExtension = true;
-                }
-            }
-
-            // Phân loại vào tier (chỉ RED và ORANGE, LIGHT_RED sẽ tính động sau)
-            // RED: Cả GE và Exact đều < minGap, HOẶC Extension Gap < minGap
-            if ((excludeGE_min && excludeExact_min) || excludeExtension) {
-                shouldExclude = true;
-                tier = 'red';
-            }
-            // ORANGE: GE HOẶC Exact < minGap - collect for later processing
-            else if (excludeGE_min || excludeExact_min) {
-                // Collect orange for later - will be applied only if red+purple <= 40
-                pendingOrange.push({ stat, key, category, subcategory, isTrendPattern });
-            }
-            // LIGHT_RED sẽ được tính động sau khi biết tổng số RED+PURPLE+ORANGE
-        }
+        // BỎ QUA KIỂM TRA GAP THEO YÊU CẦU MỚI "trước mắt sẽ chỉ loại trừ nếu đạt kỷ lục"
+        // (Không thêm vào pendingOrange hay tier khác)
 
         // Only process RED tier immediately
         if (shouldExclude && tier === 'red') {
@@ -222,6 +173,19 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
             else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
                 // SoLe - get numbers from category
                 nums = suggestionsController.getNumbersFromCategory(category);
+            }
+            else if (category === 'tienLuiSoLe' || key === 'tienLuiSoLe' || category === 'luiTienSoLe' || key === 'luiTienSoLe') {
+                if (stat.current.values && stat.current.values.length >= 2) {
+                    const values = stat.current.values;
+                    const lastValue = parseInt(values[values.length - 1], 10);
+                    const prevValue = parseInt(values[values.length - 2], 10);
+                    const isTien = lastValue > prevValue;
+                    if (isTien) {
+                        nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastValue);
+                    } else {
+                        nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastValue);
+                    }
+                }
             }
             // --- NEW: Handle Trend patterns for cac_tong ---
             else if (subcategory === 'luiLienTiep' || subcategory === 'tienLienTiep' ||
@@ -393,226 +357,20 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
         appliedTiers.push(tierName);
     }
 
-    // BƯỚC 2: Thêm ORANGE - CHỈ nếu red + purple <= 40
-    const redPurpleCount = exclusionsByTier['red'].size + exclusionsByTier['purple'].size;
+    // BƯỚC 2: Thêm ORANGE - (BỎ QUA VÌ YÊU CẦU MỚI "chỉ loại trừ khi đạt kỷ lục")
 
-    if (redPurpleCount <= 40) {
-        // Process pending orange patterns
-        for (const { stat, key, category, subcategory, isTrendPattern } of pendingOrange) {
-            let nums = [];
+    // BƯỚC 3 & BƯỚC 4: LIGHT_RED - (BỎ QUA VÌ YÊU CẦU MỚI "chỉ loại trừ khi đạt kỷ lục")
 
-            if (isTrendPattern) {
-                nums = suggestionsController.predictNextInSequence(stat, category, subcategory);
-            } else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
-                nums = suggestionsController.getNumbersFromCategory(category);
-            } else {
-                nums = suggestionsController.getNumbersFromCategory(category);
-            }
-
-            if (nums && nums.length > 0) {
-                nums = nums.filter(n => n !== null && n !== undefined && !isNaN(n));
-                nums.forEach(n => exclusionsByTier['orange'].add(parseInt(n, 10)));
-            }
-        }
-
-        // Add orange to final
-        const orangeNumbers = exclusionsByTier['orange'];
-        if (orangeNumbers.size > 0) {
-            orangeNumbers.forEach(num => {
-                finalExcludedNumbers.add(num);
-            });
-            appliedTiers.push('orange');
-        }
-    } else {
-        // Skip orange tier - red + purple already > 40
-        console.log(`[EXCLUSION] Skipping ORANGE tier: red(${exclusionsByTier['red'].size}) + purple(${exclusionsByTier['purple'].size}) = ${redPurpleCount} > 40`);
-    }
-
-    // BƯỚC 3: Nếu vẫn chưa đủ 40, tính LIGHT_RED với threshold động
-    // Threshold áp dụng ĐỒNG BỘ cho TẤT CẢ các chuỗi đang diễn ra
-    if (finalExcludedNumbers.size < MIN_EXCLUSION_COUNT) {
-        const THRESHOLD_STEP = 0.05; // 5%
-        const MAX_THRESHOLD = 5.0; // Tối đa 500% (để đủ số lượng)
-
-        // Tìm threshold tối thiểu để đạt >= 40 số
-        for (let threshold = THRESHOLD_STEP; threshold <= MAX_THRESHOLD; threshold += THRESHOLD_STEP) {
-            // Tạo set tạm để đếm số lượng với threshold hiện tại
-            const tempExcluded = new Set(finalExcludedNumbers);
-            const tempLightRedPatterns = []; // Lưu các pattern thỏa mãn
-
-            // Kiểm tra TẤT CẢ các pattern với CÙNG MỘT threshold
-            for (const key in quickStats) {
-                const stat = quickStats[key];
-                if (!stat.current) continue;
-
-                const currentLen = stat.current.length;
-                const [category, subcategory] = key.split(':');
-                if (!subcategory) continue; // Bỏ qua nếu không có subcategory
-                const isSoLePattern = (subcategory === 'veSole' || subcategory === 'veSoleMoi');
-                const targetLen = isSoLePattern ? currentLen + 2 : currentLen + 1;
-
-                const gapInfoGE = stat.gapStats ? stat.gapStats[targetLen] : null;
-                const gapInfoExact = stat.exactGapStats ? stat.exactGapStats[targetLen] : null;
-                const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
-
-                // Skip nếu đã đạt record hoặc không có gap stats
-                if (currentLen >= recordLen && recordLen > 0) continue;
-                if (!gapInfoGE && !gapInfoExact) continue;
-
-                // LIGHT_RED: lastGap < minGap * (1 + threshold) cho GE HOẶC Exact (nới lỏng)
-                // NHƯNG: minGap * (1 + threshold) phải < avgGap
-                let meetsGE = false;
-                let meetsExact = false;
-
-                if (gapInfoGE && gapInfoGE.minGap !== null) {
-                    const lightRedThreshold = gapInfoGE.minGap * (1 + threshold);
-                    const avgGap = gapInfoGE.avgGap || gapInfoGE.minGap;
-                    // Chỉ tính nếu threshold không vượt quá avgGap
-                    if (lightRedThreshold < avgGap && gapInfoGE.lastGap < lightRedThreshold) {
-                        meetsGE = true;
-                    }
-                }
-
-                if (gapInfoExact && gapInfoExact.minGap !== null) {
-                    const lightRedThreshold = gapInfoExact.minGap * (1 + threshold);
-                    const avgGap = gapInfoExact.avgGap || gapInfoExact.minGap;
-                    // Chỉ tính nếu threshold không vượt quá avgGap
-                    if (lightRedThreshold < avgGap && gapInfoExact.lastGap < lightRedThreshold) {
-                        meetsExact = true;
-                    }
-                }
-
-                // LIGHT_RED nới lỏng: GE HOẶC Exact thỏa mãn
-                if (meetsGE || meetsExact) {
-                    // Lấy số cần loại trừ
-                    let nums = suggestionsController.predictNextInSequence(stat, category,
-                        subcategory.includes('Deu') ? subcategory :
-                            (subcategory.includes('tien') || subcategory.includes('Tien') ? 'tienLienTiep' :
-                                subcategory.includes('lui') || subcategory.includes('Lui') ? 'luiLienTiep' : subcategory));
-
-                    if (nums && nums.length > 0) {
-                        tempLightRedPatterns.push({ key, category, subcategory, nums });
-                        nums.forEach(n => tempExcluded.add(n));
-                    }
-                }
-            }
-
-            // Kiểm tra nếu đã đủ 40 số với threshold hiện tại
-            if (tempExcluded.size >= MIN_EXCLUSION_COUNT) {
-                currentThreshold = threshold;
-
-                // Áp dụng chính thức cho tất cả patterns đã thỏa mãn
-                tempLightRedPatterns.forEach(({ key, nums }) => {
-                    nums.forEach(n => {
-                        if (!finalExcludedNumbers.has(n)) {
-                            finalExcludedNumbers.add(n);
-                            exclusionsByTier['light_red'].add(n);
-                        }
-                    });
-                });
-
-                break; // Đã đủ, dừng lại
-            }
-        }
-
-        if (exclusionsByTier['light_red'].size > 0) {
-            appliedTiers.push(`light_red (+${(currentThreshold * 100).toFixed(0)}%)`);
-        }
-    }
-
-    // BƯỚC 4: Nếu vẫn chưa đủ 60 loại trừ, mở rộng threshold cho phép đến avgGap
-    if (finalExcludedNumbers.size < MIN_EXCLUSION_COUNT) {
-        const THRESHOLD_STEP = 0.05;
-        const MAX_THRESHOLD = 10.0; // Tăng lên 1000%
-
-        for (let threshold = currentThreshold + THRESHOLD_STEP; threshold <= MAX_THRESHOLD; threshold += THRESHOLD_STEP) {
-            const tempExcluded = new Set(finalExcludedNumbers);
-            const tempPatterns = [];
-
-            for (const key in quickStats) {
-                const stat = quickStats[key];
-                if (!stat.current) continue;
-
-                const currentLen = stat.current.length;
-                const [category, subcategory] = key.split(':');
-                if (!subcategory) continue;
-                const isSoLePattern = (subcategory === 'veSole' || subcategory === 'veSoleMoi');
-                const targetLen = isSoLePattern ? currentLen + 2 : currentLen + 1;
-
-                const gapInfoGE = stat.gapStats ? stat.gapStats[targetLen] : null;
-                const gapInfoExact = stat.exactGapStats ? stat.exactGapStats[targetLen] : null;
-                const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
-
-                if (currentLen >= recordLen && recordLen > 0) continue;
-                if (!gapInfoGE && !gapInfoExact) continue;
-
-                // Mở rộng: cho phép threshold đến avgGap (thay vì < avgGap)
-                let meetsCondition = false;
-
-                if (gapInfoGE && gapInfoGE.minGap !== null) {
-                    const adjustedThreshold = gapInfoGE.minGap * (1 + threshold);
-                    const avgGap = gapInfoGE.avgGap || gapInfoGE.minGap;
-                    // Cho phép đến avgGap (<=)
-                    if (adjustedThreshold <= avgGap && gapInfoGE.lastGap < adjustedThreshold) {
-                        meetsCondition = true;
-                    }
-                }
-
-                if (!meetsCondition && gapInfoExact && gapInfoExact.minGap !== null) {
-                    const adjustedThreshold = gapInfoExact.minGap * (1 + threshold);
-                    const avgGap = gapInfoExact.avgGap || gapInfoExact.minGap;
-                    if (adjustedThreshold <= avgGap && gapInfoExact.lastGap < adjustedThreshold) {
-                        meetsCondition = true;
-                    }
-                }
-
-                if (meetsCondition) {
-                    let nums = suggestionsController.predictNextInSequence(stat, category, subcategory);
-                    if (nums && nums.length > 0) {
-                        tempPatterns.push({ key, nums });
-                        nums.forEach(n => tempExcluded.add(n));
-                    }
-                }
-            }
-
-            if (tempExcluded.size >= MIN_EXCLUSION_COUNT) {
-                currentThreshold = threshold;
-                tempPatterns.forEach(({ nums }) => {
-                    nums.forEach(n => {
-                        if (!finalExcludedNumbers.has(n)) {
-                            finalExcludedNumbers.add(n);
-                            exclusionsByTier['light_red'].add(n);
-                        }
-                    });
-                });
-                console.log(`[Exclusion Service] Expanded threshold to +${(threshold * 100).toFixed(0)}% to reach ${finalExcludedNumbers.size} exclusions`);
-                break;
-            }
-        }
-    }
-
-    // ĐIỀU CHỈNH ĐỘNG: Nếu loại trừ > 80 (đánh < 20), giảm bớt tier thấp đến cao
+    // ĐÓNG BỎ ĐIỀU CHỈNH ĐỘNG: Không giới hạn số lượng loại trừ tối đa nữa (để đồng bộ với Statistic và Distribution)
+    // Nếu loại 100 số thì nghỉ chơi vòng này (không còn ép đánh 20 số nữa)
+    /* 
     const MAX_EXCLUSION_COUNT = EXCLUSION_TIERS.MAX_EXCLUSION_COUNT || 80;
     const MIN_BET_COUNT = 20;
 
     if (finalExcludedNumbers.size > MAX_EXCLUSION_COUNT) {
-        // Thứ tự giảm: light_red → orange → purple → red (nếu cần)
-        const tiersToReduce = ['light_red', 'orange', 'purple', 'red'];
-
-        for (const tier of tiersToReduce) {
-            if (100 - finalExcludedNumbers.size >= MIN_BET_COUNT) break;
-
-            const tierNumbers = Array.from(exclusionsByTier[tier]);
-            for (const num of tierNumbers) {
-                if (100 - finalExcludedNumbers.size >= MIN_BET_COUNT) break;
-                finalExcludedNumbers.delete(num);
-            }
-        }
-
-        console.log(`[Exclusion Service] Adjusted down to ${finalExcludedNumbers.size} exclusions (${100 - finalExcludedNumbers.size} bets)`);
+        // ... (removed)
     }
-
-    // Báo cáo kết quả cuối
+    */
     const betCount = 100 - finalExcludedNumbers.size;
     if (betCount < 20 || betCount > 40) {
         console.log(`[Exclusion Service] WARNING: Bet count ${betCount} is outside 20-40 range`);

@@ -294,8 +294,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 finalHtml += `
                             <div class="mt-4">
                                 <h4 class="text-sm font-semibold text-gray-600 uppercase tracking-wider flex justify-between items-center border-b pb-2 mb-4">
-                                    <span><i class="bi bi-fire"></i> Chuỗi</span>
-                                    <span class="font-bold text-lg text-red-500">${length} Ngày</span>
+                                    <span><i class="bi bi-fire"></i> ${length == 1 ? 'Chuỗi tiềm năng kỷ lục (2 ngày)' : 'Chuỗi'}</span>
+                                    ${length != 1 ? `<span class="font-bold text-lg text-red-500">${length} Ngày</span>` : ''}
                                 </h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">`;
 

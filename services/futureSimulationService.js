@@ -123,12 +123,22 @@ class FutureSimulationService {
 
     // Phương pháp loại trừ (dựa vào giải đặc biệt + chuỗi + gap)
     exclusionMethod(historicalData) {
-        const recentData = historicalData.slice(-90); // 90 ngày gần nhất
+        const recentData = historicalData.slice(-60); // 60 ngày gần nhất (giảm để nhạy hơn)
         const excluded = new Set();
         const streakInfo = [];
 
         // Tính gap cho mỗi số từ giải đặc biệt
         const gapMap = this.calculateGapFromSpecial(recentData);
+
+        // ===== BƯỚC 0: LOẠI SỐ VỪA VỀ GẦN ĐÂY (gap 0-2) =====
+        // Điều này tạo sự thay đổi rõ ràng mỗi ngày
+        for (let num = 0; num < 100; num++) {
+            const gap = gapMap.get(num);
+            if (gap <= 2) { // Số về trong 3 ngày gần nhất -> loại
+                excluded.add(num);
+                streakInfo.push({ type: `Gap ${gap} (vừa về)`, num });
+            }
+        }
 
         // ===== BƯỚC 1: Kiểm tra chuỗi ĐẦU về liên tiếp =====
         for (let val = 0; val <= 9; val++) {
@@ -238,30 +248,8 @@ class FutureSimulationService {
         toBet.sort((a, b) => gapMap.get(b) - gapMap.get(a));
 
         // Số đánh = số còn lại sau khi loại trừ
-        // Nếu quá nhiều (>40), chỉ lấy 40 số có gap cao nhất
-        // Nếu quá ít (<20), nới lỏng điều kiện
+        // Bỏ logic ép đánh 20 số. Nếu bị loại hết 100 số, số đánh sẽ array rỗng.
         let finalToBet = toBet;
-        const targetMin = 20;
-        const targetMax = 40;
-
-        if (toBet.length > targetMax) {
-            // Lấy targetMax số có gap cao nhất
-            finalToBet = toBet.slice(0, targetMax);
-        } else if (toBet.length < targetMin) {
-            // Nếu loại trừ quá nhiều (>80 số), chỉ giữ loại trừ số về liên tiếp
-            excluded.clear();
-            for (let num = 0; num < 100; num++) {
-                const streak = this.calculateStreakFromSpecial(recentData, n => n === num);
-                if (streak >= 2) excluded.add(num);
-            }
-            finalToBet = [];
-            for (let i = 0; i < 100; i++) {
-                if (!excluded.has(i)) finalToBet.push(i);
-            }
-            finalToBet.sort((a, b) => gapMap.get(b) - gapMap.get(a));
-            if (finalToBet.length > targetMax) finalToBet = finalToBet.slice(0, targetMax);
-        }
-        // Nếu trong khoảng 20-40, giữ nguyên số đánh dựa trên loại trừ thực tế
 
         return {
             toBet: finalToBet,
@@ -318,8 +306,8 @@ class FutureSimulationService {
             .map(entry => entry[0]);
 
         return {
-            toBet: sortedByScore.slice(0, 25),
-            excluded: sortedByScore.slice(75)
+            toBet: sortedByScore.slice(0, 10),
+            excluded: sortedByScore.slice(90)
         };
     }
 
@@ -362,8 +350,8 @@ class FutureSimulationService {
             .map(entry => entry[0]);
 
         return {
-            toBet: sortedByScore.slice(0, 25),
-            excluded: sortedByScore.slice(75)
+            toBet: sortedByScore.slice(0, 10),
+            excluded: sortedByScore.slice(90)
         };
     }
 
@@ -409,13 +397,35 @@ class FutureSimulationService {
             .map(entry => entry[0]);
 
         return {
-            toBet: sortedByScore.slice(0, 25),
-            excluded: sortedByScore.slice(75)
+            toBet: sortedByScore.slice(0, 10),
+            excluded: sortedByScore.slice(90)
         };
     }
 
-    // Phương pháp Combined (Tổng hợp cả 4 phương pháp)
-    // Logic: Lấy Union của 4 PP, loại số có count >= 2, đánh số còn lại (count === 1)
+    // Phương pháp Streak Continuation - đánh vào các số có khả năng tiếp tục chuỗi
+    // Logic: Dựa trên quickStats từ statisticsService
+    // Lưu ý: Phương pháp này cần gọi async, sẽ được gọi từ bên ngoài
+    async streakContinuationMethod() {
+        try {
+            const streakService = require('./streakContinuationService');
+            const result = await streakService.getStreakContinuationNumbers({ topCount: 30 });
+            return {
+                toBet: result.toBet,
+                excluded: result.excluded,
+                streakInfo: result.streakInfo
+            };
+        } catch (error) {
+            console.error('[FutureSimulation] Lỗi Streak Continuation:', error.message);
+            return {
+                toBet: [],
+                excluded: Array.from({ length: 100 }, (_, i) => i),
+                streakInfo: []
+            };
+        }
+    }
+
+    // Phương pháp Combined (Tổng hợp 4 phương pháp: Exclusion + Unified + Advanced + Hybrid AI)
+    // Logic mới: UNION của tất cả số từ 4 phương pháp
     combinedMethod(historicalData) {
         // Lấy dự đoán từ 4 phương pháp
         const exclusion = this.exclusionMethod(historicalData);
@@ -423,32 +433,23 @@ class FutureSimulationService {
         const advanced = this.advancedMethod(historicalData);
         const hybridAI = this.hybridAIMethod(historicalData);
 
-        // Đếm số lần xuất hiện của mỗi số trong các phương pháp
-        const countMap = new Map();
-        for (let i = 0; i < 100; i++) {
-            countMap.set(i, 0);
-        }
+        // Tạo set để lưu UNION của cả 4 phương pháp (BAO GỒM exclusion)
+        const unionSet = new Set();
 
-        // Cộng điểm cho mỗi số xuất hiện trong toBet của các phương pháp
+        // Thêm tất cả số từ 4 phương pháp vào union
         [exclusion, unified, advanced, hybridAI].forEach(method => {
             method.toBet.forEach(num => {
-                countMap.set(num, countMap.get(num) + 1);
+                unionSet.add(num);
             });
         });
 
-        // Lấy các số trong UNION (count >= 1) nhưng loại số trùng (count >= 2)
-        // → Chỉ đánh số có count === 1 (xuất hiện trong đúng 1 phương pháp)
-        const toBet = [];
-        for (let i = 0; i < 100; i++) {
-            if (countMap.get(i) === 1) {
-                toBet.push(i);
-            }
-        }
+        // toBet = UNION của 4 phương pháp
+        const toBet = Array.from(unionSet).sort((a, b) => a - b);
 
-        // Số loại trừ = số không có trong union (count === 0) + số trùng (count >= 2)
+        // Số loại trừ = số không có trong union
         const excludedSet = new Set();
         for (let i = 0; i < 100; i++) {
-            if (countMap.get(i) !== 1) {
+            if (!unionSet.has(i)) {
                 excludedSet.add(i);
             }
         }
@@ -461,40 +462,31 @@ class FutureSimulationService {
                 unified: unified.toBet.length,
                 advanced: advanced.toBet.length,
                 hybridAI: hybridAI.toBet.length,
-                unique: toBet.length
+                combined: toBet.length
             }
         };
     }
 
-    // Combined từ 4 predictions đã tính sẵn (không gọi lại 4 phương pháp)
-    // Giải quyết vấn đề HybridAI có random nên kết quả khác nhau mỗi lần gọi
+    // Combined từ 4 predictions: Exclusion + Unified + Advanced + Hybrid AI
+    // Logic mới: UNION của tất cả số từ 4 phương pháp
     combinedMethodFromPredictions(exclusion, unified, advanced, hybridAI) {
-        // Đếm số lần xuất hiện của mỗi số trong các phương pháp
-        const countMap = new Map();
-        for (let i = 0; i < 100; i++) {
-            countMap.set(i, 0);
-        }
+        // Tạo set để lưu UNION của cả 4 phương pháp (BAO GỒM exclusion)
+        const unionSet = new Set();
 
-        // Cộng điểm cho mỗi số xuất hiện trong toBet của các phương pháp
+        // Thêm tất cả số từ 4 phương pháp vào union
         [exclusion, unified, advanced, hybridAI].forEach(method => {
             method.toBet.forEach(num => {
-                countMap.set(num, countMap.get(num) + 1);
+                unionSet.add(num);
             });
         });
 
-        // Lấy các số trong UNION (count >= 1) nhưng loại số trùng (count >= 2)
-        // → Chỉ đánh số có count === 1 (xuất hiện trong đúng 1 phương pháp)
-        const toBet = [];
-        for (let i = 0; i < 100; i++) {
-            if (countMap.get(i) === 1) {
-                toBet.push(i);
-            }
-        }
+        // toBet = UNION của 4 phương pháp
+        const toBet = Array.from(unionSet).sort((a, b) => a - b);
 
-        // Số loại trừ = số không có trong union (count === 0) + số trùng (count >= 2)
+        // Số loại trừ = số không có trong union
         const excludedSet = new Set();
         for (let i = 0; i < 100; i++) {
-            if (countMap.get(i) !== 1) {
+            if (!unionSet.has(i)) {
                 excludedSet.add(i);
             }
         }
@@ -507,7 +499,7 @@ class FutureSimulationService {
                 unified: unified.toBet.length,
                 advanced: advanced.toBet.length,
                 hybridAI: hybridAI.toBet.length,
-                unique: toBet.length
+                combined: toBet.length
             }
         };
     }
@@ -774,6 +766,336 @@ class FutureSimulationService {
             weeklyStats,
             monthlyStats,
             chartData,
+            generatedAt: new Date().toISOString()
+        };
+    }
+
+    /**
+     * Backtest 3 phương pháp (Unified, Advanced, Hybrid AI) + Combined
+     * trên dữ liệu lịch sử thực tế
+     * @param {number} days - Số ngày backtest (mặc định 30)
+     * @returns {Object} - Kết quả backtest chi tiết
+     */
+    runHistoricalBacktest(days = 30) {
+        const historicalData = this.getHistoricalData();
+        if (historicalData.length < days + 100) {
+            return { error: 'Không đủ dữ liệu lịch sử' };
+        }
+
+        // Lấy dữ liệu từ ngày gần nhất trở về trước
+        const endIndex = historicalData.length;
+        const startIndex = endIndex - days;
+
+        const results = {
+            exclusion: { wins: 0, losses: 0, details: [] },
+            unified: { wins: 0, losses: 0, details: [] },
+            advanced: { wins: 0, losses: 0, details: [] },
+            hybridAI: { wins: 0, losses: 0, details: [] },
+            combined: { wins: 0, losses: 0, details: [] },
+            consensus: { wins: 0, losses: 0, details: [] },
+            smart5: { wins: 0, losses: 0, details: [] },
+            smart10: { wins: 0, losses: 0, details: [] },
+            smart15: { wins: 0, losses: 0, details: [] },
+            smart20: { wins: 0, losses: 0, details: [] },
+            smart: { wins: 0, losses: 0, details: [] },
+            smart30: { wins: 0, losses: 0, details: [] }
+        };
+
+        for (let i = startIndex; i < endIndex; i++) {
+            // Dữ liệu để dự đoán (không bao gồm ngày i)
+            const dataForPrediction = historicalData.slice(0, i);
+
+            // Kết quả thực tế của ngày i
+            const actualDay = historicalData[i];
+            const actualNumber = this.getSpecialNumber(actualDay);
+
+            if (actualNumber === null) continue;
+
+            // Format ngày
+            const dateStr = actualDay.date ?
+                new Date(actualDay.date).toLocaleDateString('vi-VN') :
+                `Ngày ${i + 1}`;
+
+            // Chạy 4 phương pháp
+            const exclusion = this.exclusionMethod(dataForPrediction);
+            const unified = this.unifiedMethod(dataForPrediction);
+            const advanced = this.advancedMethod(dataForPrediction);
+            const hybridAI = this.hybridAIMethod(dataForPrediction);
+
+            // Combined = UNION của 4 phương pháp (bao gồm Exclusion)
+            const combinedSet = new Set([
+                ...exclusion.toBet,
+                ...unified.toBet,
+                ...advanced.toBet,
+                ...hybridAI.toBet
+            ]);
+            const combined = {
+                toBet: Array.from(combinedSet).sort((a, b) => a - b)
+            };
+
+            // Consensus = Số xuất hiện trong ít nhất 2 phương pháp (trừ exclusion)
+            const countMap = new Map();
+            [unified.toBet, advanced.toBet, hybridAI.toBet].forEach(arr => {
+                arr.forEach(num => {
+                    countMap.set(num, (countMap.get(num) || 0) + 1);
+                });
+            });
+            // Lọc số có trong ít nhất 2 phương pháp VÀ có trong exclusion
+            const consensusNumbers = [];
+            for (const [num, count] of countMap) {
+                if (count >= 2 && exclusion.toBet.includes(num)) {
+                    consensusNumbers.push(num);
+                }
+            }
+            const consensus = {
+                toBet: consensusNumbers.sort((a, b) => a - b)
+            };
+
+            // Smart = Top 25 số có điểm cao nhất từ tất cả phương pháp
+            const scoreMap = new Map();
+            // Điểm từ exclusion: +3 (mạnh nhất)
+            exclusion.toBet.forEach((num, idx) => {
+                const score = 3 + (exclusion.toBet.length - idx) / exclusion.toBet.length;
+                scoreMap.set(num, (scoreMap.get(num) || 0) + score);
+            });
+            // Điểm từ unified/advanced/hybridAI: +1 mỗi cái
+            [unified.toBet, advanced.toBet, hybridAI.toBet].forEach(arr => {
+                arr.forEach((num, idx) => {
+                    const score = 1 + (arr.length - idx) / arr.length;
+                    scoreMap.set(num, (scoreMap.get(num) || 0) + score);
+                });
+            });
+            // Sắp xếp theo điểm giảm dần
+            const sortedByScore = Array.from(scoreMap.entries())
+                .sort((a, b) => b[1] - a[1]);
+
+            // Tạo các biến thể với số lượng khác nhau
+            const smart5 = { toBet: sortedByScore.slice(0, 5).map(e => e[0]).sort((a, b) => a - b) };
+            const smart10 = { toBet: sortedByScore.slice(0, 10).map(e => e[0]).sort((a, b) => a - b) };
+            const smart15 = { toBet: sortedByScore.slice(0, 15).map(e => e[0]).sort((a, b) => a - b) };
+            const smart20 = { toBet: sortedByScore.slice(0, 20).map(e => e[0]).sort((a, b) => a - b) };
+            const smart = { toBet: sortedByScore.slice(0, 25).map(e => e[0]).sort((a, b) => a - b) };
+            const smart30 = { toBet: sortedByScore.slice(0, 30).map(e => e[0]).sort((a, b) => a - b) };
+
+            // Kiểm tra kết quả
+            const exclusionWin = exclusion.toBet.includes(actualNumber);
+            const unifiedWin = unified.toBet.includes(actualNumber);
+            const advancedWin = advanced.toBet.includes(actualNumber);
+            const hybridAIWin = hybridAI.toBet.includes(actualNumber);
+            const combinedWin = combined.toBet.includes(actualNumber);
+            const consensusWin = consensus.toBet.includes(actualNumber);
+            const smart5Win = smart5.toBet.includes(actualNumber);
+            const smart10Win = smart10.toBet.includes(actualNumber);
+            const smart15Win = smart15.toBet.includes(actualNumber);
+            const smart20Win = smart20.toBet.includes(actualNumber);
+            const smartWin = smart.toBet.includes(actualNumber);
+            const smart30Win = smart30.toBet.includes(actualNumber);
+
+            // Cập nhật thống kê
+            if (exclusionWin) results.exclusion.wins++; else results.exclusion.losses++;
+            if (unifiedWin) results.unified.wins++; else results.unified.losses++;
+            if (advancedWin) results.advanced.wins++; else results.advanced.losses++;
+            if (hybridAIWin) results.hybridAI.wins++; else results.hybridAI.losses++;
+            if (combinedWin) results.combined.wins++; else results.combined.losses++;
+            if (consensusWin) results.consensus.wins++; else results.consensus.losses++;
+            if (smart5Win) results.smart5.wins++; else results.smart5.losses++;
+            if (smart10Win) results.smart10.wins++; else results.smart10.losses++;
+            if (smart15Win) results.smart15.wins++; else results.smart15.losses++;
+            if (smart20Win) results.smart20.wins++; else results.smart20.losses++;
+            if (smartWin) results.smart.wins++; else results.smart.losses++;
+            if (smart30Win) results.smart30.wins++; else results.smart30.losses++;
+
+            // Lưu chi tiết
+            const detail = {
+                date: dateStr,
+                actualNumber: String(actualNumber).padStart(2, '0'),
+                exclusion: {
+                    count: exclusion.toBet.length,
+                    win: exclusionWin,
+                    numbers: exclusion.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                unified: {
+                    count: unified.toBet.length,
+                    win: unifiedWin,
+                    numbers: unified.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                advanced: {
+                    count: advanced.toBet.length,
+                    win: advancedWin,
+                    numbers: advanced.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                hybridAI: {
+                    count: hybridAI.toBet.length,
+                    win: hybridAIWin,
+                    numbers: hybridAI.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                combined: {
+                    count: combined.toBet.length,
+                    win: combinedWin,
+                    numbers: combined.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                consensus: {
+                    count: consensus.toBet.length,
+                    win: consensusWin,
+                    numbers: consensus.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                smart5: {
+                    count: smart5.toBet.length,
+                    win: smart5Win,
+                    numbers: smart5.toBet.map(n => String(n).padStart(2, '0'))
+                },
+                smart10: {
+                    count: smart10.toBet.length,
+                    win: smart10Win,
+                    numbers: smart10.toBet.map(n => String(n).padStart(2, '0'))
+                },
+                smart15: {
+                    count: smart15.toBet.length,
+                    win: smart15Win,
+                    numbers: smart15.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                smart20: {
+                    count: smart20.toBet.length,
+                    win: smart20Win,
+                    numbers: smart20.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                smart: {
+                    count: smart.toBet.length,
+                    win: smartWin,
+                    numbers: smart.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                smart30: {
+                    count: smart30.toBet.length,
+                    win: smart30Win,
+                    numbers: smart30.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                }
+            };
+
+            results.exclusion.details.push(detail);
+            results.unified.details.push(detail);
+            results.advanced.details.push(detail);
+            results.hybridAI.details.push(detail);
+            results.combined.details.push(detail);
+            results.consensus.details.push(detail);
+            results.smart5.details.push(detail);
+            results.smart10.details.push(detail);
+            results.smart15.details.push(detail);
+            results.smart20.details.push(detail);
+            results.smart.details.push(detail);
+            results.smart30.details.push(detail);
+        }
+
+        // Tính tỷ lệ thắng
+        const calcStats = (method) => {
+            const total = method.wins + method.losses;
+            const winRate = total > 0 ? (method.wins / total * 100).toFixed(1) : 0;
+            const avgBets = method.details.length > 0
+                ? Math.round(method.details.reduce((sum, d) => {
+                    const methodKey = Object.keys(d).find(k => d[k] && d[k].count !== undefined && k !== 'date' && k !== 'actualNumber');
+                    return sum;
+                }, 0) / method.details.length)
+                : 0;
+            return { ...method, total, winRate };
+        };
+
+        // Tính lại average bets cho từng phương pháp
+        const calcAvgBets = (details, methodName) => {
+            if (details.length === 0) return 0;
+            const sum = details.reduce((s, d) => s + (d[methodName]?.count || 0), 0);
+            return Math.round(sum / details.length);
+        };
+
+        return {
+            days,
+            summary: {
+                exclusion: {
+                    wins: results.exclusion.wins,
+                    losses: results.exclusion.losses,
+                    total: results.exclusion.wins + results.exclusion.losses,
+                    winRate: ((results.exclusion.wins / (results.exclusion.wins + results.exclusion.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.exclusion.details, 'exclusion')
+                },
+                unified: {
+                    wins: results.unified.wins,
+                    losses: results.unified.losses,
+                    total: results.unified.wins + results.unified.losses,
+                    winRate: ((results.unified.wins / (results.unified.wins + results.unified.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.unified.details, 'unified')
+                },
+                advanced: {
+                    wins: results.advanced.wins,
+                    losses: results.advanced.losses,
+                    total: results.advanced.wins + results.advanced.losses,
+                    winRate: ((results.advanced.wins / (results.advanced.wins + results.advanced.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.advanced.details, 'advanced')
+                },
+                hybridAI: {
+                    wins: results.hybridAI.wins,
+                    losses: results.hybridAI.losses,
+                    total: results.hybridAI.wins + results.hybridAI.losses,
+                    winRate: ((results.hybridAI.wins / (results.hybridAI.wins + results.hybridAI.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.hybridAI.details, 'hybridAI')
+                },
+                combined: {
+                    wins: results.combined.wins,
+                    losses: results.combined.losses,
+                    total: results.combined.wins + results.combined.losses,
+                    winRate: ((results.combined.wins / (results.combined.wins + results.combined.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.combined.details, 'combined')
+                },
+                consensus: {
+                    wins: results.consensus.wins,
+                    losses: results.consensus.losses,
+                    total: results.consensus.wins + results.consensus.losses,
+                    winRate: results.consensus.wins + results.consensus.losses > 0
+                        ? ((results.consensus.wins / (results.consensus.wins + results.consensus.losses)) * 100).toFixed(1)
+                        : '0.0',
+                    avgBets: calcAvgBets(results.consensus.details, 'consensus')
+                },
+                smart5: {
+                    wins: results.smart5.wins,
+                    losses: results.smart5.losses,
+                    total: results.smart5.wins + results.smart5.losses,
+                    winRate: ((results.smart5.wins / (results.smart5.wins + results.smart5.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.smart5.details, 'smart5')
+                },
+                smart10: {
+                    wins: results.smart10.wins,
+                    losses: results.smart10.losses,
+                    total: results.smart10.wins + results.smart10.losses,
+                    winRate: ((results.smart10.wins / (results.smart10.wins + results.smart10.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.smart10.details, 'smart10')
+                },
+                smart15: {
+                    wins: results.smart15.wins,
+                    losses: results.smart15.losses,
+                    total: results.smart15.wins + results.smart15.losses,
+                    winRate: ((results.smart15.wins / (results.smart15.wins + results.smart15.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.smart15.details, 'smart15')
+                },
+                smart20: {
+                    wins: results.smart20.wins,
+                    losses: results.smart20.losses,
+                    total: results.smart20.wins + results.smart20.losses,
+                    winRate: ((results.smart20.wins / (results.smart20.wins + results.smart20.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.smart20.details, 'smart20')
+                },
+                smart: {
+                    wins: results.smart.wins,
+                    losses: results.smart.losses,
+                    total: results.smart.wins + results.smart.losses,
+                    winRate: ((results.smart.wins / (results.smart.wins + results.smart.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.smart.details, 'smart')
+                },
+                smart30: {
+                    wins: results.smart30.wins,
+                    losses: results.smart30.losses,
+                    total: results.smart30.wins + results.smart30.losses,
+                    winRate: ((results.smart30.wins / (results.smart30.wins + results.smart30.losses)) * 100).toFixed(1),
+                    avgBets: calcAvgBets(results.smart30.details, 'smart30')
+                }
+            },
+            details: results.unified.details, // Tất cả đều chung detail
             generatedAt: new Date().toISOString()
         };
     }
