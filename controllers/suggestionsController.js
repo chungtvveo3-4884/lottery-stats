@@ -45,7 +45,7 @@ exports.getSuggestions = async (req, res) => {
             const [category, subcategory] = key.split(':');
 
             // IMPORTANT: tienLuiSoLe and luiTienSoLe are NOT "so le" patterns (they are consecutive)
-            const isSoLePattern = (subcategory === 'veSole' || subcategory === 'veSoleMoi') &&
+            const isSoLePattern = (subcategory && (subcategory.toLowerCase() === 'vesole' || subcategory.toLowerCase() === 'vesolemoi')) &&
                 key !== 'tienLuiSoLe' && key !== 'luiTienSoLe';
 
             // For so le patterns, targetLen = currentLen + 2 (skip every other day)
@@ -55,11 +55,13 @@ exports.getSuggestions = async (req, res) => {
             const gapInfoGE = stat.gapStats ? stat.gapStats[targetLen] : null;
             const gapInfoExact = stat.exactGapStats ? stat.exactGapStats[targetLen] : null;
             const extensionGapInfo = stat.extensionGapStats ? stat.extensionGapStats[currentLen] : null;
-            const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
 
-            // Helper to format sequence for tienLuiSoLe
+            // MỐC KỶ LỤC MỚI
+            const recordLen = stat.computedMaxStreak || stat.longest?.[0]?.length || 0;
+
+            // Helper to format sequence for tienLuiSoLe/luiTienSoLe
             const formatSequence = (baseExplanation) => {
-                if (key === 'tienLuiSoLe' && stat.current.values && stat.current.values.length >= 2) {
+                if ((key === 'tienLuiSoLe' || key === 'luiTienSoLe') && stat.current.values && stat.current.values.length >= 2) {
                     const values = stat.current.values;
                     let seqStr = '';
                     for (let i = 0; i < values.length - 1; i++) {
@@ -77,105 +79,41 @@ exports.getSuggestions = async (req, res) => {
 
             let shouldExclude = false;
             let reason = '';
-            let tier = null; // 'red', 'light_red', 'orange', 'light_orange'
+            let tier = null; // 'red', 'purple', 'light_red', 'orange', 'light_orange'
 
-            // 1. Kiểm tra nếu đã đạt kỷ lục -> Loại (RED tier)
-            if (currentLen >= recordLen && recordLen > 0) {
+            // --- YÊU CẦU MỚI: Dự đoán Kỷ lục/Siêu KL cho ngày tiếp theo ---
+            const lotteryService = require('../services/lotteryService');
+            const totalYears = lotteryService.getTotalYears();
+            const targetCount = gapInfoExact ? gapInfoExact.count : 0;
+            const targetFreqYear = targetCount / totalYears;
+
+            if (targetFreqYear <= 1.5 || (currentLen >= recordLen && recordLen > 0)) {
                 shouldExclude = true;
-                tier = 'red';
-                reason = `Chuỗi hiện tại(${currentLen} ngày) đã đạt kỷ lục dài nhất(${recordLen} ngày).Xác suất phá kỷ lục là THẤP.`;
+                const isSuper = targetFreqYear <= 0.5 || stat.isSuperMaxThreshold;
+                if (currentLen >= recordLen && recordLen > 0) {
+                    tier = 'red';
+                } else if (isSuper) {
+                    tier = 'purple';
+                } else {
+                    tier = 'red';
+                }
+                const recordType = isSuper ? 'Siêu Kỷ Lục' : 'Kỷ Lục';
+
+                if (currentLen >= recordLen && recordLen > 0) {
+                    reason = `[ĐỎ] Chuỗi hiện tại (${currentLen} ngày) ĐÃ đạt ${recordType} (${recordLen} ngày). Xác suất tiếp tục gần như bằng 0.`;
+                } else if (isSuper) {
+                    reason = `[TÍM] TỚI HẠN SIÊU KỶ LỤC: Chuỗi ${targetLen} ngày là Siêu KL (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
+                } else {
+                    reason = `[ĐỎ] TỚI HẠN KỶ LỤC: Chuỗi ${targetLen} ngày là Kỷ Lục (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
+                }
                 reason = formatSequence(reason);
             }
 
-            // 1.5. Kiểm tra nếu SẮP đạt kỷ lục VÀ kỷ lục đó chỉ xuất hiện 1 lần trong quá khứ
-            // (avgGap = 0 hoặc count = 1 nghĩa là kỷ lục chỉ xảy ra duy nhất 1 lần)
-            if (!tier && currentLen + 1 === recordLen && recordLen > 0) {
-                // Kiểm tra cả GE và Exact gap stats
-                const gapStatsForRecord_GE = stat.gapStats ? stat.gapStats[recordLen] : null;
-                const gapStatsForRecord_Exact = stat.exactGapStats ? stat.exactGapStats[recordLen] : null;
+            // 2. BỎ QUA KIỂM TRA GAP THEO YÊU CẦU MỚI "trước mắt sẽ chỉ loại trừ nếu đạt kỷ lục"
+            // (Không áp dụng gap rules)
 
-                // Kỷ lục chỉ xuất hiện 1 lần nếu avgGap = 0 hoặc count <= 1
-                const recordOnlyOnce_GE = gapStatsForRecord_GE &&
-                    (gapStatsForRecord_GE.avgGap === 0 || gapStatsForRecord_GE.count <= 1);
-                const recordOnlyOnce_Exact = gapStatsForRecord_Exact &&
-                    (gapStatsForRecord_Exact.avgGap === 0 || gapStatsForRecord_Exact.count <= 1);
-
-                if (recordOnlyOnce_GE || recordOnlyOnce_Exact) {
-                    shouldExclude = true;
-                    tier = 'red';
-                    reason = `Chuỗi hiện tại(${currentLen} ngày) sắp đạt kỷ lục(${recordLen} ngày). Kỷ lục này CHỈ xuất hiện 1 LẦN trong lịch sử. Xác suất phá kỷ lục là RẤT THẤP.`;
-                    reason = formatSequence(reason);
-                }
-            }
-
-            // 2. Kiểm tra quy tắc Gap với các tier khác nhau (nếu chưa có tier)
-            if (!tier) {
-                // Tính các ngưỡng
-                let excludeGE_min = false;      // GE lastGap < minGap
-                let excludeExact_min = false;   // Exact lastGap < minGap
-                let excludeExtension = false;   // Extension Gap lastGap < minGap
-
-                let reasonGE_min = '';
-                let reasonExact_min = '';
-                let reasonExtension = '';
-
-                // Check GE (Greater or Equal) - Min threshold
-                if (gapInfoGE && gapInfoGE.minGap !== null) {
-                    const minThreshold = gapInfoGE.minGap * (1 + GAP_BUFFER_PERCENT);
-                    if (gapInfoGE.lastGap < minThreshold) {
-                        excludeGE_min = true;
-                        reasonGE_min = `GE: Gap(${gapInfoGE.lastGap}) < Min(${gapInfoGE.minGap})`;
-                    }
-                }
-
-                // Check Exact - Min threshold
-                if (gapInfoExact && gapInfoExact.minGap !== null) {
-                    const minThreshold = gapInfoExact.minGap * (1 + GAP_BUFFER_PERCENT);
-                    if (gapInfoExact.lastGap < minThreshold) {
-                        excludeExact_min = true;
-                        reasonExact_min = `Exact: Gap(${gapInfoExact.lastGap}) < Min(${gapInfoExact.minGap})`;
-                    }
-                }
-
-                // Check Extension Gap - gap from current length to next level
-                const step = isSoLePattern ? 2 : 1;
-                if (extensionGapInfo && extensionGapInfo.minGap !== null && extensionGapInfo.count >= 3) {
-                    // Only check if we have at least 3 data points for reliability
-                    if (extensionGapInfo.lastGap < extensionGapInfo.minGap) {
-                        excludeExtension = true;
-                        reasonExtension = `Kéo dài(${currentLen}→${currentLen + step}): Gap(${extensionGapInfo.lastGap}) < Min(${extensionGapInfo.minGap})`;
-                    }
-                }
-
-                // Phân loại vào tier (chỉ RED và ORANGE, LIGHT_RED sẽ tính sau)
-                // RED: Cả GE và Exact đều < minGap, HOẶC Extension Gap < minGap
-                if ((excludeGE_min && excludeExact_min) || excludeExtension) {
-                    shouldExclude = true;
-                    tier = 'red';
-                    if (excludeExtension && !(excludeGE_min && excludeExact_min)) {
-                        reason = `[ĐỎ-KÉO DÀI] ${reasonExtension}`;
-                    } else if (excludeExtension) {
-                        reason = `[ĐỎ] ${reasonGE_min} VÀ ${reasonExact_min}. ${reasonExtension}`;
-                    } else {
-                        reason = `[ĐỎ] ${reasonGE_min} VÀ ${reasonExact_min}`;
-                    }
-                }
-                // ORANGE: GE HOẶC Exact < minGap - collect for later processing
-                else if (excludeGE_min || excludeExact_min) {
-                    // Don't set tier yet - collect for later decision based on red+purple count
-                    reason = `[CAM] ${excludeGE_min ? reasonGE_min : reasonExact_min}`;
-                    reason = formatSequence(reason);
-                    pendingOrange.push({ stat, key, reason });
-                }
-                // LIGHT_RED sẽ được tính động sau khi biết tổng số RED+PURPLE+ORANGE
-
-                if (shouldExclude) {
-                    reason = formatSequence(reason);
-                }
-            }
-
-            // Only add RED tier patterns immediately (orange will be added later)
-            if (shouldExclude && tier === 'red') {
+            // Only add RED and PURPLE tier patterns immediately 
+            if (shouldExclude && (tier === 'red' || tier === 'purple')) {
                 addExcludedNumber(stat, key, reason, tier);
             }
         }
@@ -567,8 +505,8 @@ exports.getSuggestions = async (req, res) => {
                     }
                 }
             }
-            // Xử lý Tiến-Lùi So Le
-            else if (category === 'tienLuiSoLe' || key === 'tienLuiSoLe') {
+            // Xử lý Tiến-Lùi/Lùi-Tiến So Le
+            else if (category === 'tienLuiSoLe' || key === 'tienLuiSoLe' || category === 'luiTienSoLe' || key === 'luiTienSoLe') {
                 // Tiến-Lùi So Le: Alternating progressive/regressive pattern
                 if (stat.current.values && stat.current.values.length >= 2) {
                     const values = stat.current.values;
@@ -579,9 +517,11 @@ exports.getSuggestions = async (req, res) => {
                     const isTien = lastValue > prevValue;
 
                     if (isTien) {
-                        nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastValue);
-                    } else {
+                        // Lần trước Tiến, lần này logic SO LE YÊU CẦU LÙI
                         nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastValue);
+                    } else {
+                        // Lần trước Lùi, lần này logic SO LE YÊU CẦU TIẾN
+                        nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastValue);
                     }
                 }
             }
@@ -591,9 +531,27 @@ exports.getSuggestions = async (req, res) => {
                 // Lấy những số đã về trong chuỗi
                 const valuesToExclude = stat.current.values || [];
 
+                // SPECIAL CASE: motDit / cacDit - lấy nhóm số theo ĐÍT của giá trị cuối chuỗi
+                if (category === 'motDit' || category === 'cacDit') {
+                    const lastVal = valuesToExclude[valuesToExclude.length - 1];
+                    if (lastVal !== null && lastVal !== undefined) {
+                        const dit = String(lastVal).padStart(2, '0')[1];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[1] === dit);
+                    }
+                }
+                // SPECIAL CASE: motDau / cacDau - lấy nhóm số theo ĐẦU của giá trị cuối chuỗi
+                else if (category === 'motDau' || category === 'cacDau') {
+                    const lastVal = valuesToExclude[valuesToExclude.length - 1];
+                    if (lastVal !== null && lastVal !== undefined) {
+                        const dau = String(lastVal).padStart(2, '0')[0];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[0] === dau);
+                    }
+                }
                 // SPECIAL: Handle "cac_tong" patterns - need to identify the specific sum
                 // values array contains actual numbers (e.g., "35", "26"), need to calculate their sums
-                if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
+                else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
                     // Check if this is a generic category (cac_tong, chan, le, etc.)
                     const suffix = category.replace(/^(tong_tt_|tong_moi_|hieu_)/, '');
                     const isGeneric = ['cac_tong', 'chan', 'le', 'chan_chan', 'chan_le', 'le_chan', 'le_le'].includes(suffix)
@@ -866,281 +824,45 @@ exports.getSuggestions = async (req, res) => {
             appliedTiers.push(tier);
         }
 
-        // BƯỚC 2: Thêm ORANGE - CHỈ nếu red + purple <= 40
-        // Trước tiên, áp dụng pendingOrange vào exclusionsByTier nếu điều kiện thỏa mãn
         const redPurpleCount = exclusionsByTier['red'].size + exclusionsByTier['purple'].size;
 
-        if (redPurpleCount <= 40) {
-            // Apply pending orange patterns
-            for (const { stat, key, reason } of pendingOrange) {
-                addExcludedNumber(stat, key, reason, 'orange');
-            }
+        // BƯỚC 2 & BƯỚC 3 ĐÃ BỊ TẠM THỜI VÔ HIỆU HÓA THEO YÊU CẦU NGƯỜI DÙNG.
+        // TẠM THỜI BỎ QUA CÁC CÁCH TÍNH ĐIỂM THEO MÀU (THÊM CHO ĐỦ 40 SỐ) VỚI LOGIC LOẠI TRỪ CŨ.
+        // CHỈ TẬP TRUNG VÀO "TỚI KỶ LỤC", "ĐẠT KỶ LỤC" VÀ "SIÊU KỶ LỤC" Ở BƯỚC 1.
+        console.log(`[SUGGESTIONS] Chỉ sử dụng RED và PURPLE tier. Tổng: ${redPurpleCount} số.`);
 
-            // Add orange to final
-            const orangeNumbers = exclusionsByTier['orange'];
-            if (orangeNumbers.size > 0) {
-                orangeNumbers.forEach((info, num) => {
-                    finalExcludedNumbers.add(num);
-                });
-                explanationsByTier['orange'].forEach(exp => finalExplanations.push(exp));
-                appliedTiers.push('orange');
-            }
-        } else {
-            // Skip orange tier - red + purple already > 40
-            console.log(`[SUGGESTIONS] Skipping ORANGE tier: red(${exclusionsByTier['red'].size}) + purple(${exclusionsByTier['purple'].size}) = ${redPurpleCount} > 40`);
-        }
+        // Chuẩn bị kết quả cuối cùng
+        const formatItem = (details, n) => {
+            const numStr = String(n).padStart(2, '0');
+            const [c, s] = details.sources[0].split(':');
+            return {
+                number: numStr,
+                category: c,
+                subcategory: s || '',
+                reason: details.reason,
+                sources: details.sources
+            };
+        };
 
-        // BƯỚC 3: Nếu vẫn chưa đủ 40, tính LIGHT_RED với threshold động
-        // Threshold áp dụng ĐỒNG BỘ cho TẤT CẢ các chuỗi đang diễn ra
-        // Tăng 5% mỗi bước cho đến khi tổng RED + PURPLE + ORANGE + LIGHT_RED >= 40
-        if (finalExcludedNumbers.size < MIN_EXCLUSION_COUNT) {
-            const THRESHOLD_STEP = 0.05; // 5%
-            const MAX_THRESHOLD = 5.0; // Tối đa 500% (để đủ số lượng)
+        const result = {
+            red: [],
+            purple: [],
+            orange: [],
+            light_red: []
+        };
 
-            // Tìm threshold tối thiểu để đạt >= 40 số
-            for (let threshold = THRESHOLD_STEP; threshold <= MAX_THRESHOLD; threshold += THRESHOLD_STEP) {
-                // Tạo set tạm để đếm số lượng với threshold hiện tại
-                const tempExcluded = new Set(finalExcludedNumbers);
-                const tempLightRedPatterns = []; // Lưu các pattern thỏa mãn
-
-                // Kiểm tra TẤT CẢ các pattern với CÙNG MỘT threshold
-                for (const key in quickStats) {
-                    const stat = quickStats[key];
-                    if (!stat.current) continue;
-
-                    const currentLen = stat.current.length;
-                    const [category, subcategory] = key.split(':');
-                    if (!subcategory) continue; // Bỏ qua nếu không có subcategory
-                    const isSoLePattern = (subcategory === 'veSole' || subcategory === 'veSoleMoi');
-                    const targetLen = isSoLePattern ? currentLen + 2 : currentLen + 1;
-
-                    const gapInfoGE = stat.gapStats ? stat.gapStats[targetLen] : null;
-                    const gapInfoExact = stat.exactGapStats ? stat.exactGapStats[targetLen] : null;
-                    const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
-
-                    // Skip nếu đã đạt record hoặc không có gap stats
-                    if (currentLen >= recordLen && recordLen > 0) continue;
-                    if (!gapInfoGE && !gapInfoExact) continue;
-
-                    // LIGHT_RED: lastGap < minGap * (1 + threshold) cho GE HOẶC Exact (nới lỏng)
-                    // NHƯNG: minGap * (1 + threshold) phải < avgGap
-                    let meetsGE = false;
-                    let meetsExact = false;
-                    let reasonGE = '';
-                    let reasonExact = '';
-
-                    if (gapInfoGE && gapInfoGE.minGap !== null) {
-                        const lightRedThreshold = gapInfoGE.minGap * (1 + threshold);
-                        const avgGap = gapInfoGE.avgGap || gapInfoGE.minGap;
-                        // Chỉ tính nếu threshold không vượt quá avgGap
-                        if (lightRedThreshold < avgGap && gapInfoGE.lastGap < lightRedThreshold) {
-                            meetsGE = true;
-                            reasonGE = `GE: Gap(${gapInfoGE.lastGap}) < Min×${(1 + threshold).toFixed(2)}(${lightRedThreshold.toFixed(0)}) < Avg(${avgGap.toFixed(0)})`;
-                        }
-                    }
-
-                    if (gapInfoExact && gapInfoExact.minGap !== null) {
-                        const lightRedThreshold = gapInfoExact.minGap * (1 + threshold);
-                        const avgGap = gapInfoExact.avgGap || gapInfoExact.minGap;
-                        // Chỉ tính nếu threshold không vượt quá avgGap
-                        if (lightRedThreshold < avgGap && gapInfoExact.lastGap < lightRedThreshold) {
-                            meetsExact = true;
-                            reasonExact = `Exact: Gap(${gapInfoExact.lastGap}) < Min×${(1 + threshold).toFixed(2)}(${lightRedThreshold.toFixed(0)}) < Avg(${avgGap.toFixed(0)})`;
-                        }
-                    }
-
-                    // LIGHT_RED nới lỏng: GE HOẶC Exact thỏa mãn
-                    if (meetsGE || meetsExact) {
-                        const reason = `[ĐỎ NHẠT +${(threshold * 100).toFixed(0)}%] ${meetsGE ? reasonGE : ''} ${meetsGE && meetsExact ? 'VÀ' : ''} ${meetsExact ? reasonExact : ''}`.trim();
-
-                        // Lấy số cần loại trừ
-                        const nums = predictNextInSequence(stat, category, subcategory.includes('Deu') ? subcategory :
-                            (subcategory.includes('tien') || subcategory.includes('Tien') ? 'tienLienTiep' :
-                                subcategory.includes('lui') || subcategory.includes('Lui') ? 'luiLienTiep' : subcategory));
-
-                        if (nums && nums.length > 0) {
-                            tempLightRedPatterns.push({ key, stat, category, subcategory, reason, nums });
-                            nums.forEach(n => tempExcluded.add(n));
-                        }
-                    }
-                }
-
-                // Kiểm tra nếu đã đủ 40 số với threshold hiện tại
-                if (tempExcluded.size >= MIN_EXCLUSION_COUNT) {
-                    currentThreshold = threshold;
-
-                    // Áp dụng chính thức cho tất cả patterns đã thỏa mãn
-                    tempLightRedPatterns.forEach(({ key, category, subcategory, reason, nums }) => {
-                        nums.forEach(n => {
-                            if (!finalExcludedNumbers.has(n)) {
-                                finalExcludedNumbers.add(n);
-                                if (!exclusionsByTier['light_red'].has(n)) {
-                                    exclusionsByTier['light_red'].set(n, { reason, sources: [key] });
-                                }
-                            }
-                        });
-
-                        // Thêm explanation
-                        const existingExp = finalExplanations.find(e => e.title === getCategoryName(category, subcategory, key) && e.tier === 'light_red');
-                        if (!existingExp) {
-                            finalExplanations.push({
-                                type: 'exclude',
-                                title: getCategoryName(category, subcategory, key),
-                                explanation: reason,
-                                numbers: nums,
-                                tier: 'light_red'
-                            });
-                        }
-                    });
-
-                    break; // Đã đủ, dừng lại
-                }
-            }
-
-            // Đánh dấu đã áp dụng light_red nếu có
-            if (exclusionsByTier['light_red'].size > 0) {
-                appliedTiers.push(`light_red (+${(currentThreshold * 100).toFixed(0)}%)`);
-            }
-        }
-
-        // [MỚI] Tạo danh sách số đánh (Tất cả - Loại trừ)
-        const allNumbers = Array.from({ length: 100 }, (_, k) => k);
-        let numbersBet = allNumbers.filter(n => !finalExcludedNumbers.has(n));
-        let isSkipped = false;
-
-        const MAX_EXCLUSION_COUNT = EXCLUSION_TIERS.MAX_EXCLUSION_COUNT || 80;
-        const MIN_BET_COUNT = 20;
-        const MAX_BET_COUNT = 40;
-
-        // ĐIỀU CHỈNH ĐỘNG để đạt 20-40 số đánh:
-        // 1. Nếu loại trừ < 60 (đánh > 40): Mở rộng threshold để thêm loại trừ
-        // 2. Nếu loại trừ > 80 (đánh < 20): Giảm bớt tier thấp cho đến khi đánh >= 20
-
-        // BƯỚC 4: Nếu vẫn chưa đủ 60 loại trừ, mở rộng threshold
-        if (finalExcludedNumbers.size < MIN_EXCLUSION_COUNT) {
-            const THRESHOLD_STEP = 0.05;
-            const MAX_THRESHOLD = 10.0;
-
-            for (let threshold = currentThreshold + THRESHOLD_STEP; threshold <= MAX_THRESHOLD; threshold += THRESHOLD_STEP) {
-                const tempExcluded = new Set(finalExcludedNumbers);
-                const tempPatterns = [];
-
-                for (const key in quickStats) {
-                    const stat = quickStats[key];
-                    if (!stat.current) continue;
-
-                    const currentLen = stat.current.length;
-                    const [category, subcategory] = key.split(':');
-                    if (!subcategory) continue;
-                    const isSoLePattern = (subcategory === 'veSole' || subcategory === 'veSoleMoi');
-                    const targetLen = isSoLePattern ? currentLen + 2 : currentLen + 1;
-
-                    const gapInfoGE = stat.gapStats ? stat.gapStats[targetLen] : null;
-                    const gapInfoExact = stat.exactGapStats ? stat.exactGapStats[targetLen] : null;
-                    const recordLen = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
-
-                    if (currentLen >= recordLen && recordLen > 0) continue;
-                    if (!gapInfoGE && !gapInfoExact) continue;
-
-                    let meetsCondition = false;
-                    let reason = '';
-
-                    if (gapInfoGE && gapInfoGE.minGap !== null) {
-                        const adjustedThreshold = gapInfoGE.minGap * (1 + threshold);
-                        const avgGap = gapInfoGE.avgGap || gapInfoGE.minGap;
-                        if (adjustedThreshold <= avgGap && gapInfoGE.lastGap < adjustedThreshold) {
-                            meetsCondition = true;
-                            reason = `GE: lastGap(${gapInfoGE.lastGap}) < minGap×${(1 + threshold).toFixed(2)}(${adjustedThreshold.toFixed(1)})`;
-                        }
-                    }
-
-                    if (!meetsCondition && gapInfoExact && gapInfoExact.minGap !== null) {
-                        const adjustedThreshold = gapInfoExact.minGap * (1 + threshold);
-                        const avgGap = gapInfoExact.avgGap || gapInfoExact.minGap;
-                        if (adjustedThreshold <= avgGap && gapInfoExact.lastGap < adjustedThreshold) {
-                            meetsCondition = true;
-                            reason = `Exact: lastGap(${gapInfoExact.lastGap}) < minGap×${(1 + threshold).toFixed(2)}(${adjustedThreshold.toFixed(1)})`;
-                        }
-                    }
-
-                    if (meetsCondition) {
-                        let nums = predictNextInSequence(stat, category, subcategory);
-                        if (nums && nums.length > 0) {
-                            tempPatterns.push({ key, category, subcategory, nums, reason });
-                            nums.forEach(n => tempExcluded.add(n));
-                        }
-                    }
-                }
-
-                if (tempExcluded.size >= MIN_EXCLUSION_COUNT) {
-                    currentThreshold = threshold;
-                    tempPatterns.forEach(({ key, category, subcategory, nums, reason }) => {
-                        nums.forEach(n => {
-                            if (!finalExcludedNumbers.has(n)) {
-                                finalExcludedNumbers.add(n);
-                                if (!exclusionsByTier['light_red'].has(n)) {
-                                    exclusionsByTier['light_red'].set(n, { reason, sources: [key] });
-                                }
-                            }
-                        });
-
-                        const existingExp = finalExplanations.find(e => e.title === getCategoryName(category, subcategory, key) && e.tier === 'light_red');
-                        if (!existingExp) {
-                            finalExplanations.push({
-                                type: 'exclude',
-                                title: getCategoryName(category, subcategory, key),
-                                explanation: reason,
-                                numbers: nums,
-                                tier: 'light_red'
-                            });
-                        }
-                    });
-
-                    // Cập nhật numbersBet
-                    numbersBet = allNumbers.filter(n => !finalExcludedNumbers.has(n));
-                    appliedTiers.push(`light_red (+${(threshold * 100).toFixed(0)}%)`);
-                    break;
-                }
-            }
-        }
-
-        // BƯỚC 5: Nếu loại trừ > 80 (đánh < 20), giảm bớt tier thấp
-        if (finalExcludedNumbers.size > MAX_EXCLUSION_COUNT) {
-            const tiersToReduce = ['light_red', 'orange', 'purple', 'red'];
-
-            for (const tier of tiersToReduce) {
-                if (numbersBet.length >= MIN_BET_COUNT) break;
-
-                const tierNumbers = Array.from(exclusionsByTier[tier].keys());
-                for (const num of tierNumbers) {
-                    if (numbersBet.length >= MIN_BET_COUNT) break;
-                    finalExcludedNumbers.delete(num);
-                    numbersBet.push(num);
-                }
-            }
-
-            numbersBet.sort((a, b) => a - b);
-
-            finalExplanations.push({
-                type: 'adjustment',
-                title: 'Điều chỉnh',
-                explanation: `Đã điều chỉnh để đạt ${numbersBet.length} số đánh`,
-                numbers: [],
-                tier: 'adjustment'
+        // Populate kết quả API
+        appliedTiers.forEach(tier => {
+            exclusionsByTier[tier].forEach((details, num) => {
+                result[tier].push(formatItem(details, num));
             });
-        }
+        });
 
-        // Báo cáo nếu ngoài phạm vi
-        if (numbersBet.length < 20 || numbersBet.length > 40) {
-            console.log(`[SUGGESTIONS] WARNING: Bet count ${numbersBet.length} is outside 20-40 range`);
-            finalExplanations.push({
-                type: 'warning',
-                title: 'Cảnh báo',
-                explanation: `Số đánh (${numbersBet.length}) nằm ngoài phạm vi 20-40`,
-                numbers: [],
-                tier: 'warning'
-            });
-        }
+        const allNumbers = Array.from({ length: 100 }, (_, k) => String(k).padStart(2, '0'));
+        const numbersBet = allNumbers.filter(n => !finalExcludedNumbers.has(parseInt(n, 10)) && !finalExcludedNumbers.has(n));
+
+        const summaryMsg = `Loại trừ tổng cộng ${finalExcludedNumbers.size} số (${appliedTiers.join(', ')})`;
+        console.log(`[SUGGESTIONS] ${summaryMsg}`);
 
         // Lấy 30 ngày gần nhất để hiển thị trên UI (ngày mới nhất ở đầu)
         const last30DaysResults = await statisticsService.getRecentResults(30);
@@ -1149,49 +871,49 @@ exports.getSuggestions = async (req, res) => {
             special: r.special
         })).reverse(); // Đảo ngược để ngày mới nhất ở đầu
 
-        res.json({
-            excludedNumbers: Array.from(finalExcludedNumbers).sort((a, b) => a - b),
+        return res.json({
+            success: true,
+            summary: summaryMsg,
+            counts: {
+                total: finalExcludedNumbers.size,
+                red: exclusionsByTier['red'].size,
+                purple: exclusionsByTier['purple'].size,
+                orange: 0,
+                light_red: 0
+            },
+            data: result,
+            numbersToBet: numbersBet,
+            excludedList: Array.from(finalExcludedNumbers).map(n => String(n).padStart(2, '0')).sort(),
+            excludedNumbers: Array.from(finalExcludedNumbers).map(n => parseInt(n, 10)).sort((a, b) => a - b),
+            // Thêm mảng explanations để tái sử dụng ở unifiedPrediction
             explanations: finalExplanations.map(exp => ({
                 ...exp,
-                // Thêm thông tin chi tiết cho mỗi chuỗi
-                streak: exp.streak || 0,
-                currentGap: exp.currentGap || 0,
-                minGapGE: exp.minGapGE || 0,
-                minGapExact: exp.minGapExact || 0,
-                maxStreak: exp.maxStreak || 0,
-                pattern: exp.title
+                combinedScore: exp.tier === 'red' ? 1.0 : (exp.tier === 'purple' ? 0.9 : 0.8)
             })),
-            numbersToBet: numbersBet,
-            isSkipped: isSkipped,
+            isSkipped: false,
             excludedCount: finalExcludedNumbers.size,
-            // Thông tin chi tiết về các tier
             tierInfo: {
                 appliedTiers: appliedTiers,
                 countByTier: {
-                    red: exclusionsByTier.red.size,
-                    purple: exclusionsByTier.purple.size,
-                    orange: exclusionsByTier.orange.size,
-                    light_red: exclusionsByTier.light_red.size
-                },
-                lightRedThreshold: currentThreshold > 0 ? `+${(currentThreshold * 100).toFixed(0)}%` : null,
-                minRequired: MIN_EXCLUSION_COUNT
+                    red: exclusionsByTier['red'].size,
+                    purple: exclusionsByTier['purple'].size,
+                    orange: 0,
+                    light_red: 0
+                }
             },
-            // Legacy: Giữ lại để tương thích
             exclusionsByTier: {
-                red: Array.from(exclusionsByTier.red.keys()),
-                purple: Array.from(exclusionsByTier.purple.keys()),
-                orange: Array.from(exclusionsByTier.orange.keys()),
-                light_red: Array.from(exclusionsByTier.light_red.keys())
+                red: Array.from(exclusionsByTier['red'].keys()),
+                purple: Array.from(exclusionsByTier['purple'].keys()),
+                orange: [],
+                light_red: []
             },
-            // NEW: 30 ngày gần nhất
             last30Days: last30Days
         });
-
     } catch (error) {
         console.error('Error generating suggestions:', error);
-        res.status(500).json({ error: 'Failed to generate suggestions' });
+        return res.status(500).json({ success: false, error: error.message });
     }
-};
+}
 
 function getNumbersFromCategory(category) {
     let setKey = category.toUpperCase();
@@ -1335,6 +1057,21 @@ function predictNextInSequence(stat, category, subcategory) {
     const isProgressive = subcategory.includes('tien'); // tienDeuLienTiep or tienLienTiep
     const isUniform = subcategory.includes('Deu'); // Đều = uniform sequence
     const isVeLienTiep = subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri'; // Về liên tiếp cùng giá trị
+
+    if (category === 'tienLuiSoLe' || category === 'luiTienSoLe' || subcategory === 'tienLuiSoLe' || subcategory === 'luiTienSoLe') {
+        if (stat.current.values && stat.current.values.length >= 2) {
+            const values = stat.current.values;
+            const lastVal = parseInt(values[values.length - 1], 10);
+            const prevVal = parseInt(values[values.length - 2], 10);
+            const isTien = lastVal > prevVal;
+            if (isTien) {
+                return Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastVal).map(String);
+            } else {
+                return Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastVal).map(String);
+            }
+        }
+        return [];
+    }
 
     // === XỬ LÝ ĐẶC BIỆT CHO VỀ LIÊN TIẾP (CÙNG GIÁ TRỊ) ===
     // Khi một giá trị về liên tiếp (VD: Tổng 8 về 3 ngày liên tiếp),

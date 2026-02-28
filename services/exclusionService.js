@@ -156,7 +156,23 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
             }
             else if (subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
                 // Standard repetition logic
-                if (category.startsWith('dau_')) {
+                if (category === 'cacDau') {
+                    // Lấy đầu từ giá trị cuối chuỗi
+                    const lastVal = stat.current?.values?.[stat.current.values.length - 1] ?? stat.current?.value;
+                    if (lastVal !== null && lastVal !== undefined) {
+                        const dau = String(lastVal).padStart(2, '0')[0];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[0] === dau);
+                    }
+                } else if (category === 'cacDit') {
+                    // Lấy đít từ giá trị cuối chuỗi
+                    const lastVal = stat.current?.values?.[stat.current.values.length - 1] ?? stat.current?.value;
+                    if (lastVal !== null && lastVal !== undefined) {
+                        const dit = String(lastVal).padStart(2, '0')[1];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[1] === dit);
+                    }
+                } else if (category.startsWith('dau_')) {
                     const digit = category.split('_')[1];
                     nums = Array.from({ length: 100 }, (_, i) => i)
                         .filter(n => String(n).padStart(2, '0')[0] === digit);
@@ -165,14 +181,31 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
                     nums = Array.from({ length: 100 }, (_, i) => i)
                         .filter(n => String(n).padStart(2, '0')[1] === digit);
                 } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
-                    nums = suggestionsController.getNumbersFromCategory(category);
+                    nums = suggestionsController.predictNextInSequence(stat, category, subcategory);
+                    if (!nums || nums.length === 0) {
+                        nums = suggestionsController.getNumbersFromCategory(category);
+                    }
                 } else {
                     nums = suggestionsController.getNumbersFromCategory(category);
                 }
             }
             else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
-                // SoLe - get numbers from category
-                nums = suggestionsController.getNumbersFromCategory(category);
+                // SoLe - lấy nhóm số theo đít/đầu của giá trị cuối trong chuỗi
+                const lastVal = stat.current?.values?.[stat.current.values.length - 1] ?? stat.current?.value;
+                if (lastVal !== null && lastVal !== undefined) {
+                    const numStr = String(lastVal).padStart(2, '0');
+                    if (category === 'cacDau') {
+                        const dau = numStr[0];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[0] === dau);
+                    } else if (category === 'cacDit') {
+                        const dit = numStr[1];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[1] === dit);
+                    } else {
+                        nums = suggestionsController.getNumbersFromCategory(category);
+                    }
+                }
             }
             else if (category === 'tienLuiSoLe' || key === 'tienLuiSoLe' || category === 'luiTienSoLe' || key === 'luiTienSoLe') {
                 if (stat.current.values && stat.current.values.length >= 2) {

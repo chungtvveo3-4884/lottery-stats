@@ -189,7 +189,7 @@ function calculateConfidence(params) {
         streakIntensityScore = currentLen / recordLen;
         if (currentLen >= recordLen) {
             streakIntensityScore = 1.0;
-            reasons.push(`Đạt kỷ lục: ${currentLen} >= ${recordLen}`);
+            reasons.push(`Đạt kỷ lục mới: ${currentLen} >= ${recordLen}`);
         }
     }
 
@@ -305,39 +305,71 @@ async function getUnifiedExclusions(quickStats, options = {}) {
         const gapInfoGE = stat.gapStats?.[targetLen];
         const gapInfoExact = stat.exactGapStats?.[targetLen];
         const extensionGapInfo = stat.extensionGapStats?.[currentLen];
-        const recordLen = stat.longest?.[0]?.length || 0;
 
-        // ===== METHOD 1: Confidence Score =====
-        const confidence = calculateConfidence({
-            currentLen, recordLen, gapInfoGE, gapInfoExact, extensionGapInfo, stat
-        });
+        // SỬ DỤNG MỐC KỶ LỤC MỚI THEO YÊU CẦU NGƯỜI DÙNG
+        const recordLen = stat.computedMaxStreak || stat.longest?.[0]?.length || 0;
 
-        // ===== METHOD 3: Historical Win Rate =====
-        const winRate = calculateWinRate(stat);
+        const lotteryService = require('./lotteryService');
+        const totalYears = lotteryService.getTotalYears();
+        const targetCount = gapInfoExact ? gapInfoExact.count : 0;
+        const targetFreqYear = targetCount / totalYears;
 
-        // ===== METHOD 5: Gap Ratio (separate scoring) =====
-        let gapRatioScore = 0;
-        if (gapInfoGE?.minGap && gapInfoGE.lastGap < gapInfoGE.minGap) {
-            gapRatioScore = Math.max(gapRatioScore, (gapInfoGE.minGap - gapInfoGE.lastGap) / gapInfoGE.avgGap);
+        // SỬ DỤNG 3 DẠNG LOẠI TRỪ CHÍNH XÁC: "Đạt kỷ lục", "Tới hạn siêu kỷ lục", "Tới hạn kỷ lục"
+        let reason = '';
+        let tier = 'low';
+        let isRisky = false;
+
+        const totalYearsStr = totalYears.toFixed(1);
+        const freqStr = targetFreqYear.toFixed(2);
+
+        if (currentLen >= recordLen && recordLen > 0) {
+            isRisky = true;
+            tier = 'critical'; // Đỏ
+            reason = `Đạt kỷ lục: Chuỗi hiện tại (${currentLen} ngày) đã đạt mốc kỷ lục ${recordLen} ngày.`;
+        } else if (targetFreqYear <= 0.5) {
+            isRisky = true;
+            tier = 'purple'; // Tím
+            reason = `Tới hạn Siêu KL: Chuỗi ${targetLen} ngày chỉ xuất hiện ${targetCount} lần / ${totalYearsStr} năm (Tần suất: ${freqStr}/năm <= 0.5).`;
+        } else if (targetFreqYear <= 1.5) {
+            isRisky = true;
+            tier = 'critical'; // Đỏ (Red)
+            reason = `Tới hạn Kỷ lục: Chuỗi ${targetLen} ngày chỉ xuất hiện ${targetCount} lần / ${totalYearsStr} năm (Tần suất: ${freqStr}/năm <= 1.5).`;
         }
-        if (gapInfoExact?.minGap && gapInfoExact.lastGap < gapInfoExact.minGap) {
-            gapRatioScore = Math.max(gapRatioScore, (gapInfoExact.minGap - gapInfoExact.lastGap) / gapInfoExact.avgGap);
+
+        if (!isRisky) {
+            continue;
         }
-        if (extensionGapInfo?.minGap && extensionGapInfo.lastGap < extensionGapInfo.minGap) {
-            gapRatioScore = Math.max(gapRatioScore, (extensionGapInfo.minGap - extensionGapInfo.lastGap) / extensionGapInfo.avgGap);
-        }
-        gapRatioScore = Math.min(gapRatioScore, 1);
 
-        // ===== METHOD 6: Streak Intensity =====
-        const streakIntensity = recordLen > 0 ? Math.min(currentLen / recordLen, 1) : 0;
-
-        // Skip if no meaningful signal at all
-        if (confidence.score <= 0.05 && gapRatioScore <= 0 && streakIntensity < 0.3) continue;
-
-        // Get numbers
+        // Get numbers - sử dụng logic phù hợp với từng loại pattern
         let nums = [];
         if (isTrendPattern) {
             nums = suggestionsController.predictNextInSequence(stat, category, subcategory);
+        } else if (subcategory === 'veSole' || subcategory === 'veSoleMoi' ||
+            subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
+            // Với các dạng Về so le / Về liên tiếp của cacDit, cacDau:
+            // Không gọi getNumbersFromCategory (sẽ trả về 100 số), thay vào đó
+            // xác định nhóm từ giá trị cuối trong chuỗi
+            const lastVal = stat.current?.values?.[stat.current.values.length - 1] ?? stat.current?.value;
+            if (lastVal !== null && lastVal !== undefined) {
+                const numStr = String(lastVal).padStart(2, '0');
+                if (category === 'cacDau') {
+                    // Lấy đầu (chữ số hàng chục) của số cuối → loại cả nhóm có đầu đó
+                    const dau = numStr[0];
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[0] === dau);
+                } else if (category === 'cacDit') {
+                    // Lấy đít (chữ số hàng đơn vị) của số cuối → loại cả nhóm có đít đó
+                    const dit = numStr[1];
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[1] === dit);
+                } else {
+                    // Các category khác: dùng predictNextInSequence (xử lý veLienTiep đúng cho tong/hieu)
+                    nums = suggestionsController.predictNextInSequence(stat, category, subcategory);
+                    if (!nums || nums.length === 0) {
+                        nums = suggestionsController.getNumbersFromCategory(category);
+                    }
+                }
+            }
         } else {
             nums = suggestionsController.getNumbersFromCategory(category);
         }
@@ -346,107 +378,66 @@ async function getUnifiedExclusions(quickStats, options = {}) {
         nums = nums.filter(n => n !== null && n !== undefined && !isNaN(n)).map(n => parseInt(n, 10));
         if (nums.length === 0) continue;
 
-        // ===== COMBINED SCORE (Kết hợp 6 phương pháp) =====
-        const combinedScore =
-            0.30 * confidence.score +         // Method 1: Confidence
-            0.20 * winRate +                  // Method 3: Win Rate
-            0.25 * gapRatioScore +            // Method 5: Gap Ratio
-            0.25 * streakIntensity;           // Method 6: Streak Intensity
-
         allPatterns.push({
             key, stat, category, subcategory,
             currentLen, recordLen,
             numbers: nums,
-            confidence,
-            winRate,
-            gapRatioScore,
-            streakIntensity,
-            combinedScore,
+            tier: tier,
+            combinedScore: tier === 'critical' ? 1 : 0.9, // Cho lên đầu
             title: getCategoryName(category, subcategory, key),
-            explanation: buildExplanation(confidence, gapInfoGE, gapInfoExact, extensionGapInfo)
+            explanation: reason,
+            targetCount,
+            targetFreqYear
         });
     }
 
-    // ===== METHOD 4: Top-K Patterns =====
-    // Sort by combinedScore descending
-    allPatterns.sort((a, b) => b.combinedScore - a.combinedScore);
-
-    // ===== METHOD 2: Weighted Voting =====
-    // Calculate votes for each number based on pattern combinedScore
-    const numberScores = new Map();
-
-    for (const pattern of allPatterns) {
-        for (const num of pattern.numbers) {
-            if (!numberScores.has(num)) {
-                numberScores.set(num, { score: 0, votes: 0, sources: [] });
-            }
-            const entry = numberScores.get(num);
-            entry.score += pattern.combinedScore;
-            entry.votes += 1;
-            entry.sources.push({ key: pattern.key, score: pattern.combinedScore });
-        }
-    }
-
-    // Sort numbers by total score
-    const sortedNumbers = Array.from(numberScores.entries())
-        .sort((a, b) => b[1].score - a[1].score);
-
-    // ===== FINAL SELECTION =====
-    // Take numbers until we reach target count (50-60)
+    // Lọc các số loại trừ
     const excluded = new Set();
-    const targetCount = Math.round((targetMin + targetMax) / 2); // Default: 55
-
-    for (const [num, info] of sortedNumbers) {
-        if (excluded.size >= targetMax) break;
-        excluded.add(num);
-    }
-
-    // If we have less than targetMin, add more from top patterns
-    if (excluded.size < targetMin) {
-        for (const pattern of allPatterns) {
-            if (excluded.size >= targetMin) break;
-            for (const num of pattern.numbers) {
-                if (!excluded.has(num)) {
-                    excluded.add(num);
-                    if (excluded.size >= targetMin) break;
-                }
-            }
-        }
-    }
-
-    // Build explanations
     const explanations = [];
     const usedPatterns = new Set();
 
+    // Sắp xếp patterns: Tím / Đỏ lên trước
+    allPatterns.sort((a, b) => b.combinedScore - a.combinedScore);
+
     for (const pattern of allPatterns) {
-        const includedNums = pattern.numbers.filter(n => excluded.has(n));
-        if (includedNums.length > 0 && !usedPatterns.has(pattern.key)) {
+        let patternExcludedNums = [];
+        for (const num of pattern.numbers) {
+            excluded.add(num);
+            patternExcludedNums.push(num);
+        }
+
+        const isSoLePattern = (pattern.subcategory === 'veSole' || pattern.subcategory === 'veSoleMoi') &&
+            pattern.key !== 'tienLuiSoLe' && pattern.key !== 'luiTienSoLe';
+        const targetLen = isSoLePattern ? pattern.currentLen + 2 : pattern.currentLen + 1;
+
+        if (patternExcludedNums.length > 0 && !usedPatterns.has(pattern.key)) {
             usedPatterns.add(pattern.key);
             explanations.push({
                 type: 'exclude',
                 title: pattern.title,
+                pattern: pattern.title, // Thêm pattern cho UI hiển thị
+                streak: pattern.currentLen, // Cập nhật streak cho UI
+                maxStreak: pattern.recordLen, // Cập nhật maxStreak
+                currentGap: pattern.stat.gapStats?.[targetLen]?.lastGap || 0,
+                minGapGE: pattern.stat.gapStats?.[targetLen]?.minGap || 0,
+                minGapExact: pattern.stat.exactGapStats?.[targetLen]?.minGap || 0,
                 explanation: pattern.explanation,
-                numbers: includedNums,
-                tier: mapTier(pattern.confidence.tier),
-                confidence: pattern.confidence.score,
-                winRate: pattern.winRate,
+                reason: pattern.explanation, // Hỗ trợ tương thích UI cũ
+                numbers: patternExcludedNums,
+                tier: pattern.tier,
                 combinedScore: Math.round(pattern.combinedScore * 100) / 100
             });
         }
     }
-
-    // Sort explanations by combinedScore
-    explanations.sort((a, b) => (b.combinedScore || 0) - (a.combinedScore || 0));
 
     return {
         excludedNumbers: excluded,
         explanations,
         stats: {
             strategy,
-            method: 'COMBINED_6',
+            method: '3_RECORD_REASONS',
             patternsTotal: allPatterns.length,
-            excludedCount: excluded.size,
-            targetRange: `${targetMin}-${targetMax}`
+            excludedCount: excluded.size
         }
     };
 }
