@@ -100,13 +100,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             statsTypeSelect.appendChild(optgroup);
         }
+
+        // Khởi tạo Tom Select cho Loại thống kê
+        const tomSelectInstance = new TomSelect("#statsType", {
+            create: false,
+            sortField: false, // Giữ nguyên thứ tự ban đầu của optgroup
+            searchField: ['text'], // Cho phép search theo text của option
+            placeholder: "Gõ để tìm kiếm loại thống kê... (VD: Đầu lẻ, Dạng)",
+            maxOptions: null, // Không giới hạn số lượng hiển thị khi search
+            onFocus: function () {
+                // Lưu lại item hiện tại và clear đi để ô search hoàn toàn trống 100% khi bắt đầu gõ
+                this._backupValue = this.getValue();
+                this.clear(true); // Tham số true để clear silently (không kích hoạt event change)
+            },
+            onBlur: function () {
+                // Nếu click bên ngoài mà chưa chọn thêm option nào (value rỗng) -> khôi phục lại giá trị cũ
+                if (this.getValue() === '' && this._backupValue) {
+                    this.setValue(this._backupValue, true);
+                }
+            }
+        });
+
         // [SỬA LOGIC TẠI ĐÂY]
-        // Thêm trình lắng nghe sự kiện VÀO BÊN TRONG initializePage
+        // Lắng nghe sự kiện change từ Tom Select (nó bind trực tiếp vào thẻ select gốc nhưng nên gọi qua tomSelect nếu cần thiết. Tuy sự kiện native event of 'change' ở element vẫn hoạt động.)
         statsTypeSelect.addEventListener('change', (event) => {
             const selectedValue = event.target.value;
 
             // 1. Ưu tiên kiểm tra 'tienLuiSoLe' / 'luiTienSoLe' TRƯỚC
-            if (selectedValue === 'tienLuiSoLe' || selectedValue === 'luiTienSoLe') {
+            if (selectedValue === 'tienLuiSoLe' || selectedValue === 'luiTienSoLe' || selectedValue.includes('tienLuiSoLe') || selectedValue.includes('luiTienSoLe')) {
                 populateMinLength('tienLuiSoLe'); // Chế độ mới (4-30)
             }
             // 2. Nếu không phải, thì mới kiểm tra "so le" chung
@@ -225,16 +246,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             quickStatsContainer.innerHTML = '';
             const allCurrentStreaks = [];
 
+            let totalYears = 20.41; // fallback
+            if (data._meta && data._meta.totalYears) {
+                totalYears = data._meta.totalYears;
+                window.GLOBAL_TOTAL_YEARS = totalYears;
+            }
+
             ORDERED_STATS_KEYS.forEach(key => {
                 const stat = data[key];
                 if (stat && !stat.error) {
                     if (stat.current) {
-                        const recordLength = stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0;
+                        const recordLength = stat.computedMaxStreak || (stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0);
                         allCurrentStreaks.push({
                             ...stat.current,
                             key: key,
                             description: stat.description,
                             recordLength: recordLength,
+                            isSuperRecord: stat.isSuperMaxThreshold || false,
+                            originalRecord: stat.longest && stat.longest.length > 0 ? stat.longest[0].length : 0,
                             gapStats: stat.gapStats,
                             exactGapStats: stat.exactGapStats,
                             extensionGapStats: stat.extensionGapStats
@@ -248,13 +277,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 acc[streak.length].push(streak);
                 return acc;
             }, {});
-            renderCurrentStreaks(streaksByLength, allCurrentStreaks.length);
+            renderCurrentStreaks(streaksByLength, allCurrentStreaks.length, totalYears);
         } catch (error) {
             console.error("Lỗi khi tải thống kê nhanh:", error);
         }
     };
 
-    const renderCurrentStreaks = (streaksByLength, totalCount) => {
+    const renderCurrentStreaks = (streaksByLength, totalCount, totalYears = 20.41) => {
         console.log('[DEBUG] streaksByLength:', streaksByLength);
         const sortedLengths = Object.keys(streaksByLength).sort((a, b) => b - a);
         if (totalCount > 0) {
@@ -271,18 +300,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">`;
 
                 streaksByLength[length].forEach(streak => {
-                    // Check if this streak has reached the record
-                    const isRecord = parseInt(length) >= streak.recordLength && streak.recordLength > 0;
-                    const borderColor = isRecord ? 'border-l-red-700' : 'border-l-red-500';
-                    const bgColor = isRecord ? 'bg-red-50' : 'bg-white';
+                    const streakLen = parseInt(length);
+                    // Check for so le pattern 
+                    const isTienLuiSoLePattern = (streak.key && (streak.key.includes('tienLuiSoLe') || streak.key.includes('luiTienSoLe'))) || (streak.description && (streak.description.includes('Tiến-Lùi') || streak.description.includes('Lùi-Tiến')));
+                    const isSoLePatternOuter = (streak.key && (streak.key.toLowerCase().includes('sole') || streak.key.toLowerCase().includes('solemoi')) && !isTienLuiSoLePattern) || (streak.description && streak.description.toLowerCase().includes('so le') && !isTienLuiSoLePattern);
+
+                    const targetLenOuter = isSoLePatternOuter ? streakLen + 2 : streakLen + 1;
+                    const gapInfoOuter = streak.exactGapStats ? streak.exactGapStats[targetLenOuter] : null;
+                    const targetCountOuter = gapInfoOuter ? gapInfoOuter.count : 0;
+                    const targetFreqYearOuter = targetCountOuter / totalYears;
+
+                    const isNextSuperRecordOuter = targetFreqYearOuter <= 0.5;
+                    const isNextRecordOuter = targetFreqYearOuter <= 1.5;
+
+                    const hasReachedRecordOuter = streakLen >= streak.recordLength && streak.recordLength > 0;
+                    const isRecord = hasReachedRecordOuter || isNextRecordOuter;
+                    const isSuperRecord = (hasReachedRecordOuter ? streak.isSuperRecord : isNextSuperRecordOuter);
+
+                    const borderColor = isRecord ? (isSuperRecord ? 'border-l-purple-700' : 'border-l-red-700') : 'border-l-red-500';
+                    const bgColor = isRecord ? (isSuperRecord ? 'bg-purple-50' : 'bg-red-50') : 'bg-white';
                     const titleWeight = isRecord ? 'font-bold' : 'font-semibold';
+
+                    const superBadge = isSuperRecord ? '<span class="ml-2 inline-block bg-purple-600 text-white text-[9px] px-1 py-0.5 rounded uppercase">Siêu KL</span>' : '';
 
                     finalHtml += `
                                 <div class="${bgColor} rounded-lg shadow-sm border border-l-4 ${borderColor} transition hover:shadow-lg hover:-translate-y-1">
                                     <div class="p-4 flex flex-col h-full">
-                                        <h6 class="${titleWeight} text-gray-800">${streak.description}</h6>
+                                        <h6 class="${titleWeight} text-gray-800">${streak.description}${superBadge}</h6>
                                         <p class="text-xs text-gray-500 mb-1">Từ ngày: ${streak.startDate}</p>
-                                        <p class="text-xs text-gray-500">Kỷ lục: ${streak.recordLength} ngày</p>
+                                        <p class="text-xs ${isRecord ? 'text-red-500 font-bold' : 'text-gray-500'}">Mốc kỷ lục mới: ${streak.recordLength} ngày</p>
                                         <div class="mt-auto pt-2">
                                            <div class="flex flex-wrap gap-1">${renderFullSequence(streak, streak.description)}</div>
                                         </div>
@@ -293,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const isTienLuiSoLePattern = isTienLuiSoLeByKey || isTienLuiSoLeByDesc;
 
                             // Check for so le pattern - check both key and description (excluding Tiến Lùi So Le)
-                            const isSoLeByKey = streak.key && (streak.key.includes('veSole') || streak.key.includes('veSoleMoi')) && !isTienLuiSoLePattern;
+                            const isSoLeByKey = streak.key && (streak.key.toLowerCase().includes('sole') || streak.key.toLowerCase().includes('solemoi')) && !isTienLuiSoLePattern;
                             const isSoLeByDesc = streak.description && streak.description.toLowerCase().includes('so le') && !isTienLuiSoLePattern;
                             const isSoLePattern = isSoLeByKey || isSoLeByDesc;
 
@@ -403,10 +449,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                             // Include Extension Gap in low prob calculation
                             const isLowProbFinal = isLowProb || isLowProbExt;
 
+                            // --- NEW LOGIC: Prediction for NEXT day Record ---
+                            const targetCount = gapInfoExact ? gapInfoExact.count : 0;
+                            const targetFreqYear = targetCount / totalYears;
+
+                            const isNextSuperRecord = targetFreqYear <= 0.5;
+                            const isNextRecord = targetFreqYear <= 1.5;
+
                             // Badge - show different messages based on condition
                             let probBadge;
                             if (hasReachedRecord) {
-                                probBadge = `<span class="inline-block bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🏆 Đạt kỷ lục</span>`;
+                                probBadge = `<span class="inline-block ${streak.isSuperRecord ? 'bg-purple-600' : 'bg-red-600'} text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🏆 Đạt ${streak.isSuperRecord ? 'Siêu KL' : 'Kỷ Lục'}</span>`;
+                            } else if (isNextRecord) {
+                                probBadge = `<span class="inline-block ${isNextSuperRecord ? 'bg-purple-600' : 'bg-red-600'} text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🚧 Tới hạn ${isNextSuperRecord ? 'Siêu KL' : 'Kỷ Lục'}</span>`;
                             } else if (isLowProbExt && !isLowProb) {
                                 // Only extension gap is low
                                 const step = isSoLePattern ? 2 : 1;
@@ -417,21 +472,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 probBadge = `<span class="inline-block bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Dễ Tiếp Tục</span>`;
                             }
 
-                            const cardBg = hasReachedRecord ? 'bg-yellow-50' : (isLowProbFinal ? 'bg-red-50' : 'bg-white');
+                            const isWarning = hasReachedRecord || isNextRecord || isLowProbFinal;
+                            const isSuperLevel = hasReachedRecord ? streak.isSuperRecord : isNextSuperRecord;
+                            const cardBg = (hasReachedRecord || isNextRecord) ? (isSuperLevel ? 'bg-purple-50' : 'bg-red-50') : (isWarning ? 'bg-red-50' : 'bg-white');
 
-                            if (gapInfoGE || gapInfoExact || extGapInfo) {
+                            let freqHtml = '';
+                            if (targetCount > 0) {
+                                freqHtml = `<div class="text-[11px] mt-1 border-t border-gray-100 pt-2 text-center text-gray-700">
+                                    <div class="mb-1"><strong>Dự đoán Kéo dài (${nextLen} ngày)</strong></div>
+                                    <div class="flex justify-between px-2 bg-gray-100 rounded py-1">
+                                        <span>Số lần: <strong class="text-blue-600">${targetCount}</strong></span>
+                                        <span>Tần suất: <strong class="${isNextRecord ? (isNextSuperRecord ? 'text-purple-600' : 'text-red-600') : 'text-green-600'}">${targetFreqYear.toFixed(2)} lần/năm</strong></span>
+                                    </div>
+                                    <div class="text-[10px] text-gray-500 mt-1 italic leading-tight">
+                                        (Thống kê trong vòng ${totalYears.toFixed(1)} năm qua)
+                                    </div>
+                                </div>`;
+                            }
+
+                            if (freqHtml || gapInfoGE || gapInfoExact || extGapInfo) {
                                 return `
                                     <div class="mt-2 pt-2 border-t border-gray-100 text-xs ${cardBg} -mx-4 -mb-4 p-4 rounded-b-lg">
-                                        ${geHtml}
-                                        ${exactHtml}
-                                        ${extGapHtml}
+                                        ${freqHtml}
                                         <div class="text-center mt-2">${probBadge}</div>
                                     </div>`;
-                            } else if (hasReachedRecord) {
+                            } else if (hasReachedRecord || isNextRecord) {
+                                let badgeText = hasReachedRecord ? `🏆 Đạt ${isSuperLevel ? 'Siêu KL' : 'Kỷ Lục'}` : `🚧 Tới hạn ${isSuperLevel ? 'Siêu KL' : 'Kỷ Lục'}`;
                                 return `
-                                    <div class="mt-2 pt-2 border-t border-gray-100 text-xs bg-yellow-50 -mx-4 -mb-4 p-4 rounded-b-lg">
+                                    <div class="mt-2 pt-2 border-t border-gray-100 text-xs ${isSuperLevel ? 'bg-purple-50' : 'bg-red-50'} -mx-4 -mb-4 p-4 rounded-b-lg">
                                         <div class="text-center">
-                                            <span class="inline-block bg-yellow-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🏆 Đạt kỷ lục</span>
+                                            <span class="inline-block ${isSuperLevel ? 'bg-purple-500' : 'bg-red-500'} text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">${badgeText}</span>
                                         </div>
                                     </div>`;
                             }
@@ -777,5 +847,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     form.addEventListener('submit', handleStatsSubmit);
+
+    // Modal popup logic
+    const versionModal = document.getElementById('versionModal');
+    const closeVersionModalBtn = document.getElementById('closeVersionModalBtn');
+    const understandVersionBtn = document.getElementById('understandVersionBtn');
+
+    if (versionModal && closeVersionModalBtn && understandVersionBtn) {
+        const v2PopupShown = localStorage.getItem('v2_popup_shown_2026_02_25');
+
+        if (!v2PopupShown) {
+            versionModal.classList.remove('hidden');
+        }
+
+        const closeModal = () => {
+            versionModal.classList.add('hidden');
+            localStorage.setItem('v2_popup_shown_2026_02_25', 'true');
+        };
+
+        closeVersionModalBtn.addEventListener('click', closeModal);
+        understandVersionBtn.addEventListener('click', closeModal);
+
+        // Close on clicking outside
+        versionModal.addEventListener('click', (e) => {
+            if (e.target === versionModal) {
+                closeModal();
+            }
+        });
+    }
+
     initializePage();
 });
