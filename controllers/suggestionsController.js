@@ -80,6 +80,7 @@ exports.getSuggestions = async (req, res) => {
             let shouldExclude = false;
             let reason = '';
             let tier = null; // 'red', 'purple', 'light_red', 'orange', 'light_orange'
+            let subTier = null; // 'achieved' | 'threshold' | 'superThreshold'
 
             // --- YÊU CẦU MỚI: Dự đoán Kỷ lục/Siêu KL cho ngày tiếp theo ---
             const lotteryService = require('../services/lotteryService');
@@ -92,10 +93,13 @@ exports.getSuggestions = async (req, res) => {
                 const isSuper = targetFreqYear <= 0.5 || stat.isSuperMaxThreshold;
                 if (currentLen >= recordLen && recordLen > 0) {
                     tier = 'red';
+                    subTier = 'achieved'; // Đạt kỷ lục
                 } else if (isSuper) {
                     tier = 'purple';
+                    subTier = 'superThreshold'; // Tới hạn siêu kỷ lục
                 } else {
                     tier = 'red';
+                    subTier = 'threshold'; // Tới hạn kỷ lục
                 }
                 const recordType = isSuper ? 'Siêu Kỷ Lục' : 'Kỷ Lục';
 
@@ -114,7 +118,7 @@ exports.getSuggestions = async (req, res) => {
 
             // Only add RED and PURPLE tier patterns immediately 
             if (shouldExclude && (tier === 'red' || tier === 'purple')) {
-                addExcludedNumber(stat, key, reason, tier);
+                addExcludedNumber(stat, key, reason, tier, subTier);
             }
         }
 
@@ -370,7 +374,7 @@ exports.getSuggestions = async (req, res) => {
             return catName;
         }
 
-        function addExcludedNumber(stat, key, reason, tier = 'red') {
+        function addExcludedNumber(stat, key, reason, tier = 'red', subTier = null) {
             let nums = [];
 
             // Parse key - handle both formats:
@@ -667,7 +671,7 @@ exports.getSuggestions = async (req, res) => {
                 nums.forEach(n => {
                     // Add to tier-specific map
                     if (!exclusionsByTier[tier].has(n)) {
-                        exclusionsByTier[tier].set(n, { reason, sources: [key] });
+                        exclusionsByTier[tier].set(n, { reason, sources: [key], subTier: subTier });
                     } else {
                         // Add source to existing entry
                         exclusionsByTier[tier].get(n).sources.push(key);
@@ -698,10 +702,10 @@ exports.getSuggestions = async (req, res) => {
                     minGapExact: minGapExact
                 };
 
-                explanationsByTier[tier].push(explanationDetails);
+                explanationsByTier[tier].push({ ...explanationDetails, subTier });
 
                 // Also add to legacy explanations
-                explanations.push(explanationDetails);
+                explanations.push({ ...explanationDetails, subTier });
             } else {
                 // Nếu không dự đoán được số nào, bỏ qua (không thêm vào danh sách)
             }
@@ -906,6 +910,23 @@ exports.getSuggestions = async (req, res) => {
                 purple: Array.from(exclusionsByTier['purple'].keys()),
                 orange: [],
                 light_red: []
+            },
+            // Phân loại theo 3 subTier để hiển thị màu khác nhau
+            exclusionsBySubTier: {
+                achieved: Array.from(exclusionsByTier['red'])
+                    .filter(([, v]) => v.subTier === 'achieved')
+                    .map(([n]) => n),
+                threshold: Array.from(exclusionsByTier['red'])
+                    .filter(([, v]) => v.subTier === 'threshold')
+                    .map(([n]) => n),
+                superThreshold: Array.from(exclusionsByTier['purple'])
+                    .filter(([, v]) => v.subTier === 'superThreshold')
+                    .map(([n]) => n)
+            },
+            countBySubTier: {
+                achieved: Array.from(exclusionsByTier['red']).filter(([, v]) => v.subTier === 'achieved').length,
+                threshold: Array.from(exclusionsByTier['red']).filter(([, v]) => v.subTier === 'threshold').length,
+                superThreshold: Array.from(exclusionsByTier['purple']).filter(([, v]) => v.subTier === 'superThreshold').length
             },
             last30Days: last30Days
         });

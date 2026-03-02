@@ -233,17 +233,18 @@
                             trong lịch sử và loại trừ số dựa trên <strong>gap</strong> (khoảng cách ngày).</p>
                         <p>✅ <strong>Chuỗi (Streak) là gì?</strong> Là một mẫu (pattern) đang lặp lại liên tiếp. Ví dụ:
                             Đầu 5 về liên tiếp 3 ngày.</p>
-                        <p>✅ <strong>Gap là gì?</strong> Là số ngày kể từ lần cuối chuỗi tương tự xuất hiện. Nếu gap
-                            hiện tại < gap tối thiểu lịch sử → Chuỗi ít khả năng tiếp tục.</p>
-                                <p>✅ <strong>Logic loại trừ:</strong></p>
-                                <ul class="list-disc list-inside ml-4 space-y-1">
-                                    <li><strong class="text-red-400">ĐỎ:</strong> Chuỗi đã đạt kỷ lục HOẶC Gap < Min (GE
-                                            & Exact) → Loại trừ NGAY</li>
-                                    <li><strong class="text-orange-400">CAM:</strong> Gap < Min (chỉ GE hoặc Exact) →
-                                            Cẩn thận, xem xét loại trừ</li>
-                                    <li><strong class="text-green-400">XANH:</strong> Gap cao, chuỗi chưa gần kỷ lục →
-                                        NÊN ĐÁNH</li>
-                                </ul>
+                        <p>✅ <strong>Kỷ lục là gì?</strong> Là các mốc chuỗi xuất hiện rất hiếm. <strong>Tới Hạn Kỷ Lục
+                                Mới:</strong> Chuỗi có tần suất xảy ra sang ngày tiếp theo <= 1.5 lần/năm.</p>
+                                <p>✅ <strong>Siêu KL (Siêu Kỷ Lục):</strong> Tần suất <= 0.5 lần/năm (2 năm mới gặp 1
+                                        lần).</p>
+                                        <p>✅ <strong>Logic loại trừ:</strong></p>
+                                        <ul class="list-disc list-inside ml-4 space-y-1">
+                                            <li><strong class="text-red-400">ĐỎ:</strong> Chuỗi <strong>Đạt Kỷ Lục /
+                                                    Định phá Kỷ Lục</strong> (<= 1.5 lần/năm). Xác suất ra cực thấp →
+                                                    Loại trừ NGAY</li>
+                                            <li><strong class="text-green-400">XANH:</strong> Chuỗi bình thường, chưa
+                                                đến mốc Kỷ Lục → NÊN ĐÁNH</li>
+                                        </ul>
                     </div>
                 </div>
 
@@ -267,642 +268,651 @@
                     </div>
                 </div>
 
-                <!-- Gợi Ý Loại Trừ Theo Tier -->
+                <!-- Gợi Ý Loại Trừ Theo Tier (3 loại) -->
                 <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 mb-6">
                     <h3 class="text-md font-bold text-yellow-400 mb-3"><i class="bi bi-layers mr-2"></i>Gợi Ý Loại Trừ
-                        Theo Tier</h3>
+                        Theo Loại</h3>
                     <div id="exclusionByTierPreview" class="text-gray-300 text-sm space-y-2">
                         Đang tải các gợi ý loại trừ...
                     </div>
                 </div>
 
-                <!-- Gap Analysis Explanation -->
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                    <div class="stat-card text-center p-3 border-l-2 border-red-500">
-                        <div class="text-xs text-gray-400">Gap < Min GE & Exact</div>
-                                <div class="text-sm text-red-400 font-bold">LOẠI TRỪ</div>
-                                <div class="text-[10px] text-gray-500">Chuỗi không thể tiếp tục</div>
-                        </div>
-                        <div class="stat-card text-center p-3 border-l-2 border-orange-500">
-                            <div class="text-xs text-gray-400">Gap < Min (1 loại)</div>
-                                    <div class="text-sm text-orange-400 font-bold">CẨN THẬN</div>
-                                    <div class="text-[10px] text-gray-500">Xem xét các yếu tố khác</div>
-                            </div>
-                            <div class="stat-card text-center p-3 border-l-2 border-green-500">
-                                <div class="text-xs text-gray-400">Gap > Min</div>
-                                <div class="text-sm text-green-400 font-bold">NÊN ĐÁNH</div>
-                                <div class="text-[10px] text-gray-500">Chuỗi có thể tiếp tục</div>
-                            </div>
-                        </div>
+                <!-- Grid 100 số: 4 màu sắc -->
+                <div class="bg-gray-800 bg-opacity-50 rounded-lg p-4 mb-6">
+                    <h3 class="text-md font-bold text-blue-400 mb-3"><i class="bi bi-grid-3x3 mr-2"></i>⚡ Grid 100 Số -
+                        Phân Biệt Theo Loại Loại Trừ</h3>
+                    <p class="text-gray-400 text-xs mb-3">Click vào số để xem chi tiết. Màu xanh = nên đánh | Đỏ = đạt
+                        kỷ lục | Cam = tới hạn kỷ lục | Tím = siêu kỷ lục</p>
+                    <div id="exclusionGrid100">Đang tải...</div>
+                </div>
 
-                        <!-- Summary Stats -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="exclusionSummary"></div>
+                <!-- Record Explanation -->
+                <div class="grid grid-cols-3 md:grid-cols-3 gap-3 mb-6">
+                    <div class="stat-card text-center p-3 border-l-2 border-red-600">
+                        <div class="text-lg">🔴</div>
+                        <div class="text-xs text-gray-400 mt-1">Đã đạt mốc kỷ lục</div>
+                        <div class="text-sm text-red-400 font-bold">ĐẠT KỸ LỤC</div>
+                        <div class="text-[10px] text-gray-500">Xác suất tiếp ≈ 0</div>
                     </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(16, 185, 129, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-green-400">
-                                <i class="bi bi-check-circle mr-2"></i>Số NÊN Đánh (Sau loại trừ)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Các số không thuộc chuỗi loại trừ - an toàn để đánh
-                            </p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="exclusionPredictions"></div>
-                        </div>
-
-                        <!-- Numbers to AVOID -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-red-400">
-                                <i class="bi bi-x-circle mr-2"></i>Số LOẠI TRỪ (Thuộc chuỗi)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Các số thuộc chuỗi đang diễn ra có gap < min</p>
-                                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="exclusionExclusions"></div>
-                        </div>
+                    <div class="stat-card text-center p-3 border-l-2 border-orange-500">
+                        <div class="text-lg">🟠</div>
+                        <div class="text-xs text-gray-400 mt-1">Tần suất ≤ 1.5 lần/năm</div>
+                        <div class="text-sm text-orange-400 font-bold">TỚI HẠN KỸ LỤC</div>
+                        <div class="text-[10px] text-gray-500">Sắp phá kỷ lục, rất khó</div>
                     </div>
-
-                    <!-- Detail View for Selected Number -->
-                    <div id="exclusionNumberDetail" class="glass-card rounded-2xl p-6 mt-6 hidden"
-                        style="border-left: 4px solid #ef4444;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold" id="exclusionDetailTitle">Chi tiết số: --</h3>
-                            <button onclick="document.getElementById('exclusionNumberDetail').classList.add('hidden')"
-                                class="text-gray-400 hover:text-white">
-                                <i class="bi bi-x-lg text-2xl"></i>
-                            </button>
-                        </div>
-
-                        <!-- Detail Content -->
-                        <div id="exclusionDetailContent" class="space-y-4"></div>
-
-                        <!-- Loading indicator -->
-                        <div id="exclusionDetailLoading" class="text-center text-gray-400 hidden">
-                            <div class="spinner mx-auto mb-2" style="width:30px;height:30px;"></div>
-                            <p>Đang tải...</p>
-                        </div>
+                    <div class="stat-card text-center p-3 border-l-2 border-purple-500">
+                        <div class="text-lg">🟣</div>
+                        <div class="text-xs text-gray-400 mt-1">Tần suất ≤ 0.5 lần/năm</div>
+                        <div class="text-sm text-purple-400 font-bold">SIÊu KỸ LỤC</div>
+                        <div class="text-[10px] text-gray-500">Gần như không thể phá</div>
                     </div>
                 </div>
 
-                <!-- Tab Content: Unified Prediction (6 METHODS) -->
-                <div id="unifiedTab" class="tab-content hidden">
-                    <div class="glass-card rounded-2xl p-6 mb-6" style="border-left: 4px solid #10b981;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">
-                                <i class="bi bi-stars mr-2 text-green-400"></i>🌟 Unified Prediction (6 Phương Pháp Cơ
-                                Bản)
-                            </h2>
-                            <div class="text-sm text-gray-400" id="unifiedDate">Đang tải...</div>
-                        </div>
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="exclusionSummary"></div>
+            </div>
 
-                        <!-- Easy Explanation -->
-                        <div class="bg-green-900 bg-opacity-20 rounded-lg p-4 mb-6">
-                            <h3 class="text-lg font-bold text-green-400 mb-3">🎯 Cách hoạt động (Dễ hiểu)</h3>
-                            <div class="text-gray-300 text-sm space-y-2">
-                                <p>✅ <strong>Ý tưởng chính:</strong> Kết hợp 6 góc nhìn khác nhau để đánh giá khả năng
-                                    một số sẽ
-                                    về.</p>
-                                <p>✅ <strong>Tính điểm:</strong> Mỗi phương pháp cho điểm 0-100%. Điểm cuối = Trung bình
-                                    có
-                                    trọng số.</p>
-                                <p>✅ <strong>Số điểm cao:</strong> Được nhiều phương pháp ủng hộ → Khả năng về CAO → NÊN
-                                    ĐÁNH
-                                </p>
-                                <p>✅ <strong>Số điểm thấp:</strong> Không được phương pháp nào ủng hộ → Khả năng về THẤP
-                                    → LOẠI
-                                    TRỪ</p>
-                            </div>
-                        </div>
-
-                        <!-- 6 Methods Explanation -->
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
-                            <div class="stat-card text-center p-2">
-                                <div class="text-xs text-blue-400 font-bold">📊 Gap</div>
-                                <div class="text-[10px] text-gray-400">Lâu chưa về? Sắp đến lượt!</div>
-                            </div>
-                            <div class="stat-card text-center p-2">
-                                <div class="text-xs text-purple-400 font-bold">🔗 Chuỗi</div>
-                                <div class="text-[10px] text-gray-400">Đang "hot" liên tiếp</div>
-                            </div>
-                            <div class="stat-card text-center p-2">
-                                <div class="text-xs text-red-400 font-bold">🛡️ Loại trừ</div>
-                                <div class="text-[10px] text-gray-400">Pattern vừa về = tránh</div>
-                            </div>
-                            <div class="stat-card text-center p-2">
-                                <div class="text-xs text-green-400 font-bold">📅 360 ngày</div>
-                                <div class="text-[10px] text-gray-400">So với năm trước</div>
-                            </div>
-                            <div class="stat-card text-center p-2">
-                                <div class="text-xs text-yellow-400 font-bold">📆 Ngày</div>
-                                <div class="text-[10px] text-gray-400">Mẫu theo thứ</div>
-                            </div>
-                            <div class="stat-card text-center p-2">
-                                <div class="text-xs text-pink-400 font-bold">🕐 Gần đây</div>
-                                <div class="text-[10px] text-gray-400">30 ngày qua</div>
-                            </div>
-                        </div>
-
-                        <!-- 6 Method Weights Display -->
-                        <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6" id="methodWeights"></div>
-
-                        <!-- Summary Stats -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="unifiedSummary"></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Numbers to BET -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(16, 185, 129, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-green-400">
-                                <i class="bi bi-check-circle mr-2"></i>Top 20 Số NÊN Đánh (Unified)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Điểm kết hợp cao từ 6 phương pháp</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="unifiedPredictions"></div>
-                        </div>
-
-                        <!-- Numbers to AVOID -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-red-400">
-                                <i class="bi bi-x-circle mr-2"></i>Top 20 Số NÊN Loại Trừ (Unified)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Điểm kết hợp thấp từ 6 phương pháp</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="unifiedExclusions"></div>
-                        </div>
-                    </div>
-
-                    <!-- Detail View for Selected Number (6 METHODS ONLY) -->
-                    <div id="unifiedNumberDetail" class="glass-card rounded-2xl p-6 mt-6 hidden"
-                        style="border-left: 4px solid #10b981;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold" id="unifiedDetailTitle">Chi tiết số: --</h3>
-                            <button onclick="document.getElementById('unifiedNumberDetail').classList.add('hidden')"
-                                class="text-gray-400 hover:text-white">
-                                <i class="bi bi-x-lg text-2xl"></i>
-                            </button>
-                        </div>
-
-                        <!-- Recommendation Banner -->
-                        <div id="unifiedRecommendation" class="p-4 rounded-lg mb-6 text-center text-lg font-bold"></div>
-
-                        <!-- Summary: Pros & Cons -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div class="bg-green-900 bg-opacity-20 p-4 rounded-lg">
-                                <h4 class="font-bold text-green-400 mb-2"><i class="bi bi-check-circle mr-2"></i>Điểm
-                                    tích cực
-                                </h4>
-                                <ul id="unifiedPros" class="text-sm space-y-1"></ul>
-                            </div>
-                            <div class="bg-red-900 bg-opacity-20 p-4 rounded-lg">
-                                <h4 class="font-bold text-red-400 mb-2"><i class="bi bi-x-circle mr-2"></i>Điểm tiêu cực
-                                </h4>
-                                <ul id="unifiedCons" class="text-sm space-y-1"></ul>
-                            </div>
-                        </div>
-
-                        <!-- Score Breakdown for 6 methods -->
-                        <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6" id="unifiedScoreBreakdown"></div>
-
-                        <!-- Detailed Methods Explanation (6 METHODS) -->
-                        <h4 class="text-lg font-bold text-green-400 mb-4">
-                            <i class="bi bi-info-circle mr-2"></i>Giải Thích Chi Tiết 6 Phương Pháp
-                        </h4>
-                        <div id="unifiedMethodsDetail" class="space-y-4"></div>
-
-                        <!-- Loading indicator -->
-                        <div id="detailLoading" class="text-center text-gray-400 hidden">
-                            <div class="spinner mx-auto mb-2" style="width:30px;height:30px;"></div>
-                            <p>Đang tải phân tích chi tiết...</p>
-                        </div>
-                    </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(16, 185, 129, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-green-400">
+                        <i class="bi bi-check-circle mr-2"></i>Số NÊN Đánh (Sau loại trừ)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Các số không thuộc chuỗi loại trừ - an toàn để đánh
+                    </p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="exclusionPredictions"></div>
                 </div>
 
-                <!-- Tab Content: Advanced Prediction (13 METHODS) - NEW SEPARATE TAB -->
-                <div id="advancedTab" class="tab-content hidden">
-                    <div class="glass-card rounded-2xl p-6 mb-6" style="border-left: 4px solid #8b5cf6;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">
-                                <i class="bi bi-graph-up-arrow mr-2 text-purple-400"></i>🔬 Advanced Prediction (13
-                                Phương Pháp
-                                Nâng Cao)
-                            </h2>
-                            <div class="text-sm text-gray-400" id="advancedDate">Đang tải...</div>
-                        </div>
+                <!-- Numbers to AVOID -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-red-400">
+                        <i class="bi bi-x-circle mr-2"></i>Số LOẠI TRỪ (Thuộc chuỗi)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Các số thuộc chuỗi đạt Kỷ Lục Mới hoặc Siêu KL</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="exclusionExclusions"></div>
+                </div>
+            </div>
 
-                        <!-- Easy Explanation -->
-                        <div class="bg-purple-900 bg-opacity-20 rounded-lg p-4 mb-6">
-                            <h3 class="text-lg font-bold text-purple-400 mb-3">🎯 Cách hoạt động (Dễ hiểu)</h3>
-                            <div class="text-gray-300 text-sm space-y-2">
-                                <p>✅ <strong>Ý tưởng chính:</strong> Sử dụng các công thức toán học và thống kê xác suất
-                                    để phân
-                                    tích số.</p>
-                                <p>✅ <strong>Phương pháp thống kê:</strong> Chi-Square, Z-Score, Poisson, Bayesian - đo
-                                    lường độ
-                                    "bất thường" của số.</p>
-                                <p>✅ <strong>Phương pháp xu hướng:</strong> Mean Reversion, Moving Average, Momentum,
-                                    Cycle -
-                                    tìm mẫu thay đổi.</p>
-                                <p>✅ <strong>Phương pháp số học:</strong> Fibonacci, Prime, Digit Sum, Modular - phân
-                                    tích tính
-                                    chất số học.</p>
-                            </div>
-                        </div>
-
-                        <!-- 13 Methods Categories -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-                            <div class="stat-card text-center p-2 border-l-2 border-blue-500">
-                                <div class="text-xs text-blue-400 font-bold">📊 Thống kê</div>
-                                <div class="text-[10px] text-gray-400">Chi², Z-Score, Poisson, Bayes</div>
-                            </div>
-                            <div class="stat-card text-center p-2 border-l-2 border-green-500">
-                                <div class="text-xs text-green-400 font-bold">📈 Xu hướng</div>
-                                <div class="text-[10px] text-gray-400">Mean Rev, MA, Momentum, Cycle</div>
-                            </div>
-                            <div class="stat-card text-center p-2 border-l-2 border-orange-500">
-                                <div class="text-xs text-orange-400 font-bold">🔗 Markov</div>
-                                <div class="text-[10px] text-gray-400">Xác suất chuyển tiếp</div>
-                            </div>
-                            <div class="stat-card text-center p-2 border-l-2 border-pink-500">
-                                <div class="text-xs text-pink-400 font-bold">🔢 Số học</div>
-                                <div class="text-[10px] text-gray-400">Fibo, Prime, DigitΣ, Mod</div>
-                            </div>
-                        </div>
-
-                        <!-- 13 Method Weights Display -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-6"
-                            id="advancedMethodWeights"></div>
-
-                        <!-- Summary Stats -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="advancedSummary"></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Numbers to BET -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(139, 92, 246, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-purple-400">
-                                <i class="bi bi-check-circle mr-2"></i>Top 20 Số NÊN Đánh (Advanced)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Điểm kết hợp cao từ 13 phương pháp nâng cao</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="advancedPredictions"></div>
-                        </div>
-
-                        <!-- Numbers to AVOID -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-red-400">
-                                <i class="bi bi-x-circle mr-2"></i>Top 20 Số NÊN Loại Trừ (Advanced)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Điểm kết hợp thấp từ 13 phương pháp nâng cao</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="advancedExclusions"></div>
-                        </div>
-                    </div>
-
-                    <!-- Detail View for Selected Number (13 METHODS) -->
-                    <div id="advancedNumberDetail" class="glass-card rounded-2xl p-6 mt-6 hidden"
-                        style="border-left: 4px solid #8b5cf6;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold" id="advancedDetailTitle">Chi tiết số: --</h3>
-                            <button onclick="document.getElementById('advancedNumberDetail').classList.add('hidden')"
-                                class="text-gray-400 hover:text-white">
-                                <i class="bi bi-x-lg text-2xl"></i>
-                            </button>
-                        </div>
-
-                        <!-- Recommendation Banner -->
-                        <div id="advancedRecommendation" class="p-4 rounded-lg mb-6 text-center text-lg font-bold">
-                        </div>
-
-                        <!-- Score Breakdown for 13 methods -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6"
-                            id="advancedScoreBreakdown">
-                        </div>
-
-                        <!-- Detailed Methods Explanation (13 METHODS) -->
-                        <h4 class="text-lg font-bold text-purple-400 mb-4">
-                            <i class="bi bi-info-circle mr-2"></i>Giải Thích Chi Tiết 13 Phương Pháp Nâng Cao
-                        </h4>
-                        <div id="advancedMethodsDetail" class="space-y-4"></div>
-
-                        <!-- Loading indicator -->
-                        <div id="advancedDetailLoading" class="text-center text-gray-400 hidden">
-                            <div class="spinner mx-auto mb-2" style="width:30px;height:30px;"></div>
-                            <p>Đang tải phân tích chi tiết...</p>
-                        </div>
-                    </div>
+            <!-- Detail View for Selected Number -->
+            <div id="exclusionNumberDetail" class="glass-card rounded-2xl p-6 mt-6 hidden"
+                style="border-left: 4px solid #ef4444;">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold" id="exclusionDetailTitle">Chi tiết số: --</h3>
+                    <button onclick="document.getElementById('exclusionNumberDetail').classList.add('hidden')"
+                        class="text-gray-400 hover:text-white">
+                        <i class="bi bi-x-lg text-2xl"></i>
+                    </button>
                 </div>
 
-                <!-- Tab Content: Hybrid AI Prediction (4 AI METHODS) - NEW -->
-                <div id="hybridTab" class="tab-content hidden">
-                    <div class="glass-card rounded-2xl p-6 mb-6" style="border-left: 4px solid #f97316;">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">
-                                <i class="bi bi-robot mr-2 text-orange-400"></i>🤖 Hybrid AI Prediction (4 Phương Pháp
-                                AI)
-                            </h2>
-                            <div class="text-sm text-gray-400" id="hybridDate">Đang tải...</div>
-                        </div>
+                <!-- Detail Content -->
+                <div id="exclusionDetailContent" class="space-y-4"></div>
 
-                        <!-- Easy Explanation -->
-                        <div class="bg-orange-900 bg-opacity-20 rounded-lg p-4 mb-6">
-                            <h3 class="text-lg font-bold text-orange-400 mb-3">🎯 Cách hoạt động (Dễ hiểu)</h3>
-                            <div class="text-gray-300 text-sm space-y-2">
-                                <p>✅ <strong>Ý tưởng chính:</strong> Kết hợp 4 thuật toán AI/ML hiện đại để dự đoán số
-                                    có khả năng về.</p>
-                                <p>✅ <strong>Markov Chain:</strong> Xác suất chuyển đổi - "Sau số X thường về số gì?"
-                                </p>
-                                <p>✅ <strong>Monte Carlo:</strong> Mô phỏng 10,000 lần quay để tính xác suất.</p>
-                                <p>✅ <strong>Time Series:</strong> Phân tích xu hướng theo thời gian và ngày trong tuần.
-                                </p>
-                                <p>✅ <strong>Pattern Recognition:</strong> Nhận dạng các mẫu lặp lại trong lịch sử.</p>
-                            </div>
-                        </div>
+                <!-- Loading indicator -->
+                <div id="exclusionDetailLoading" class="text-center text-gray-400 hidden">
+                    <div class="spinner mx-auto mb-2" style="width:30px;height:30px;"></div>
+                    <p>Đang tải...</p>
+                </div>
+            </div>
+        </div>
 
-                        <!-- 4 Methods Details -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                            <div class="stat-card text-center p-3 border-l-2 border-blue-500">
-                                <div class="text-xs text-blue-400 font-bold">🔗 Markov Chain</div>
-                                <div class="text-[10px] text-gray-400 mt-1">Ma trận chuyển đổi 100 trạng thái</div>
-                                <div class="text-[9px] text-gray-500 mt-1">P(next | current)</div>
-                            </div>
-                            <div class="stat-card text-center p-3 border-l-2 border-green-500">
-                                <div class="text-xs text-green-400 font-bold">🎲 Monte Carlo</div>
-                                <div class="text-[10px] text-gray-400 mt-1">10,000 mô phỏng ngẫu nhiên</div>
-                                <div class="text-[9px] text-gray-500 mt-1">40% historical + 60% recent</div>
-                            </div>
-                            <div class="stat-card text-center p-3 border-l-2 border-purple-500">
-                                <div class="text-xs text-purple-400 font-bold">📈 Time Series</div>
-                                <div class="text-[10px] text-gray-400 mt-1">Xu hướng + Tính mùa vụ</div>
-                                <div class="text-[9px] text-gray-500 mt-1">ARIMA-like analysis</div>
-                            </div>
-                            <div class="stat-card text-center p-3 border-l-2 border-orange-500">
-                                <div class="text-xs text-orange-400 font-bold">🔍 Pattern</div>
-                                <div class="text-[10px] text-gray-400 mt-1">5,000+ sequence patterns</div>
-                                <div class="text-[9px] text-gray-500 mt-1">Nhận dạng mẫu lặp</div>
-                            </div>
-                        </div>
-
-                        <!-- Summary Stats -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="hybridSummary"></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Numbers to BET -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(249, 115, 22, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-orange-400">
-                                <i class="bi bi-check-circle mr-2"></i>Top 40 Số NÊN Đánh (Hybrid AI)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Điểm kết hợp cao từ 4 phương pháp AI</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="hybridPredictions"></div>
-                        </div>
-
-                        <!-- Numbers to AVOID -->
-                        <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
-                            <h3 class="text-lg font-bold mb-4 text-red-400">
-                                <i class="bi bi-x-circle mr-2"></i>Top 40 Số NÊN Loại Trừ (Hybrid AI)
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Điểm kết hợp thấp từ 4 phương pháp AI</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="hybridExclusions"></div>
-                        </div>
-                    </div>
-
-                    <!-- Methodology Detail -->
-                    <div class="glass-card rounded-2xl p-6 mt-6" style="border-left: 4px solid #f97316;">
-                        <h3 class="text-lg font-bold mb-4 text-orange-400">
-                            <i class="bi bi-info-circle mr-2"></i>Chi Tiết Phương Pháp Tính
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
-                                <h4 class="font-bold text-blue-400 mb-2">🔗 Markov Chain (25%)</h4>
-                                <p class="text-gray-400">Xây dựng ma trận chuyển đổi từ 7,000+ kết quả lịch sử. Tính xác
-                                    suất P(số tiếp theo | số hiện tại) cho mỗi cặp số.</p>
-                            </div>
-                            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
-                                <h4 class="font-bold text-green-400 mb-2">🎲 Monte Carlo (25%)</h4>
-                                <p class="text-gray-400">Mô phỏng 10,000 lần quay với trọng số: 40% từ tần suất lịch sử
-                                    + 60% từ 90 ngày gần đây. Số nào xuất hiện nhiều nhất trong mô phỏng → điểm cao.</p>
-                            </div>
-                            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
-                                <h4 class="font-bold text-purple-400 mb-2">📈 Time Series (25%)</h4>
-                                <p class="text-gray-400">Phân tích xu hướng tăng/giảm trong 30 ngày gần, tính mùa vụ
-                                    theo ngày trong tuần (52 tuần), và inverse gap analysis (số lâu chưa về → điểm cao).
-                                </p>
-                            </div>
-                            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
-                                <h4 class="font-bold text-orange-400 mb-2">🔍 Pattern Recognition (25%)</h4>
-                                <p class="text-gray-400">Nhận dạng 5,000+ chuỗi 2 số liên tiếp từ lịch sử. Phân tích
-                                    pattern đầu số và số đối xứng. Ví dụ: Sau [36, 68] thường về số gì?</p>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Tab Content: Unified Prediction (6 METHODS) -->
+        <div id="unifiedTab" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 mb-6" style="border-left: 4px solid #10b981;">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">
+                        <i class="bi bi-stars mr-2 text-green-400"></i>🌟 Unified Prediction (6 Phương Pháp Cơ
+                        Bản)
+                    </h2>
+                    <div class="text-sm text-gray-400" id="unifiedDate">Đang tải...</div>
                 </div>
 
-                <!-- Tab Content: AI Analysis (NEW) -->
-                <div id="aiTab" class="tab-content hidden">
-                    <div class="glass-card rounded-2xl p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4">
-                            <i class="bi bi-robot mr-2 text-purple-400"></i>AI Analysis - Phân Tích Bằng AI
-                        </h2>
-                        <p class="text-gray-400 mb-6">
-                            Copy prompt bên dưới và dán vào ChatGPT hoặc Claude để nhận phân tích chi tiết từ AI
+                <!-- Easy Explanation -->
+                <div class="bg-green-900 bg-opacity-20 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-bold text-green-400 mb-3">🎯 Cách hoạt động (Dễ hiểu)</h3>
+                    <div class="text-gray-300 text-sm space-y-2">
+                        <p>✅ <strong>Ý tưởng chính:</strong> Kết hợp 6 góc nhìn khác nhau để đánh giá khả năng
+                            một số sẽ
+                            về.</p>
+                        <p>✅ <strong>Tính điểm:</strong> Mỗi phương pháp cho điểm 0-100%. Điểm cuối = Trung bình
+                            có
+                            trọng số.</p>
+                        <p>✅ <strong>Số điểm cao:</strong> Được nhiều phương pháp ủng hộ → Khả năng về CAO → NÊN
+                            ĐÁNH
                         </p>
-
-                        <div class="flex gap-2 mb-4">
-                            <button id="loadAIPrompt"
-                                class="px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition">
-                                <i class="bi bi-magic mr-2"></i>Tạo AI Prompt
-                            </button>
-                            <button id="copyAIPrompt"
-                                class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition hidden">
-                                <i class="bi bi-clipboard mr-2"></i>Copy Prompt
-                            </button>
-                        </div>
-
-                        <div id="aiPromptContainer" class="hidden">
-                            <pre id="aiPrompt"
-                                class="bg-gray-900 p-4 rounded-lg text-sm text-gray-300 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto"></pre>
-                        </div>
-
-                        <div class="mt-6">
-                            <h4 class="font-bold mb-3">Hướng dẫn sử dụng:</h4>
-                            <ol class="text-gray-400 text-sm space-y-2 list-decimal list-inside">
-                                <li>Nhấn "Tạo AI Prompt" để sinh prompt phân tích</li>
-                                <li>Nhấn "Copy Prompt" để copy vào clipboard</li>
-                                <li>Mở <a href="https://chat.openai.com" target="_blank"
-                                        class="text-blue-400 underline">ChatGPT</a> hoặc <a href="https://claude.ai"
-                                        target="_blank" class="text-blue-400 underline">Claude</a></li>
-                                <li>Dán prompt và gửi để nhận phân tích AI</li>
-                            </ol>
-                        </div>
-                    </div>
-
-                    <!-- Year Comparison -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <h3 class="text-lg font-bold mb-4">
-                            <i class="bi bi-graph-up mr-2"></i>So Sánh Xu Hướng Các Năm
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <h4 class="font-bold text-red-400 mb-3">Top 10 Số "Nợ" Nhiều Nhất</h4>
-                                <p class="text-gray-400 text-xs mb-3">Xuất hiện ít hơn trung bình trong năm nay</p>
-                                <div id="yearlyDeficit" class="space-y-2"></div>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-green-400 mb-3">Top 10 Số "Thừa" Nhiều Nhất</h4>
-                                <p class="text-gray-400 text-xs mb-3">Xuất hiện nhiều hơn trung bình trong năm nay</p>
-                                <div id="yearlySurplus" class="space-y-2"></div>
-                            </div>
-                        </div>
+                        <p>✅ <strong>Số điểm thấp:</strong> Không được phương pháp nào ủng hộ → Khả năng về THẤP
+                            → LOẠI
+                            TRỪ</p>
                     </div>
                 </div>
 
-                <!-- Tab Content: Heatmap -->
-                <div id="heatmapTab" class="tab-content">
-                    <div class="glass-card rounded-2xl p-6 mb-6">
-                        <h2 class="text-xl font-bold mb-4"><i class="bi bi-grid-3x3-gap mr-2"></i>Heatmap Tần Suất 100
-                            Số
-                            (00-99)</h2>
-                        <p class="text-gray-400 mb-4 text-sm">Màu sắc thể hiện mức độ "cần xuất hiện" - càng đỏ càng lâu
-                            chưa về
+                <!-- 6 Methods Explanation -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-6">
+                    <div class="stat-card text-center p-2">
+                        <div class="text-xs text-blue-400 font-bold">📊 Gap</div>
+                        <div class="text-[10px] text-gray-400">Lâu chưa về? Sắp đến lượt!</div>
+                    </div>
+                    <div class="stat-card text-center p-2">
+                        <div class="text-xs text-purple-400 font-bold">🔗 Chuỗi</div>
+                        <div class="text-[10px] text-gray-400">Đang "hot" liên tiếp</div>
+                    </div>
+                    <div class="stat-card text-center p-2">
+                        <div class="text-xs text-red-400 font-bold">🛡️ Loại trừ</div>
+                        <div class="text-[10px] text-gray-400">Pattern vừa về = tránh</div>
+                    </div>
+                    <div class="stat-card text-center p-2">
+                        <div class="text-xs text-green-400 font-bold">📅 360 ngày</div>
+                        <div class="text-[10px] text-gray-400">So với năm trước</div>
+                    </div>
+                    <div class="stat-card text-center p-2">
+                        <div class="text-xs text-yellow-400 font-bold">📆 Ngày</div>
+                        <div class="text-[10px] text-gray-400">Mẫu theo thứ</div>
+                    </div>
+                    <div class="stat-card text-center p-2">
+                        <div class="text-xs text-pink-400 font-bold">🕐 Gần đây</div>
+                        <div class="text-[10px] text-gray-400">30 ngày qua</div>
+                    </div>
+                </div>
+
+                <!-- 6 Method Weights Display -->
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6" id="methodWeights"></div>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="unifiedSummary"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Numbers to BET -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(16, 185, 129, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-green-400">
+                        <i class="bi bi-check-circle mr-2"></i>Top 20 Số NÊN Đánh (Unified)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Điểm kết hợp cao từ 6 phương pháp</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="unifiedPredictions"></div>
+                </div>
+
+                <!-- Numbers to AVOID -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-red-400">
+                        <i class="bi bi-x-circle mr-2"></i>Top 20 Số NÊN Loại Trừ (Unified)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Điểm kết hợp thấp từ 6 phương pháp</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="unifiedExclusions"></div>
+                </div>
+            </div>
+
+            <!-- Detail View for Selected Number (6 METHODS ONLY) -->
+            <div id="unifiedNumberDetail" class="glass-card rounded-2xl p-6 mt-6 hidden"
+                style="border-left: 4px solid #10b981;">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold" id="unifiedDetailTitle">Chi tiết số: --</h3>
+                    <button onclick="document.getElementById('unifiedNumberDetail').classList.add('hidden')"
+                        class="text-gray-400 hover:text-white">
+                        <i class="bi bi-x-lg text-2xl"></i>
+                    </button>
+                </div>
+
+                <!-- Recommendation Banner -->
+                <div id="unifiedRecommendation" class="p-4 rounded-lg mb-6 text-center text-lg font-bold"></div>
+
+                <!-- Summary: Pros & Cons -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-green-900 bg-opacity-20 p-4 rounded-lg">
+                        <h4 class="font-bold text-green-400 mb-2"><i class="bi bi-check-circle mr-2"></i>Điểm
+                            tích cực
+                        </h4>
+                        <ul id="unifiedPros" class="text-sm space-y-1"></ul>
+                    </div>
+                    <div class="bg-red-900 bg-opacity-20 p-4 rounded-lg">
+                        <h4 class="font-bold text-red-400 mb-2"><i class="bi bi-x-circle mr-2"></i>Điểm tiêu cực
+                        </h4>
+                        <ul id="unifiedCons" class="text-sm space-y-1"></ul>
+                    </div>
+                </div>
+
+                <!-- Score Breakdown for 6 methods -->
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6" id="unifiedScoreBreakdown"></div>
+
+                <!-- Detailed Methods Explanation (6 METHODS) -->
+                <h4 class="text-lg font-bold text-green-400 mb-4">
+                    <i class="bi bi-info-circle mr-2"></i>Giải Thích Chi Tiết 6 Phương Pháp
+                </h4>
+                <div id="unifiedMethodsDetail" class="space-y-4"></div>
+
+                <!-- Loading indicator -->
+                <div id="detailLoading" class="text-center text-gray-400 hidden">
+                    <div class="spinner mx-auto mb-2" style="width:30px;height:30px;"></div>
+                    <p>Đang tải phân tích chi tiết...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Advanced Prediction (13 METHODS) - NEW SEPARATE TAB -->
+        <div id="advancedTab" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 mb-6" style="border-left: 4px solid #8b5cf6;">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">
+                        <i class="bi bi-graph-up-arrow mr-2 text-purple-400"></i>🔬 Advanced Prediction (13
+                        Phương Pháp
+                        Nâng Cao)
+                    </h2>
+                    <div class="text-sm text-gray-400" id="advancedDate">Đang tải...</div>
+                </div>
+
+                <!-- Easy Explanation -->
+                <div class="bg-purple-900 bg-opacity-20 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-bold text-purple-400 mb-3">🎯 Cách hoạt động (Dễ hiểu)</h3>
+                    <div class="text-gray-300 text-sm space-y-2">
+                        <p>✅ <strong>Ý tưởng chính:</strong> Sử dụng các công thức toán học và thống kê xác suất
+                            để phân
+                            tích số.</p>
+                        <p>✅ <strong>Phương pháp thống kê:</strong> Chi-Square, Z-Score, Poisson, Bayesian - đo
+                            lường độ
+                            "bất thường" của số.</p>
+                        <p>✅ <strong>Phương pháp xu hướng:</strong> Mean Reversion, Moving Average, Momentum,
+                            Cycle -
+                            tìm mẫu thay đổi.</p>
+                        <p>✅ <strong>Phương pháp số học:</strong> Fibonacci, Prime, Digit Sum, Modular - phân
+                            tích tính
+                            chất số học.</p>
+                    </div>
+                </div>
+
+                <!-- 13 Methods Categories -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+                    <div class="stat-card text-center p-2 border-l-2 border-blue-500">
+                        <div class="text-xs text-blue-400 font-bold">📊 Thống kê</div>
+                        <div class="text-[10px] text-gray-400">Chi², Z-Score, Poisson, Bayes</div>
+                    </div>
+                    <div class="stat-card text-center p-2 border-l-2 border-green-500">
+                        <div class="text-xs text-green-400 font-bold">📈 Xu hướng</div>
+                        <div class="text-[10px] text-gray-400">Mean Rev, MA, Momentum, Cycle</div>
+                    </div>
+                    <div class="stat-card text-center p-2 border-l-2 border-orange-500">
+                        <div class="text-xs text-orange-400 font-bold">🔗 Markov</div>
+                        <div class="text-[10px] text-gray-400">Xác suất chuyển tiếp</div>
+                    </div>
+                    <div class="stat-card text-center p-2 border-l-2 border-pink-500">
+                        <div class="text-xs text-pink-400 font-bold">🔢 Số học</div>
+                        <div class="text-[10px] text-gray-400">Fibo, Prime, DigitΣ, Mod</div>
+                    </div>
+                </div>
+
+                <!-- 13 Method Weights Display -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-6" id="advancedMethodWeights"></div>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="advancedSummary"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Numbers to BET -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(139, 92, 246, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-purple-400">
+                        <i class="bi bi-check-circle mr-2"></i>Top 20 Số NÊN Đánh (Advanced)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Điểm kết hợp cao từ 13 phương pháp nâng cao</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="advancedPredictions"></div>
+                </div>
+
+                <!-- Numbers to AVOID -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-red-400">
+                        <i class="bi bi-x-circle mr-2"></i>Top 20 Số NÊN Loại Trừ (Advanced)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Điểm kết hợp thấp từ 13 phương pháp nâng cao</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="advancedExclusions"></div>
+                </div>
+            </div>
+
+            <!-- Detail View for Selected Number (13 METHODS) -->
+            <div id="advancedNumberDetail" class="glass-card rounded-2xl p-6 mt-6 hidden"
+                style="border-left: 4px solid #8b5cf6;">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold" id="advancedDetailTitle">Chi tiết số: --</h3>
+                    <button onclick="document.getElementById('advancedNumberDetail').classList.add('hidden')"
+                        class="text-gray-400 hover:text-white">
+                        <i class="bi bi-x-lg text-2xl"></i>
+                    </button>
+                </div>
+
+                <!-- Recommendation Banner -->
+                <div id="advancedRecommendation" class="p-4 rounded-lg mb-6 text-center text-lg font-bold">
+                </div>
+
+                <!-- Score Breakdown for 13 methods -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6" id="advancedScoreBreakdown">
+                </div>
+
+                <!-- Detailed Methods Explanation (13 METHODS) -->
+                <h4 class="text-lg font-bold text-purple-400 mb-4">
+                    <i class="bi bi-info-circle mr-2"></i>Giải Thích Chi Tiết 13 Phương Pháp Nâng Cao
+                </h4>
+                <div id="advancedMethodsDetail" class="space-y-4"></div>
+
+                <!-- Loading indicator -->
+                <div id="advancedDetailLoading" class="text-center text-gray-400 hidden">
+                    <div class="spinner mx-auto mb-2" style="width:30px;height:30px;"></div>
+                    <p>Đang tải phân tích chi tiết...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Hybrid AI Prediction (4 AI METHODS) - NEW -->
+        <div id="hybridTab" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 mb-6" style="border-left: 4px solid #f97316;">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">
+                        <i class="bi bi-robot mr-2 text-orange-400"></i>🤖 Hybrid AI Prediction (4 Phương Pháp
+                        AI)
+                    </h2>
+                    <div class="text-sm text-gray-400" id="hybridDate">Đang tải...</div>
+                </div>
+
+                <!-- Easy Explanation -->
+                <div class="bg-orange-900 bg-opacity-20 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-bold text-orange-400 mb-3">🎯 Cách hoạt động (Dễ hiểu)</h3>
+                    <div class="text-gray-300 text-sm space-y-2">
+                        <p>✅ <strong>Ý tưởng chính:</strong> Kết hợp 4 thuật toán AI/ML hiện đại để dự đoán số
+                            có khả năng về.</p>
+                        <p>✅ <strong>Markov Chain:</strong> Xác suất chuyển đổi - "Sau số X thường về số gì?"
                         </p>
-
-                        <div class="flex flex-wrap gap-1 justify-center" id="numberHeatmap">
-                            <!-- Heatmap cells will be generated here -->
-                        </div>
-
-                        <div class="flex justify-center gap-4 mt-4 text-sm">
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 rounded mr-2 prediction-high"></div>Cao (lâu chưa về)
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 rounded mr-2 prediction-medium"></div>Trung bình
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 rounded mr-2 prediction-normal"></div>Bình thường
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 rounded mr-2 prediction-low"></div>Gần đây đã về
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Number Details Modal -->
-                    <div id="numberDetails" class="glass-card rounded-2xl p-6 hidden">
-                        <h3 class="text-lg font-bold mb-3" id="numberDetailsTitle">Chi tiết số: --</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="numberDetailsContent"></div>
+                        <p>✅ <strong>Monte Carlo:</strong> Mô phỏng 10,000 lần quay để tính xác suất.</p>
+                        <p>✅ <strong>Time Series:</strong> Phân tích xu hướng theo thời gian và ngày trong tuần.
+                        </p>
+                        <p>✅ <strong>Pattern Recognition:</strong> Nhận dạng các mẫu lặp lại trong lịch sử.</p>
                     </div>
                 </div>
 
-                <!-- Tab Content: Distribution -->
-                <div id="distributionTab" class="tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Đầu Distribution -->
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-bold mb-4"><i class="bi bi-1-circle mr-2"></i>Phân Bổ Đầu (0-9)</h3>
-                            <div class="chart-container">
-                                <canvas id="dauChart"></canvas>
-                            </div>
-                            <div class="mt-4 grid grid-cols-5 gap-2" id="dauStats"></div>
-                        </div>
-
-                        <!-- Đít Distribution -->
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-bold mb-4"><i class="bi bi-2-circle mr-2"></i>Phân Bổ Đít (0-9)</h3>
-                            <div class="chart-container">
-                                <canvas id="ditChart"></canvas>
-                            </div>
-                            <div class="mt-4 grid grid-cols-5 gap-2" id="ditStats"></div>
-                        </div>
-
-                        <!-- Tổng TT Distribution -->
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-bold mb-4"><i class="bi bi-plus-circle mr-2"></i>Phân Bổ Tổng TT
-                                (0-18)</h3>
-                            <div class="chart-container">
-                                <canvas id="tongChart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Chẵn/Lẻ Distribution -->
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-bold mb-4"><i class="bi bi-pie-chart mr-2"></i>Phân Bổ Chẵn/Lẻ</h3>
-                            <div class="chart-container">
-                                <canvas id="chanLeChart"></canvas>
-                            </div>
-                        </div>
+                <!-- 4 Methods Details -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div class="stat-card text-center p-3 border-l-2 border-blue-500">
+                        <div class="text-xs text-blue-400 font-bold">🔗 Markov Chain</div>
+                        <div class="text-[10px] text-gray-400 mt-1">Ma trận chuyển đổi 100 trạng thái</div>
+                        <div class="text-[9px] text-gray-500 mt-1">P(next | current)</div>
+                    </div>
+                    <div class="stat-card text-center p-3 border-l-2 border-green-500">
+                        <div class="text-xs text-green-400 font-bold">🎲 Monte Carlo</div>
+                        <div class="text-[10px] text-gray-400 mt-1">10,000 mô phỏng ngẫu nhiên</div>
+                        <div class="text-[9px] text-gray-500 mt-1">40% historical + 60% recent</div>
+                    </div>
+                    <div class="stat-card text-center p-3 border-l-2 border-purple-500">
+                        <div class="text-xs text-purple-400 font-bold">📈 Time Series</div>
+                        <div class="text-[10px] text-gray-400 mt-1">Xu hướng + Tính mùa vụ</div>
+                        <div class="text-[9px] text-gray-500 mt-1">ARIMA-like analysis</div>
+                    </div>
+                    <div class="stat-card text-center p-3 border-l-2 border-orange-500">
+                        <div class="text-xs text-orange-400 font-bold">🔍 Pattern</div>
+                        <div class="text-[10px] text-gray-400 mt-1">5,000+ sequence patterns</div>
+                        <div class="text-[9px] text-gray-500 mt-1">Nhận dạng mẫu lặp</div>
                     </div>
                 </div>
 
-                <!-- Tab Content: Predictions -->
-                <div id="predictionsTab" class="tab-content hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <!-- Top Candidates -->
-                        <div class="lg:col-span-2 glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-bold mb-4">
-                                <i class="bi bi-fire mr-2 text-red-400"></i>Top 20 Số Có Khả Năng Cao
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Dựa trên phân tích gap và tần suất xuất hiện</p>
-                            <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="topCandidates"></div>
-                        </div>
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="hybridSummary"></div>
+            </div>
 
-                        <!-- Breaking Records -->
-                        <div class="glass-card rounded-2xl p-6">
-                            <h3 class="text-lg font-bold mb-4">
-                                <i class="bi bi-exclamation-triangle mr-2 text-yellow-400"></i>Đang Phá Kỷ Lục
-                            </h3>
-                            <p class="text-gray-400 text-sm mb-4">Các số lâu nhất chưa về (vượt kỷ lục gap)</p>
-                            <div class="space-y-2" id="breakingRecords"></div>
-                        </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Numbers to BET -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(249, 115, 22, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-orange-400">
+                        <i class="bi bi-check-circle mr-2"></i>Top 40 Số NÊN Đánh (Hybrid AI)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Điểm kết hợp cao từ 4 phương pháp AI</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="hybridPredictions"></div>
+                </div>
+
+                <!-- Numbers to AVOID -->
+                <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
+                    <h3 class="text-lg font-bold mb-4 text-red-400">
+                        <i class="bi bi-x-circle mr-2"></i>Top 40 Số NÊN Loại Trừ (Hybrid AI)
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Điểm kết hợp thấp từ 4 phương pháp AI</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="hybridExclusions"></div>
+                </div>
+            </div>
+
+            <!-- Methodology Detail -->
+            <div class="glass-card rounded-2xl p-6 mt-6" style="border-left: 4px solid #f97316;">
+                <h3 class="text-lg font-bold mb-4 text-orange-400">
+                    <i class="bi bi-info-circle mr-2"></i>Chi Tiết Phương Pháp Tính
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-blue-400 mb-2">🔗 Markov Chain (25%)</h4>
+                        <p class="text-gray-400">Xây dựng ma trận chuyển đổi từ 7,000+ kết quả lịch sử. Tính xác
+                            suất P(số tiếp theo | số hiện tại) cho mỗi cặp số.</p>
                     </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-green-400 mb-2">🎲 Monte Carlo (25%)</h4>
+                        <p class="text-gray-400">Mô phỏng 10,000 lần quay với trọng số: 40% từ tần suất lịch sử
+                            + 60% từ 90 ngày gần đây. Số nào xuất hiện nhiều nhất trong mô phỏng → điểm cao.</p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-purple-400 mb-2">📈 Time Series (25%)</h4>
+                        <p class="text-gray-400">Phân tích xu hướng tăng/giảm trong 30 ngày gần, tính mùa vụ
+                            theo ngày trong tuần (52 tuần), và inverse gap analysis (số lâu chưa về → điểm cao).
+                        </p>
+                    </div>
+                    <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-orange-400 mb-2">🔍 Pattern Recognition (25%)</h4>
+                        <p class="text-gray-400">Nhận dạng 5,000+ chuỗi 2 số liên tiếp từ lịch sử. Phân tích
+                            pattern đầu số và số đối xứng. Ví dụ: Sau [36, 68] thường về số gì?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    <!-- Prediction Explanation -->
-                    <div class="glass-card rounded-2xl p-6 mt-6">
-                        <h3 class="text-lg font-bold mb-4"><i class="bi bi-info-circle mr-2"></i>Cách Tính Điểm Dự Đoán
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                            <div class="stat-card">
-                                <h4 class="font-bold text-blue-400">Gap Ratio (40%)</h4>
-                                <p class="text-gray-400 mt-2">Tỷ lệ gap hiện tại so với trung bình. Gap càng cao càng dễ
-                                    về.</p>
-                            </div>
-                            <div class="stat-card">
-                                <h4 class="font-bold text-yellow-400">Phá Kỷ Lục (30%)</h4>
-                                <p class="text-gray-400 mt-2">Số đang gần hoặc vượt gap kỷ lục lịch sử.</p>
-                            </div>
-                            <div class="stat-card">
-                                <h4 class="font-bold text-green-400">Tần Suất Thấp (30%)</h4>
-                                <p class="text-gray-400 mt-2">Số xuất hiện ít hơn trung bình kỳ vọng.</p>
-                            </div>
-                        </div>
+        <!-- Tab Content: AI Analysis (NEW) -->
+        <div id="aiTab" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4">
+                    <i class="bi bi-robot mr-2 text-purple-400"></i>AI Analysis - Phân Tích Bằng AI
+                </h2>
+                <p class="text-gray-400 mb-6">
+                    Copy prompt bên dưới và dán vào ChatGPT hoặc Claude để nhận phân tích chi tiết từ AI
+                </p>
+
+                <div class="flex gap-2 mb-4">
+                    <button id="loadAIPrompt" class="px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                        <i class="bi bi-magic mr-2"></i>Tạo AI Prompt
+                    </button>
+                    <button id="copyAIPrompt"
+                        class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition hidden">
+                        <i class="bi bi-clipboard mr-2"></i>Copy Prompt
+                    </button>
+                </div>
+
+                <div id="aiPromptContainer" class="hidden">
+                    <pre id="aiPrompt"
+                        class="bg-gray-900 p-4 rounded-lg text-sm text-gray-300 overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto"></pre>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="font-bold mb-3">Hướng dẫn sử dụng:</h4>
+                    <ol class="text-gray-400 text-sm space-y-2 list-decimal list-inside">
+                        <li>Nhấn "Tạo AI Prompt" để sinh prompt phân tích</li>
+                        <li>Nhấn "Copy Prompt" để copy vào clipboard</li>
+                        <li>Mở <a href="https://chat.openai.com" target="_blank"
+                                class="text-blue-400 underline">ChatGPT</a> hoặc <a href="https://claude.ai"
+                                target="_blank" class="text-blue-400 underline">Claude</a></li>
+                        <li>Dán prompt và gửi để nhận phân tích AI</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Year Comparison -->
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-lg font-bold mb-4">
+                    <i class="bi bi-graph-up mr-2"></i>So Sánh Xu Hướng Các Năm
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-bold text-red-400 mb-3">Top 10 Số "Nợ" Nhiều Nhất</h4>
+                        <p class="text-gray-400 text-xs mb-3">Xuất hiện ít hơn trung bình trong năm nay</p>
+                        <div id="yearlyDeficit" class="space-y-2"></div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-green-400 mb-3">Top 10 Số "Thừa" Nhiều Nhất</h4>
+                        <p class="text-gray-400 text-xs mb-3">Xuất hiện nhiều hơn trung bình trong năm nay</p>
+                        <div id="yearlySurplus" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Heatmap -->
+        <div id="heatmapTab" class="tab-content">
+            <div class="glass-card rounded-2xl p-6 mb-6">
+                <h2 class="text-xl font-bold mb-4"><i class="bi bi-grid-3x3-gap mr-2"></i>Heatmap Tần Suất 100
+                    Số
+                    (00-99)</h2>
+                <p class="text-gray-400 mb-4 text-sm">Màu sắc thể hiện mức độ "cần xuất hiện" - càng đỏ càng lâu
+                    chưa về
+                </p>
+
+                <div class="flex flex-wrap gap-1 justify-center" id="numberHeatmap">
+                    <!-- Heatmap cells will be generated here -->
+                </div>
+
+                <div class="flex justify-center gap-4 mt-4 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rounded mr-2 prediction-high"></div>Cao (lâu chưa về)
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rounded mr-2 prediction-medium"></div>Trung bình
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rounded mr-2 prediction-normal"></div>Bình thường
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 rounded mr-2 prediction-low"></div>Gần đây đã về
+                    </div>
+                </div>
+            </div>
+
+            <!-- Number Details Modal -->
+            <div id="numberDetails" class="glass-card rounded-2xl p-6 hidden">
+                <h3 class="text-lg font-bold mb-3" id="numberDetailsTitle">Chi tiết số: --</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="numberDetailsContent"></div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Distribution -->
+        <div id="distributionTab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Đầu Distribution -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4"><i class="bi bi-1-circle mr-2"></i>Phân Bổ Đầu (0-9)</h3>
+                    <div class="chart-container">
+                        <canvas id="dauChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-5 gap-2" id="dauStats"></div>
+                </div>
+
+                <!-- Đít Distribution -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4"><i class="bi bi-2-circle mr-2"></i>Phân Bổ Đít (0-9)</h3>
+                    <div class="chart-container">
+                        <canvas id="ditChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-5 gap-2" id="ditStats"></div>
+                </div>
+
+                <!-- Tổng TT Distribution -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4"><i class="bi bi-plus-circle mr-2"></i>Phân Bổ Tổng TT
+                        (0-18)</h3>
+                    <div class="chart-container">
+                        <canvas id="tongChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Tab Content: Yearly Trends -->
-                <div id="yearlyTab" class="tab-content hidden">
-                    <div class="glass-card rounded-2xl p-6 mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-bold"><i class="bi bi-calendar3 mr-2"></i>Xu Hướng Theo Năm</h3>
-                            <select id="yearlyCategory" class="bg-gray-700 rounded-lg px-4 py-2 text-sm">
-                                <option value="dau">Đầu</option>
-                                <option value="dit">Đít</option>
-                                <option value="tongTT">Tổng TT</option>
-                                <option value="chanLe">Chẵn/Lẻ</option>
-                            </select>
-                        </div>
-                        <div class="chart-container" style="height: 400px;">
-                            <canvas id="yearlyTrendChart"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- Yearly Stats Table -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <h3 class="text-lg font-bold mb-4">Bảng Thống Kê Theo Năm</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm" id="yearlyTable">
-                                <thead class="text-gray-400 border-b border-gray-600">
-                                    <tr>
-                                        <th class="text-left py-3">Giá trị</th>
-                                        <!-- Years will be added dynamically -->
-                                    </tr>
-                                </thead>
-                                <tbody id="yearlyTableBody"></tbody>
-                            </table>
-                        </div>
+                <!-- Chẵn/Lẻ Distribution -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4"><i class="bi bi-pie-chart mr-2"></i>Phân Bổ Chẵn/Lẻ</h3>
+                    <div class="chart-container">
+                        <canvas id="chanLeChart"></canvas>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Predictions -->
+        <div id="predictionsTab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Top Candidates -->
+                <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4">
+                        <i class="bi bi-fire mr-2 text-red-400"></i>Top 20 Số Có Khả Năng Cao
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Dựa trên phân tích gap và tần suất xuất hiện</p>
+                    <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="topCandidates"></div>
+                </div>
+
+                <!-- Breaking Records -->
+                <div class="glass-card rounded-2xl p-6">
+                    <h3 class="text-lg font-bold mb-4">
+                        <i class="bi bi-exclamation-triangle mr-2 text-yellow-400"></i>Đang Phá Kỷ Lục
+                    </h3>
+                    <p class="text-gray-400 text-sm mb-4">Các số lâu nhất chưa về (vượt kỷ lục gap)</p>
+                    <div class="space-y-2" id="breakingRecords"></div>
+                </div>
+            </div>
+
+            <!-- Prediction Explanation -->
+            <div class="glass-card rounded-2xl p-6 mt-6">
+                <h3 class="text-lg font-bold mb-4"><i class="bi bi-info-circle mr-2"></i>Cách Tính Điểm Dự Đoán
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div class="stat-card">
+                        <h4 class="font-bold text-blue-400">Gap Ratio (40%)</h4>
+                        <p class="text-gray-400 mt-2">Tỷ lệ gap hiện tại so với trung bình. Gap càng cao càng dễ
+                            về.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4 class="font-bold text-yellow-400">Phá Kỷ Lục (30%)</h4>
+                        <p class="text-gray-400 mt-2">Số đang gần hoặc vượt gap kỷ lục lịch sử.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4 class="font-bold text-green-400">Tần Suất Thấp (30%)</h4>
+                        <p class="text-gray-400 mt-2">Số xuất hiện ít hơn trung bình kỳ vọng.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Yearly Trends -->
+        <div id="yearlyTab" class="tab-content hidden">
+            <div class="glass-card rounded-2xl p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold"><i class="bi bi-calendar3 mr-2"></i>Xu Hướng Theo Năm</h3>
+                    <select id="yearlyCategory" class="bg-gray-700 rounded-lg px-4 py-2 text-sm">
+                        <option value="dau">Đầu</option>
+                        <option value="dit">Đít</option>
+                        <option value="tongTT">Tổng TT</option>
+                        <option value="chanLe">Chẵn/Lẻ</option>
+                    </select>
+                </div>
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="yearlyTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Yearly Stats Table -->
+            <div class="glass-card rounded-2xl p-6">
+                <h3 class="text-lg font-bold mb-4">Bảng Thống Kê Theo Năm</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm" id="yearlyTable">
+                        <thead class="text-gray-400 border-b border-gray-600">
+                            <tr>
+                                <th class="text-left py-3">Giá trị</th>
+                                <!-- Years will be added dynamically -->
+                            </tr>
+                        </thead>
+                        <tbody id="yearlyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -1403,6 +1413,12 @@
             const explanations = exclusionData.explanations || [];
             const tierInfo = exclusionData.tierInfo || {};
             const exclusionsByTier = exclusionData.exclusionsByTier || {};
+            // 3 subTier mới
+            const exclusionsBySubTier = exclusionData.exclusionsBySubTier || {};
+            const countBySubTier = exclusionData.countBySubTier || {};
+            const achievedNums = (exclusionsBySubTier.achieved || []).map(n => parseInt(n));
+            const thresholdNums = (exclusionsBySubTier.threshold || []).map(n => parseInt(n));
+            const superThresholdNums = (exclusionsBySubTier.superThreshold || []).map(n => parseInt(n));
 
             // Counts by tier
             const redCount = tierInfo.countByTier?.red || 0;
@@ -1415,54 +1431,58 @@
                 <div class="stat-card text-center">
                     <div class="text-gray-400 text-xs">Số Đánh</div>
                     <div class="text-2xl font-bold text-green-400">${toBet.length}</div>
+                    <div class="text-[10px] text-gray-500">Exclusion +</div>
                 </div>
-                <div class="stat-card text-center">
-                    <div class="text-gray-400 text-xs">Số Loại Trừ</div>
-                    <div class="text-2xl font-bold text-red-400">${excluded.length}</div>
+                <div class="stat-card text-center border-l-2 border-red-600">
+                    <div class="text-gray-400 text-xs">🔴 Đạt KL</div>
+                    <div class="text-2xl font-bold text-red-400">${countBySubTier.achieved || 0}</div>
+                    <div class="text-[10px] text-gray-500">Đạt kỷ lục</div>
                 </div>
-                <div class="stat-card text-center">
-                    <div class="text-gray-400 text-xs">Tier (Đ/T/C/L)</div>
-                    <div class="text-lg font-bold">
-                        <span class="text-red-400">${redCount}</span>/
-                        <span class="text-purple-400">${purpleCount}</span>/
-                        <span class="text-orange-400">${orangeCount}</span>/
-                        <span class="text-pink-400">${lightRedCount}</span>
-                    </div>
+                <div class="stat-card text-center border-l-2 border-orange-500">
+                    <div class="text-gray-400 text-xs">🟠 Tới Hạn KL</div>
+                    <div class="text-2xl font-bold text-orange-400">${countBySubTier.threshold || 0}</div>
+                    <div class="text-[10px] text-gray-500">Tới hạn kỷ lục</div>
                 </div>
-                <div class="stat-card text-center">
-                    <div class="text-gray-400 text-xs">Phương Pháp</div>
-                    <div class="text-lg font-bold text-red-400">Tier-Based</div>
+                <div class="stat-card text-center border-l-2 border-purple-500">
+                    <div class="text-gray-400 text-xs">🟣 Siêu KL</div>
+                    <div class="text-2xl font-bold text-purple-400">${countBySubTier.superThreshold || 0}</div>
+                    <div class="text-[10px] text-gray-500">Tới hạn siêu KL</div>
                 </div>
             `;
 
-            // Render Exclusion By Tier Preview
+            // Render Exclusion By Tier Preview - phân theo 3 loại
             const tierPreview = document.getElementById('exclusionByTierPreview');
-            const tiers = [
-                { name: 'Đỏ', key: 'red', color: 'red-400', icon: '🔴', desc: 'Chuỗi đạt kỷ lục hoặc Gap < Min (GE & Exact)' },
-                { name: 'Tím', key: 'purple', color: 'purple-400', icon: '🟣', desc: 'Tiềm năng: Pattern có kỷ lục 2 ngày' },
-                { name: 'Cam', key: 'orange', color: 'orange-400', icon: '🟠', desc: 'Gap < Min (chỉ GE hoặc Exact)' },
-                { name: 'Light Red', key: 'light_red', color: 'pink-400', icon: '🩷', desc: 'Threshold động để đủ 40 số' }
+            const subTierDefs = [
+                {
+                    name: '🔴 Đạt Kỷ Lục', key: 'achieved', color: 'red-400', bg: 'red', borderColor: '#dc2626',
+                    desc: 'Chuỗi hiện tại ĐÃ đạt mốc kỷ lục → Xác suất tiếp tục gần 0'
+                },
+                {
+                    name: '🟠 Tới Hạn Kỷ Lục', key: 'threshold', color: 'orange-400', bg: 'orange', borderColor: '#f97316',
+                    desc: 'Chuỗi sắp đạt kỷ lục (tần suất ≤ 1.5 lần/năm)'
+                },
+                {
+                    name: '🟣 Tới Hạn Siêu Kỷ Lục', key: 'superThreshold', color: 'purple-400', bg: 'purple', borderColor: '#9333ea',
+                    desc: 'Siêu kỷ lục cực hiếm (tần suất ≤ 0.5 lần/năm)'
+                }
             ];
-
             let tierHtml = '';
-            for (const tier of tiers) {
-                const nums = exclusionsByTier[tier.key] || [];
+            for (const st of subTierDefs) {
+                const nums = exclusionsBySubTier[st.key] || [];
                 if (nums.length > 0) {
-                    const tierBgColor = tier.key === 'red' ? 'red' : tier.key === 'purple' ? 'purple' : tier.key === 'orange' ? 'orange' : 'pink';
                     tierHtml += `
-                        <div class="border-b border-gray-700 pb-2">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-${tier.color} font-bold">${tier.icon} ${tier.name} (${nums.length} số)</span>
-                                <span class="text-xs text-gray-500">${tier.desc}</span>
+                        <div class="border-b border-gray-700 pb-3 mb-2">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-${st.color} font-bold">${st.name} (${nums.length} số)</span>
+                                <span class="text-xs text-gray-500">${st.desc}</span>
                             </div>
                             <div class="flex flex-wrap gap-1">
-                                ${nums.map(n => `<span class="px-1.5 py-0.5 bg-${tierBgColor}-900 bg-opacity-50 rounded text-xs text-${tier.color} font-medium">${String(n).padStart(2, '0')}</span>`).join('')}
+                                ${nums.map(n => `<span class="px-1.5 py-0.5 bg-${st.bg}-900 bg-opacity-50 rounded text-xs text-${st.color} font-medium">${String(n).padStart(2, '0')}</span>`).join('')}
                             </div>
                         </div>
                     `;
                 }
             }
-
             if (tierHtml) {
                 tierPreview.innerHTML = tierHtml;
             } else {
@@ -1523,7 +1543,7 @@
                                 <span class="text-xs text-gray-400">${exp.type || 'Pattern'}</span>
                             </div>
                             <div class="text-sm text-gray-300 mb-2">
-                                <strong>Pattern:</strong> ${exp.pattern || 'N/A'} | 
+                                <strong>Pattern:</strong> ${exp.pattern || exp.title || 'N/A'} | 
                                 <strong>Streak:</strong> ${exp.streak || 0} ngày | 
                                 <strong>Gap:</strong> ${exp.currentGap || 0} (Min: ${exp.minGapGE || 0} GE, ${exp.minGapExact || 0} Exact) |
                                 <strong>Kỷ lục:</strong> ${exp.maxStreak || 0} ngày
@@ -1543,6 +1563,41 @@
                 streaksContainer.innerHTML = '<p class="text-green-400">🎉 Không có chuỗi nào đang diễn ra cần loại trừ!</p>';
             }
 
+            // === GRID 100 SỐ: 4 màu (xanh=đánh, đỏ=đạt KL, cam=tới hạn KL, tím=siêu KL)
+            const grid100Container = document.getElementById('exclusionGrid100');
+            if (grid100Container) {
+                const toBetSet = new Set(toBet.map(n => parseInt(n)));
+                const achievedSet = new Set(achievedNums);
+                const thresholdSet = new Set(thresholdNums);
+                const superSet = new Set(superThresholdNums);
+
+                let gridHtml = '<div class="grid grid-cols-10 gap-1">';
+                for (let i = 0; i < 100; i++) {
+                    const numStr = String(i).padStart(2, '0');
+                    let cls = 'bg-green-900 text-green-300 border border-green-700'; // đánh
+                    let label = '';
+                    if (achievedSet.has(i)) {
+                        cls = 'bg-red-700 text-white border border-red-500 font-bold';
+                        label = '🔴';
+                    } else if (thresholdSet.has(i)) {
+                        cls = 'bg-orange-700 bg-opacity-80 text-white border border-orange-500 font-bold';
+                        label = '🟠';
+                    } else if (superSet.has(i)) {
+                        cls = 'bg-purple-700 text-white border border-purple-400 font-bold';
+                        label = '🟣';
+                    }
+                    gridHtml += `<div class="${cls} rounded text-center text-xs py-1 cursor-pointer hover:opacity-80 transition" onclick="showExclusionDetail('${numStr}')" title="${label || '✅'} ${numStr}">${numStr}</div>`;
+                }
+                gridHtml += '</div>';
+                gridHtml += `<div class="flex gap-4 mt-2 text-xs text-gray-400">
+                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 bg-green-900 border border-green-700 rounded"></span> Nên đánh (${toBet.length})</span>
+                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 bg-red-700 rounded"></span> Đạt KL (${achievedNums.length})</span>
+                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 bg-orange-700 rounded"></span> Tới hạn KL (${thresholdNums.length})</span>
+                    <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 bg-purple-700 rounded"></span> Siêu KL (${superThresholdNums.length})</span>
+                </div>`;
+                grid100Container.innerHTML = gridHtml;
+            }
+
             // Predictions (numbers to bet) - tất cả màu xanh
             const predContainer = document.getElementById('exclusionPredictions');
             predContainer.innerHTML = toBet.slice(0, 40).map((num, i) => {
@@ -1555,36 +1610,33 @@
                 `;
             }).join('');
 
-            // Exclusions (numbers to avoid) - màu theo Tier
+            // Exclusions (numbers to avoid) - màu theo 3 subTier
             const exclContainer = document.getElementById('exclusionExclusions');
             exclContainer.innerHTML = excluded.slice(0, 60).map((num) => {
-                // Xác định tier của số
+                // Xác định subTier của số
                 const numInt = parseInt(num);
                 let tierColor = 'gray';
                 let borderColor = 'gray';
                 let tierLabel = 'Loại trừ';
+                let bgStyle = '';
 
-                if (exclusionsByTier.red?.includes(numInt)) {
-                    tierColor = 'red';
-                    borderColor = 'red';
-                    tierLabel = '🔴 Đỏ';
-                } else if (exclusionsByTier.purple?.includes(numInt)) {
-                    tierColor = 'purple';
-                    borderColor = 'purple';
-                    tierLabel = '🟣 Tím';
-                } else if (exclusionsByTier.orange?.includes(numInt)) {
-                    tierColor = 'orange';
-                    borderColor = 'orange';
-                    tierLabel = '🟠 Cam';
-                } else if (exclusionsByTier.light_red?.includes(numInt)) {
-                    tierColor = 'pink';
-                    borderColor = 'pink';
-                    tierLabel = '🩷 LRed';
+                if (achievedNums.includes(numInt)) {
+                    tierColor = 'red'; borderColor = 'red';
+                    tierLabel = '🔴 Đạt KL';
+                    bgStyle = 'background: rgba(220,38,38,0.3);';
+                } else if (thresholdNums.includes(numInt)) {
+                    tierColor = 'orange'; borderColor = 'orange';
+                    tierLabel = '🟠 Tới Hạn KL';
+                    bgStyle = 'background: rgba(249,115,22,0.25);';
+                } else if (superThresholdNums.includes(numInt)) {
+                    tierColor = 'purple'; borderColor = 'purple';
+                    tierLabel = '🟣 Siêu KL';
+                    bgStyle = 'background: rgba(147,51,234,0.25);';
                 }
 
                 return `
                     <div class="stat-card bg-${tierColor}-900 bg-opacity-30 border-l-4 border-${borderColor}-500 text-center cursor-pointer hover:scale-105 transition"
-                         onclick="showExclusionDetail('${num}')">
+                         style="${bgStyle}" onclick="showExclusionDetail('${num}')">
                         <div class="font-bold text-2xl text-${tierColor}-400">${num}</div>
                         <div class="text-xs text-${tierColor}-300">${tierLabel}</div>
                     </div>
