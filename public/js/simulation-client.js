@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             analysisContent.innerHTML = `<p class="text-red-500">Lỗi: Dữ liệu phân tích không hợp lệ.</p>`;
             return;
         }
-        const { date, danh, betAmount, danhUnified, betAmountUnified, danhAdvanced, betAmountAdvanced, danhHybrid, betAmountHybrid, danhCombined, betAmountCombined } = data;
+        const { date, danh, betAmount, danhUnified, betAmountUnified, danhAdvanced, betAmountAdvanced, danhHybrid, betAmountHybrid, danhCombined, betAmountCombined, danhSmart, betAmountSmart } = data;
         const [year, month, day] = date.split('-');
         const formattedDate = new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('vi-VN');
 
@@ -82,6 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const hybridExclude = danhHybrid?.excluded || [];
         const combinedBet = danhCombined?.numbers || [];
         const combinedExclude = danhCombined?.excluded || [];
+        const smartBet = danhSmart?.numbers || [];
+        const smartExclude = danhSmart?.excluded || [];
 
         let html = `
             <div class="mb-6">
@@ -151,11 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <!-- METHOD 5: COMBINED -->
-                <div class="bg-pink-50 p-4 rounded-lg border-2 border-pink-200 lg:col-span-2">
+                <div class="bg-pink-50 p-4 rounded-lg border-2 border-pink-200">
                     <a href="/distribution#combined" class="text-lg font-bold text-pink-800 mb-3 block hover:underline">
-                        🔗 5. Combined (Tổng hợp 4 phương pháp) <i class="bi bi-box-arrow-up-right text-xs"></i>
+                        🔗 5. Combined (Tổng hợp) <i class="bi bi-box-arrow-up-right text-xs"></i>
                     </a>
-                    <p class="text-xs text-gray-500 mb-2">Tổng hợp cả 4 phương pháp: Exclusion, Unified, Advanced, Hybrid AI</p>
+                    <p class="text-xs text-gray-500 mb-2">Tổng hợp cả 4 phương pháp trên (loại trùng)</p>
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-sm text-gray-600">Cược: <span class="font-bold text-pink-600">${(betAmountCombined || 10).toLocaleString()}k/số</span></span>
                         <span class="text-xs"><span class="text-green-600 font-bold">${combinedBet.length}</span> đánh | <span class="text-red-600">${combinedExclude.length}</span> loại trừ</span>
@@ -164,11 +166,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${render100Numbers(combinedBet, combinedExclude, 'bg-pink-300 text-pink-900 border-pink-500')}
                     </div>
                 </div>
+
+                <!-- METHOD 6: EXCLUSION + -->
+                <div class="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
+                    <div class="text-lg font-bold text-yellow-800 mb-3 block">
+                        ⚡ 6. Exclusion + (Kỷ lục)
+                    </div>
+                    <p class="text-xs text-gray-500 mb-2">Chỉ đánh số sau khi loại trừ “Đạt kỷ lục” và “Tới hạn siêu kỷ lục” (chỉ RED+PURPLE)</p>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-sm text-gray-600">Cược: <span class="font-bold text-yellow-600">${(betAmountSmart || 10).toLocaleString()}k/số</span></span>
+                        <span class="text-xs"><span class="text-green-600 font-bold">${smartBet.length}</span> đánh | <span class="text-red-600">${smartExclude.length}</span> loại trừ</span>
+                    </div>
+                    <div class="number-grid-100 p-2 bg-white rounded-lg">
+                        ${render100Numbers(smartBet, smartExclude, 'bg-yellow-300 text-yellow-900 border-yellow-500')}
+                    </div>
+                </div>
             </div>
             
             <!-- Comparison note -->
             <div class="mt-4 p-3 bg-gray-100 rounded-lg text-sm text-gray-600">
-                <strong>💡 Ghi chú:</strong> So sánh 5 phương pháp song song. Combined tổng hợp cả 4 phương pháp khác (tối đa 60 số). Kết quả thực tế sẽ được cập nhật trong Lịch Sử Đối Chiếu bên dưới.
+                <strong>💡 Ghi chú:</strong> So sánh 5 phương pháp song song. Combined tổng hợp cả 4 phương pháp khác (tối đa 60 số). <strong>Exclusion +</strong> chỉ dùng loại trừ kỷ lục RED+PURPLE từ Distribution, đánh toàn bộ số còn lại. Kết quả thực tế sẽ được cập nhật trong Lịch Sử Đối Chiếu bên dưới.
             </div>
         `;
 
@@ -187,7 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unified: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
             advanced: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
             hybrid: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
-            combined: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 }
+            combined: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
+            smart: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 }
         };
 
         let tableHtml = `<table class="w-full text-xs text-left">
@@ -200,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th class="p-2 text-center bg-purple-50 border-l-2 border-purple-300" colspan="3">🔬 Advanced</th>
                     <th class="p-2 text-center bg-orange-50 border-l-2 border-orange-300" colspan="3">🤖 Hybrid AI</th>
                     <th class="p-2 text-center bg-pink-50 border-l-2 border-pink-300" colspan="3">🔗 Combined</th>
+                    <th class="p-2 text-center bg-yellow-50 border-l-2 border-yellow-300" colspan="3">⚡ Exclusion +</th>
                 </tr>
                 <tr class="text-[10px]">
                     <th class="p-1 text-center bg-blue-50 border-l-2 border-blue-300">Đánh</th>
@@ -217,6 +236,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th class="p-1 text-center bg-pink-50 border-l-2 border-pink-300">Đánh</th>
                     <th class="p-1 text-right bg-pink-50">Lãi/Lỗ</th>
                     <th class="p-1 text-center bg-pink-50">W/L</th>
+                    <th class="p-1 text-center bg-yellow-50 border-l-2 border-yellow-300">Đánh</th>
+                    <th class="p-1 text-right bg-yellow-50">Lãi/Lỗ</th>
+                    <th class="p-1 text-center bg-yellow-50">W/L</th>
                 </tr>
             </thead>
             <tbody>`;
@@ -233,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let advancedHtml = renderMethodCell(item, 'advanced', 'purple', stats.advanced);
             let hybridHtml = renderMethodCell(item, 'hybrid', 'orange', stats.hybrid);
             let combinedHtml = renderMethodCell(item, 'combined', 'pink', stats.combined);
+            let smartHtml = renderMethodCell(item, 'smart', 'yellow', stats.smart);
 
             tableHtml += `<tr class="border-b hover:bg-gray-50">
                 <td class="p-1 font-medium">${date}</td>
@@ -242,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${advancedHtml}
                 ${hybridHtml}
                 ${combinedHtml}
+                ${smartHtml}
             </tr>`;
         }
         tableHtml += `</tbody></table>`;
@@ -340,10 +364,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Hide all content
         document.getElementById('content-analysis').classList.add('hidden');
         document.getElementById('content-future').classList.add('hidden');
+        const backtestContent = document.getElementById('content-backtest');
+        if (backtestContent) backtestContent.classList.add('hidden');
 
         // Remove active from all tabs
         document.getElementById('tabAnalysis').classList.remove('active');
         document.getElementById('tabFuture').classList.remove('active');
+        const tabBacktest = document.getElementById('tabBacktest');
+        if (tabBacktest) tabBacktest.classList.remove('active');
 
         // Show selected content and activate tab
         if (tab === 'analysis') {
@@ -352,6 +380,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (tab === 'future') {
             document.getElementById('content-future').classList.remove('hidden');
             document.getElementById('tabFuture').classList.add('active');
+        } else if (tab === 'backtest') {
+            if (backtestContent) backtestContent.classList.remove('hidden');
+            if (tabBacktest) tabBacktest.classList.add('active');
         }
     };
 
@@ -744,6 +775,151 @@ document.addEventListener('DOMContentLoaded', () => {
 
         html += `</tbody></table>`;
         resultsTable.innerHTML = html;
+    }
+
+    // === BACKTEST FUNCTIONS ===
+    window.runBacktest = async function () {
+        const days = parseInt(document.getElementById('backtestDays').value) || 30;
+        const btn = document.getElementById('btnRunBacktest');
+        const progress = document.getElementById('backtestProgress');
+        const summary = document.getElementById('backtestSummary');
+        const results = document.getElementById('backtestResults');
+
+        btn.disabled = true;
+        progress.classList.remove('hidden');
+        summary.classList.add('hidden');
+        results.classList.add('hidden');
+
+        try {
+            const response = await fetch(`/api/simulation/backtest?days=${days}`);
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || 'Lỗi không xác định');
+            }
+
+            const data = await response.json();
+            renderBacktestSummary(data);
+            renderBacktestResults(data);
+
+            summary.classList.remove('hidden');
+            results.classList.remove('hidden');
+        } catch (error) {
+            alert('Lỗi: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            progress.classList.add('hidden');
+        }
+    };
+
+    function renderBacktestSummary(data) {
+        const container = document.getElementById('backtestSummaryCards');
+        const methods = [
+            { key: 'exclusion', name: '🚫 Exclusion', color: 'red' },
+            { key: 'unified', name: '🎯 Unified', color: 'blue' },
+            { key: 'advanced', name: '🔬 Advanced', color: 'purple' },
+            { key: 'hybridAI', name: '🤖 Hybrid AI', color: 'orange' },
+            { key: 'combined', name: '🔄 Combined', color: 'green' },
+            { key: 'smart20', name: '⚡ Exclusion +', color: 'yellow' }
+        ];
+
+        let html = '';
+        methods.forEach(m => {
+            const s = data.summary[m.key];
+            const winRate = parseFloat(s.winRate);
+            const rateClass = winRate >= 50 ? 'text-green-600' : (winRate >= 30 ? 'text-yellow-600' : 'text-red-600');
+
+            html += `
+                <div class="bg-${m.color}-50 border border-${m.color}-200 rounded-lg p-4">
+                    <h4 class="font-bold text-${m.color}-800 mb-2">${m.name}</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Tỷ lệ thắng:</span>
+                            <span class="font-bold ${rateClass}">${s.winRate}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Thắng/Thua:</span>
+                            <span><span class="text-green-600 font-bold">${s.wins}</span> / <span class="text-red-600">${s.losses}</span></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">TB số đánh:</span>
+                            <span class="font-semibold">${s.avgBets} số</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-${m.color}-200">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-${m.color}-600 h-2 rounded-full" style="width: ${Math.min(winRate, 100)}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    function renderBacktestResults(data) {
+        const container = document.getElementById('backtestResultsTable');
+
+        let html = `
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-gray-100 sticky top-0">
+                    <tr>
+                        <th class="p-2 text-left border-b">Ngày</th>
+                        <th class="p-2 text-center border-b">Số về</th>
+                        <th class="p-2 text-center border-b bg-red-50">🚫 Exclusion</th>
+                        <th class="p-2 text-center border-b bg-blue-50">🎯 Unified</th>
+                        <th class="p-2 text-center border-b bg-purple-50">🔬 Advanced</th>
+                        <th class="p-2 text-center border-b bg-orange-50">🤖 Hybrid</th>
+                        <th class="p-2 text-center border-b bg-green-50">🔄 Combined</th>
+                        <th class="p-2 text-center border-b bg-yellow-50">⚡ Exclusion +</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        const details = data.details || [];
+        details.forEach(d => {
+            html += `<tr class="border-b hover:bg-gray-50">
+                <td class="p-2 font-medium">${d.date}</td>
+                <td class="p-2 text-center">
+                    <span class="bg-yellow-500 text-white px-2 py-1 rounded font-bold">${d.actualNumber}</span>
+                </td>`;
+
+            const methods = [
+                { key: 'exclusion', bg: 'red' },
+                { key: 'unified', bg: 'blue' },
+                { key: 'advanced', bg: 'purple' },
+                { key: 'hybridAI', bg: 'orange' },
+                { key: 'combined', bg: 'green' },
+                { key: 'smart20', bg: 'yellow' }
+            ];
+
+            methods.forEach(m => {
+                const method = d[m.key];
+                const isWin = method.win;
+                const nums = method.numbers.join(', ');
+                const count = method.count;
+
+                html += `<td class="p-2 text-center bg-${m.bg}-50">
+                    <details class="cursor-pointer">
+                        <summary class="flex flex-col items-center gap-1">
+                            <span class="${isWin ? 'bg-green-500 text-white px-2 rounded' : 'bg-red-100 text-red-600 px-2 rounded'}">${isWin ? '✅ TRÚNG' : '❌ THUA'}</span>
+                            <span class="text-xs text-gray-500">${count} số</span>
+                        </summary>
+                        <div class="mt-2 p-2 bg-white rounded text-[10px] text-left max-w-xs">
+                            <div class="font-bold mb-1">Top 10 số:</div>
+                            <div class="break-words">${nums}...</div>
+                        </div>
+                    </details>
+                </td>`;
+            });
+
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
     }
 
     initializePage();
