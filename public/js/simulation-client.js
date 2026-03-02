@@ -198,14 +198,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Totals for 5 methods
+        // Totals for 6 methods
         let stats = {
-            exclusion: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
-            unified: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
-            advanced: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
-            hybrid: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
-            combined: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 },
-            smart: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0 }
+            exclusion: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
+            unified: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
+            advanced: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
+            hybrid: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
+            combined: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
+            smart: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 }
         };
 
         let tableHtml = `<table class="w-full text-xs text-left">
@@ -281,6 +281,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const result = item[resultKey];
         const danh = item[danhKey];
+        const numCount = danh?.numbers?.length || 0;
+
+        // Kiểm tra nếu ngày bỏ qua (skip) do > 65 số
+        if (result && result.skipped && result.winningNumber) {
+            if (totals) totals.skipDays++;
+            return `
+                <td class="p-1 text-center bg-${color}-50 border-l-2 border-${color}-300">
+                    <span class="text-gray-400 text-[10px]">${numCount}</span>
+                </td>
+                <td class="p-1 text-center bg-${color}-50 text-gray-400 text-[10px]">Bỏ qua</td>
+                <td class="p-1 text-center bg-${color}-50 text-gray-400">⏩</td>
+            `;
+        }
 
         if (result && result.winningNumber) {
             const winNum = result.winningNumber;
@@ -291,7 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
             totals.totalWin += result.winAmount || 0;
             if (isWin) totals.winDays++; else totals.loseDays++;
 
-            const numCount = danh?.numbers?.length || 0;
             return `
                 <td class="p-1 text-center bg-${color}-50 border-l-2 border-${color}-300">
                     <details class="cursor-pointer"><summary class="text-${color}-600">${numCount}</summary>
@@ -301,11 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     </details>
                 </td>
                 <td class="p-1 text-right bg-${color}-50 font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}">${Math.round(profit).toLocaleString()}k</td>
-                <td class="p-1 text-center bg-${color}-50">${isWin ? '✅' : '❌'}</td>
+                <td class="p-1 text-center bg-${color}-50">${isWin ? '\u2705' : '\u274c'}</td>
             `;
         } else if (danh && danh.numbers) {
             return `
-                <td class="p-1 text-center bg-${color}-50 border-l-2 border-${color}-300">${danh.numbers.length}</td>
+                <td class="p-1 text-center bg-${color}-50 border-l-2 border-${color}-300">${numCount}</td>
                 <td class="p-1 text-center bg-${color}-50 text-gray-400" colspan="2">⏳</td>
             `;
         } else {
@@ -319,15 +331,17 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'unified', name: '🌟 Unified', color: 'green' },
             { key: 'advanced', name: '🔬 Advanced', color: 'purple' },
             { key: 'hybrid', name: '🤖 Hybrid AI', color: 'orange' },
-            { key: 'combined', name: '🔗 Combined', color: 'pink' }
+            { key: 'combined', name: '🔗 Combined', color: 'pink' },
+            { key: 'smart', name: '⚡ Exclusion +', color: 'yellow' }
         ];
 
-        let summaryHtml = `<div class="mt-4 grid grid-cols-2 lg:grid-cols-5 gap-3">`;
+        let summaryHtml = `<div class="mt-4 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">`;
 
         for (const m of methods) {
             const s = stats[m.key];
             const profit = s.totalWin - s.totalBet;
             const winRate = s.winDays + s.loseDays > 0 ? ((s.winDays / (s.winDays + s.loseDays)) * 100).toFixed(1) : '-';
+            const skipNote = s.skipDays > 0 ? `<div><span class="text-gray-500">Bỏ qua:</span> <span class="font-bold text-gray-600">${s.skipDays} ngày</span></div>` : '';
 
             summaryHtml += `
                 <div class="p-3 bg-${m.color}-50 rounded-lg border-2 border-${m.color}-200">
@@ -337,6 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div><span class="text-gray-600">Thắng:</span> <span class="font-bold text-green-600">${s.totalWin.toLocaleString()}k</span></div>
                         <div><span class="text-gray-600">Lãi/Lỗ:</span> <span class="font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}">${profit.toLocaleString()}k</span></div>
                         <div><span class="text-gray-600">Tỷ lệ:</span> <span class="font-bold">${winRate}% (${s.winDays}W/${s.loseDays}L)</span></div>
+                        ${skipNote}
                     </div>
                 </div>
             `;
@@ -344,17 +359,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         summaryHtml += `</div>`;
 
-        // Best method comparison
-        const profits = methods.map(m => ({ key: m.key, name: m.name, profit: stats[m.key].totalWin - stats[m.key].totalBet }));
-        profits.sort((a, b) => b.profit - a.profit);
-        const best = profits[0];
-
-        summaryHtml += `
-            <div class="mt-3 p-3 bg-gray-100 rounded-lg text-center text-sm">
-                <strong>🏆 Phương pháp tốt nhất:</strong> 
-                <span class="font-bold ${best.profit >= 0 ? 'text-green-600' : 'text-red-600'}">${best.name} (${best.profit >= 0 ? '+' : ''}${best.profit.toLocaleString()}k)</span>
-            </div>
-        `;
+        // Best method comparison (chỉ tính phương pháp có bet > 0)
+        const profits = methods
+            .filter(m => stats[m.key].totalBet > 0)
+            .map(m => ({ key: m.key, name: m.name, profit: stats[m.key].totalWin - stats[m.key].totalBet }));
+        if (profits.length > 0) {
+            profits.sort((a, b) => b.profit - a.profit);
+            const best = profits[0];
+            summaryHtml += `
+                <div class="mt-3 p-3 bg-gray-100 rounded-lg text-center text-sm">
+                    <strong>🏆 Phương pháp tốt nhất:</strong> 
+                    <span class="font-bold ${best.profit >= 0 ? 'text-green-600' : 'text-red-600'}">${best.name} (${best.profit >= 0 ? '+' : ''}${best.profit.toLocaleString()}k)</span>
+                </div>
+            `;
+        }
 
         return summaryHtml;
     }

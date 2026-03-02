@@ -52,18 +52,26 @@ async function checkAndUpdateHistory() {
         const totalLossSoFarUnified = lastPredictionIndex >= 0 ? (predictions[lastPredictionIndex].resultUnified?.totalLossToDate || 0) : 0;
         const totalLossSoFarAdvanced = lastPredictionIndex >= 0 ? (predictions[lastPredictionIndex].resultAdvanced?.totalLossToDate || 0) : 0;
 
-        // ========== PHƯƠNG PHÁP 1: EXCLUSION ==========
+        // ========== PHƯƠNG PHÁP 1: EXCLUSION (Bỏ qua nếu > 65 số) ==========
         if (predictionToUpdate.danh && predictionToUpdate.danh.numbers && predictionToUpdate.danh.numbers.length > 0) {
-            const betAmount = predictionToUpdate.betAmount;
-            const calculation = calculateWinLoss(predictionToUpdate.danh.numbers, winningNumber, betAmount, totalLossSoFar);
-            predictionToUpdate.result = {
-                winningNumber,
-                totalBet: calculation.totalBet,
-                winAmount: calculation.winAmount,
-                profit: calculation.profit,
-                totalLossToDate: calculation.totalLossToDate,
-                isWin: calculation.isWin
-            };
+            const exclusionCount = predictionToUpdate.danh.numbers.length;
+            if (exclusionCount > 65) {
+                // Bỏ qua ngày này - quá nhiều số
+                predictionToUpdate.result = { winningNumber, totalBet: 0, winAmount: 0, profit: 0, totalLossToDate: totalLossSoFar, isWin: false, skipped: true, skipReason: `Vượt 65 số (${exclusionCount} số)` };
+                console.log(`[Daily Analysis] Exclusion: Bỏ QUA (${exclusionCount} số > 65)`);
+            } else {
+                const betAmount = predictionToUpdate.betAmount;
+                const calculation = calculateWinLoss(predictionToUpdate.danh.numbers, winningNumber, betAmount, totalLossSoFar);
+                predictionToUpdate.result = {
+                    winningNumber,
+                    totalBet: calculation.totalBet,
+                    winAmount: calculation.winAmount,
+                    profit: calculation.profit,
+                    totalLossToDate: calculation.totalLossToDate,
+                    isWin: calculation.isWin
+                };
+                console.log(`[Daily Analysis] Exclusion: ${calculation.isWin ? 'THắNG' : 'THUA'} (${winningNumber}) - ${exclusionCount} số`);
+            }
         } else {
             predictionToUpdate.result = { winningNumber, totalBet: 0, winAmount: 0, profit: 0, totalLossToDate: totalLossSoFar, isWin: false, skipped: true };
         }
@@ -130,20 +138,27 @@ async function checkAndUpdateHistory() {
             console.log(`[Daily Analysis] Combined: ${calcCombined.isWin ? 'THẮNG' : 'THUA'} (${winningNumber})`);
         }
 
-        // ========== PHƯƠNG PHÁP 6: SMART PICK (Chọn lọc thông minh) ==========
+        // ========== PHƯƠNG PHÁP 6: EXCLUSION + (Bỏ qua nếu > 65 số) ==========
         const totalLossSoFarSmart = lastPredictionIndex >= 0 ? (predictions[lastPredictionIndex].resultSmart?.totalLossToDate || 0) : 0;
         if (predictionToUpdate.danhSmart && predictionToUpdate.danhSmart.numbers && predictionToUpdate.danhSmart.numbers.length > 0) {
-            const betAmountSmart = predictionToUpdate.betAmountSmart || 10;
-            const calcSmart = calculateWinLoss(predictionToUpdate.danhSmart.numbers, winningNumber, betAmountSmart, totalLossSoFarSmart);
-            predictionToUpdate.resultSmart = {
-                winningNumber,
-                totalBet: calcSmart.totalBet,
-                winAmount: calcSmart.winAmount,
-                profit: calcSmart.profit,
-                totalLossToDate: calcSmart.totalLossToDate,
-                isWin: calcSmart.isWin
-            };
-            console.log(`[Daily Analysis] Smart Pick: ${calcSmart.isWin ? 'THẮNG' : 'THUA'} (${winningNumber})`);
+            const smartCount = predictionToUpdate.danhSmart.numbers.length;
+            if (smartCount > 65) {
+                // Bỏ qua ngày này - quá nhiều số
+                predictionToUpdate.resultSmart = { winningNumber, totalBet: 0, winAmount: 0, profit: 0, totalLossToDate: totalLossSoFarSmart, isWin: false, skipped: true, skipReason: `Vượt 65 số (${smartCount} số)` };
+                console.log(`[Daily Analysis] Exclusion +: Bỏ QUA (${smartCount} số > 65)`);
+            } else {
+                const betAmountSmart = predictionToUpdate.betAmountSmart || 10;
+                const calcSmart = calculateWinLoss(predictionToUpdate.danhSmart.numbers, winningNumber, betAmountSmart, totalLossSoFarSmart);
+                predictionToUpdate.resultSmart = {
+                    winningNumber,
+                    totalBet: calcSmart.totalBet,
+                    winAmount: calcSmart.winAmount,
+                    profit: calcSmart.profit,
+                    totalLossToDate: calcSmart.totalLossToDate,
+                    isWin: calcSmart.isWin
+                };
+                console.log(`[Daily Analysis] Exclusion +: ${calcSmart.isWin ? 'THắNG' : 'THUA'} (${winningNumber}) - ${smartCount} số`);
+            }
         }
 
         await fs.writeFile(PREDICTIONS_PATH, JSON.stringify(predictions, null, 2));
@@ -542,11 +557,16 @@ async function syncPredictionHistory() {
             // Có kết quả -> Tính toán lại
             const winningNumber = actualSpecial.toString().padStart(2, '0');
 
-            // 1. EXCLUSION
+            // 1. EXCLUSION (Bỏ qua nếu > 65 số)
             if (pred.danh && pred.danh.numbers && pred.danh.numbers.length > 0) {
-                const calculation = calculateWinLoss(pred.danh.numbers, winningNumber, pred.betAmount || 10, totalLossSoFar);
-                pred.result = { ...calculation, winningNumber };
-                totalLossSoFar = calculation.totalLossToDate;
+                const exclusionCount = pred.danh.numbers.length;
+                if (exclusionCount > 65) {
+                    pred.result = { winningNumber, totalBet: 0, winAmount: 0, profit: 0, totalLossToDate: totalLossSoFar, isWin: false, skipped: true, skipReason: `Vượt 65 số (${exclusionCount} số)` };
+                } else {
+                    const calculation = calculateWinLoss(pred.danh.numbers, winningNumber, pred.betAmount || 10, totalLossSoFar);
+                    pred.result = { ...calculation, winningNumber };
+                    totalLossSoFar = calculation.totalLossToDate;
+                }
             } else {
                 pred.result = { winningNumber, totalBet: 0, winAmount: 0, profit: 0, totalLossToDate: totalLossSoFar, isWin: false, skipped: true };
             }
@@ -579,11 +599,16 @@ async function syncPredictionHistory() {
                 totalLossSoFarCombined = calc.totalLossToDate;
             } else { pred.resultCombined = null; }
 
-            // 6. SMART PICK
+            // 6. EXCLUSION + (Bỏ qua nếu > 65 số)
             if (pred.danhSmart && pred.danhSmart.numbers && pred.danhSmart.numbers.length > 0) {
-                const calc = calculateWinLoss(pred.danhSmart.numbers, winningNumber, pred.betAmountSmart || 10, totalLossSoFarSmart);
-                pred.resultSmart = { ...calc, winningNumber };
-                totalLossSoFarSmart = calc.totalLossToDate;
+                const smartCount = pred.danhSmart.numbers.length;
+                if (smartCount > 65) {
+                    pred.resultSmart = { winningNumber, totalBet: 0, winAmount: 0, profit: 0, totalLossToDate: totalLossSoFarSmart, isWin: false, skipped: true, skipReason: `Vượt 65 số (${smartCount} số)` };
+                } else {
+                    const calc = calculateWinLoss(pred.danhSmart.numbers, winningNumber, pred.betAmountSmart || 10, totalLossSoFarSmart);
+                    pred.resultSmart = { ...calc, winningNumber };
+                    totalLossSoFarSmart = calc.totalLossToDate;
+                }
             } else { pred.resultSmart = null; }
 
             updatedCount++;
