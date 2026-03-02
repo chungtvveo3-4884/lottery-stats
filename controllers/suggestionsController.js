@@ -79,43 +79,46 @@ exports.getSuggestions = async (req, res) => {
 
             let shouldExclude = false;
             let reason = '';
-            let tier = null; // 'red', 'purple', 'light_red', 'orange', 'light_orange'
-            let subTier = null; // 'achieved' | 'threshold' | 'superThreshold'
+            let tier = null; // 'red', 'purple'
+            let subTier = null; // 'achieved' | 'achievedSuper' | 'threshold' | 'superThreshold'
 
-            // --- YÊU CẦU MỚI: Dự đoán Kỷ lục/Siêu KL cho ngày tiếp theo ---
+            // --- YÊu CẦU MỚI: Dự đoán Kỷ lục/Siêu KL cho ngày tiếp theo ---
             const lotteryService = require('../services/lotteryService');
             const totalYears = lotteryService.getTotalYears();
             const targetCount = gapInfoExact ? gapInfoExact.count : 0;
             const targetFreqYear = targetCount / totalYears;
+            const isSuper = targetFreqYear <= 0.5 || stat.isSuperMaxThreshold;
 
             if (targetFreqYear <= 1.5 || (currentLen >= recordLen && recordLen > 0)) {
                 shouldExclude = true;
-                const isSuper = targetFreqYear <= 0.5 || stat.isSuperMaxThreshold;
-                if (currentLen >= recordLen && recordLen > 0) {
-                    tier = 'red';
-                    subTier = 'achieved'; // Đạt kỷ lục
-                } else if (isSuper) {
-                    tier = 'purple';
-                    subTier = 'superThreshold'; // Tới hạn siêu kỷ lục
-                } else {
-                    tier = 'red';
-                    subTier = 'threshold'; // Tới hạn kỷ lục
-                }
-                const recordType = isSuper ? 'Siêu Kỷ Lục' : 'Kỷ Lục';
 
                 if (currentLen >= recordLen && recordLen > 0) {
-                    reason = `[ĐỎ] Chuỗi hiện tại (${currentLen} ngày) ĐÃ đạt ${recordType} (${recordLen} ngày). Xác suất tiếp tục gần như bằng 0.`;
+                    if (isSuper) {
+                        // Đạt SIÊu kỷ lục
+                        tier = 'purple';
+                        subTier = 'achievedSuper';
+                        reason = `[TÍM ĐẬM] Chuỗi hiện tại (${currentLen} ngày) ĐÃ ĐẠT SIÊu KỸ LỤC (${recordLen} ngày). Cực kỳ hiếm!`;
+                    } else {
+                        // Đạt kỷ lục thường
+                        tier = 'red';
+                        subTier = 'achieved';
+                        reason = `[Đᷠ] Chuỗi hiện tại (${currentLen} ngày) ĐÃ đạt Kỷ Lục (${recordLen} ngày). Xác suất tiếp tục gần như bằng 0.`;
+                    }
                 } else if (isSuper) {
-                    reason = `[TÍM] TỚI HẠN SIÊU KỶ LỤC: Chuỗi ${targetLen} ngày là Siêu KL (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
+                    // Tới hạn SIÊu kỷ lục
+                    tier = 'purple';
+                    subTier = 'superThreshold';
+                    reason = `[TÍM] TỚI HẠN SIÊu KỸ LỤC: Chuỗi ${targetLen} ngày là Siêu KL (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
                 } else {
-                    reason = `[ĐỎ] TỚI HẠN KỶ LỤC: Chuỗi ${targetLen} ngày là Kỷ Lục (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
+                    // Tới hạn kỷ lục thường
+                    tier = 'red';
+                    subTier = 'threshold';
+                    reason = `[Đᷠ] TỚI HẠN KỸ LỤC: Chuỗi ${targetLen} ngày là Kỷ Lục (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
                 }
                 reason = formatSequence(reason);
             }
 
-            // 2. BỎ QUA KIỂM TRA GAP THEO YÊU CẦU MỚI "trước mắt sẽ chỉ loại trừ nếu đạt kỷ lục"
-            // (Không áp dụng gap rules)
-
+            // 2. BỢ QUA KIỂM TRA GAP THEO YÊu CẦU MỚI
             // Only add RED and PURPLE tier patterns immediately 
             if (shouldExclude && (tier === 'red' || tier === 'purple')) {
                 addExcludedNumber(stat, key, reason, tier, subTier);
@@ -911,10 +914,13 @@ exports.getSuggestions = async (req, res) => {
                 orange: [],
                 light_red: []
             },
-            // Phân loại theo 3 subTier để hiển thị màu khác nhau
+            // Phân loại theo 4 subTier để hiển thị màu khác nhau
             exclusionsBySubTier: {
                 achieved: Array.from(exclusionsByTier['red'])
                     .filter(([, v]) => v.subTier === 'achieved')
+                    .map(([n]) => n),
+                achievedSuper: Array.from(exclusionsByTier['purple'])
+                    .filter(([, v]) => v.subTier === 'achievedSuper')
                     .map(([n]) => n),
                 threshold: Array.from(exclusionsByTier['red'])
                     .filter(([, v]) => v.subTier === 'threshold')
@@ -925,6 +931,7 @@ exports.getSuggestions = async (req, res) => {
             },
             countBySubTier: {
                 achieved: Array.from(exclusionsByTier['red']).filter(([, v]) => v.subTier === 'achieved').length,
+                achievedSuper: Array.from(exclusionsByTier['purple']).filter(([, v]) => v.subTier === 'achievedSuper').length,
                 threshold: Array.from(exclusionsByTier['red']).filter(([, v]) => v.subTier === 'threshold').length,
                 superThreshold: Array.from(exclusionsByTier['purple']).filter(([, v]) => v.subTier === 'superThreshold').length
             },
