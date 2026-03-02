@@ -291,19 +291,19 @@
                     <div class="stat-card text-center p-3 border-l-2 border-red-600">
                         <div class="text-lg">🔴</div>
                         <div class="text-xs text-gray-400 mt-1">Đã đạt mốc kỷ lục</div>
-                        <div class="text-sm text-red-400 font-bold">ĐẠT KỸ LỤC</div>
+                        <div class="text-sm text-red-400 font-bold">ĐẠT KỶ LỤC</div>
                         <div class="text-[10px] text-gray-500">Xác suất tiếp ≈ 0</div>
                     </div>
                     <div class="stat-card text-center p-3 border-l-2 border-orange-500">
                         <div class="text-lg">🟠</div>
                         <div class="text-xs text-gray-400 mt-1">Tần suất ≤ 1.5 lần/năm</div>
-                        <div class="text-sm text-orange-400 font-bold">TỚI HẠN KỸ LỤC</div>
+                        <div class="text-sm text-orange-400 font-bold">TỚI HẠN KỶ LỤC</div>
                         <div class="text-[10px] text-gray-500">Sắp phá kỷ lục, rất khó</div>
                     </div>
                     <div class="stat-card text-center p-3 border-l-2" style="border-color:#7c3aed">
                         <div class="text-lg">🟡</div>
                         <div class="text-xs text-gray-400 mt-1">Đã đạt SIÊU kỷ lục</div>
-                        <div class="text-sm font-bold" style="color:#7c3aed">ĐẠT SIÊu KỸ LỤC</div>
+                        <div class="text-sm font-bold" style="color:#7c3aed">ĐẠT SIÊu KỶ LỤC</div>
                         <div class="text-[10px] text-gray-500">Cực kỳ hiếm, gần 0</div>
                     </div>
                     <div class="stat-card text-center p-3 border-l-2 border-purple-400">
@@ -321,13 +321,21 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(59, 130, 246, 0.4);">
                     <h3 class="text-lg font-bold mb-4 text-blue-400">
-                        <i class="bi bi-check-circle mr-2"></i>📊 Exclusion: Số NÊN Đánh
+                        <i class="bi bi-check-circle mr-2"></i>📊 Exclusion vs Exclusion+: Số NÊN Đánh
                     </h3>
-                    <p class="text-gray-400 text-sm mb-4">Các số sau loại trừ Exclusion (4 loại) — không thuộc chuỗi
-                        loại trừ nào
-                    </p>
+                    <p class="text-gray-400 text-sm mb-2">Phân biệt số đánh của 2 phương pháp:</p>
+                    <div class="flex flex-wrap gap-3 text-xs mb-4">
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded"
+                                style="background:rgba(37,99,235,0.6);border:1px solid #3b82f6"></span> <span
+                                style="color:#93c5fd">Cả 2 PP đều đánh (Exclusion + Exclusion+)</span></span>
+                        <span class="flex items-center gap-1"><span class="inline-block w-3 h-3 rounded"
+                                style="background:rgba(6,182,212,0.3);border:1px solid #22d3ee"></span> <span
+                                style="color:#67e8f9">Chỉ Exclusion+ đánh (Exclusion loại do
+                                Threshold/cam)</span></span>
+                    </div>
                     <div class="grid grid-cols-4 md:grid-cols-5 gap-3" id="exclusionPredictions"></div>
                 </div>
+
 
                 <!-- Numbers to AVOID -->
                 <div class="glass-card rounded-2xl p-6" style="border: 2px solid rgba(239, 68, 68, 0.3);">
@@ -1537,13 +1545,13 @@
                     let tierLabel = '';
 
                     if (exp.subTier === 'achieved') {
-                        borderColor = 'red'; bgColor = 'red'; tierLabel = '🔴 ĐẠT KỸ LỤC';
+                        borderColor = 'red'; bgColor = 'red'; tierLabel = '🔴 ĐẠT KỶ LỤC';
                     } else if (exp.subTier === 'achievedSuper') {
-                        borderColor = 'purple'; bgColor = 'purple'; tierLabel = '🟡 ĐẠT SIÊU KỸ LỤC';
+                        borderColor = 'purple'; bgColor = 'purple'; tierLabel = '🟡 ĐẠT SIÊU KỶ LỤC';
                     } else if (exp.subTier === 'threshold') {
-                        borderColor = 'orange'; bgColor = 'orange'; tierLabel = '🟠 TỚI HẠN KỸ LỤC';
+                        borderColor = 'orange'; bgColor = 'orange'; tierLabel = '🟠 TỚI HẠN KỶ LỤC';
                     } else if (exp.subTier === 'superThreshold') {
-                        borderColor = 'purple'; bgColor = 'purple'; tierLabel = '🟣 TỚI HẠN SIÊU KỸ LỤC';
+                        borderColor = 'purple'; bgColor = 'purple'; tierLabel = '🟣 TỚI HẠN SIÊU KỶ LỤC';
                     } else if (exp.tier === 'red') {
                         borderColor = 'red'; bgColor = 'red'; tierLabel = '🔴 ĐỎ (Loại trừ ngay)';
                     } else if (exp.tier === 'purple') {
@@ -1626,18 +1634,39 @@
                 grid100Container.innerHTML = gridHtml;
             }
 
-            // Predictions (numbers to bet) - màu xanh dương (Exclusion)
+            // Predictions (numbers to bet) - 2 nhóm màu (Exclusion vs chỉ Exclusion+)
             const predContainer = document.getElementById('exclusionPredictions');
-            predContainer.innerHTML = toBet.slice(0, 40).map((num, i) => {
-                return `
+            // thịBet = số đánh của Exclusion (khắng khưa nhất, ít nhất)
+            // thresholdNums = số bị Exclusion loại (cam) nhưng Exclusion+ không loại
+            const toBetSet = new Set(toBet.map(n => parseInt(n)));
+            const exclusionPlusBet = allNumbers.filter(n => !exclusionPlusNums.has(parseInt(n)));
+
+            let betHtml = '';
+            // Nhóm 1: Số Exclusion (đầu xanh dương đậm) - cả 2 PP đều đánh
+            betHtml += `<div class="col-span-full mb-1"><span class="text-xs" style="color:#60a5fa">&#128309; Cả 2 PP đều đánh (${toBet.length} số) &mdash; <strong>Exclusion</strong> + Exclusion +</span></div>`;
+            betHtml += toBet.map(num => `
+                <div class="stat-card text-center cursor-pointer hover:scale-105 transition"
+                     style="background:rgba(37,99,235,0.25); border-left:4px solid #3b82f6;"
+                     onclick="showExclusionDetail('${num}')">
+                    <div class="font-bold text-2xl" style="color:#93c5fd">${num}</div>
+                    <div class="text-xs" style="color:#60a5fa">📊 Cả 2 PP</div>
+                </div>`).join('');
+
+            // Nhóm 2: Chỉ Exclusion+ đánh (xanh nhạt cyan) - Exclusion loại bỏ do Threshold (cam)
+            const exclusionPlusOnlyBet = exclusionPlusBet.filter(n => !toBetSet.has(parseInt(n)));
+            if (exclusionPlusOnlyBet.length > 0) {
+                betHtml += `<div class="col-span-full mt-3 mb-1"><span class="text-xs" style="color:#22d3ee">&#10133; Chỉ Exclusion+ đánh (${exclusionPlusOnlyBet.length} số) &mdash; Exclusion loại (Cam)</span></div>`;
+                betHtml += exclusionPlusOnlyBet.map(num => `
                     <div class="stat-card text-center cursor-pointer hover:scale-105 transition"
-                         style="background:rgba(37,99,235,0.2); border-left:4px solid #3b82f6;"
+                         style="background:rgba(6,182,212,0.12); border-left:4px solid #22d3ee; opacity:0.8"
                          onclick="showExclusionDetail('${num}')">
-                        <div class="font-bold text-2xl" style="color:#93c5fd">${num}</div>
-                        <div class="text-xs" style="color:#60a5fa">📊 Đánh</div>
-                    </div>
-                `;
-            }).join('');
+                        <div class="font-bold text-2xl" style="color:#67e8f9">${num}</div>
+                        <div class="text-xs" style="color:#22d3ee">⚡ Ex+ only</div>
+                    </div>`).join('');
+            }
+
+            predContainer.className = 'grid grid-cols-4 md:grid-cols-5 gap-3';
+            predContainer.innerHTML = betHtml;
 
             // Exclusions (numbers to avoid) - màu theo 4 subTier
             const exclContainer = document.getElementById('exclusionExclusions');

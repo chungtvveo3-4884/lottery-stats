@@ -97,7 +97,7 @@ exports.getSuggestions = async (req, res) => {
                         // Đạt SIÊu kỷ lục
                         tier = 'purple';
                         subTier = 'achievedSuper';
-                        reason = `[TÍM ĐẬM] Chuỗi hiện tại (${currentLen} ngày) ĐÃ ĐẠT SIÊu KỸ LỤC (${recordLen} ngày). Cực kỳ hiếm!`;
+                        reason = `[TÍM ĐẬM] Chuỗi hiện tại (${currentLen} ngày) ĐÃ ĐẠT SIÊu KỶ LỤC (${recordLen} ngày). Cực kỳ hiếm!`;
                     } else {
                         // Đạt kỷ lục thường
                         tier = 'red';
@@ -108,12 +108,12 @@ exports.getSuggestions = async (req, res) => {
                     // Tới hạn SIÊu kỷ lục
                     tier = 'purple';
                     subTier = 'superThreshold';
-                    reason = `[TÍM] TỚI HẠN SIÊu KỸ LỤC: Chuỗi ${targetLen} ngày là Siêu KL (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
+                    reason = `[TÍM] TỚI HẠN SIÊu KỶ LỤC: Chuỗi ${targetLen} ngày là Siêu KL (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
                 } else {
                     // Tới hạn kỷ lục thường
                     tier = 'red';
                     subTier = 'threshold';
-                    reason = `[Đᷠ] TỚI HẠN KỸ LỤC: Chuỗi ${targetLen} ngày là Kỷ Lục (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
+                    reason = `[Đᷠ] TỚI HẠN KỶ LỤC: Chuỗi ${targetLen} ngày là Kỷ Lục (chỉ xuất hiện ${targetFreqYear.toFixed(2)} lần/năm). Lên tiếp cực khó!`;
                 }
                 reason = formatSequence(reason);
             }
