@@ -138,16 +138,28 @@ async function getExclusions(lotteryData, currentIndex, globalStats, options = {
         const targetFreqYear = targetCount / totalYears;
 
         // --- YÊU CẦU MỚI: Chỉ loại trừ khi đã đạt kỷ lục hoặc TỚI HẠN Kỷ lục (freq <= 1.5) ---
+        const isSuper = targetFreqYear <= 0.5 || stat.isSuperMaxThreshold;
+
         if (targetFreqYear <= 1.5 || (currentLen >= recordLen && recordLen > 0)) {
             shouldExclude = true;
-            tier = 'red';
+            // Đồng bộ với suggestionsController: phân biệt red vs purple
+            if (currentLen >= recordLen && recordLen > 0) {
+                // Đạt kỷ lục: siêu KL → purple, thường → red
+                tier = isSuper ? 'purple' : 'red';
+            } else if (isSuper) {
+                // Tới hạn siêu kỷ lục → purple
+                tier = 'purple';
+            } else {
+                // Tới hạn kỷ lục thường → red
+                tier = 'red';
+            }
         }
 
         // BỎ QUA KIỂM TRA GAP THEO YÊU CẦU MỚI "trước mắt sẽ chỉ loại trừ nếu đạt kỷ lục"
         // (Không thêm vào pendingOrange hay tier khác)
 
-        // Only process RED tier immediately
-        if (shouldExclude && tier === 'red') {
+        // Only process RED and PURPLE tiers (đồng bộ với suggestionsController)
+        if (shouldExclude && (tier === 'red' || tier === 'purple')) {
             // Resolve numbers using the same logic as suggestionsController
             let nums = [];
 
