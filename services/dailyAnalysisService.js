@@ -194,30 +194,42 @@ async function analyzeAndSavePrediction() {
         predictions.splice(existingIndex, 1);
     }
 
-    // Logic phân tích dựa trên loại trừ - ĐỒNG NHẤT với suggestionsController
-    const globalStats = await statisticsService.getStatsData();
-    console.log(`[Daily Analysis] Global Stats Keys: ${Object.keys(globalStats).length}`);
+    // ============ EXCLUSION & EXCLUSION+ - DÙNG CHUNG suggestionsController ============
+    // Đồng bộ hoàn toàn với Distribution tab: dùng suggestionsController làm nguồn duy nhất
+    // - Exclusion: loại CẢ 4 subTier (achieved + achievedSuper + threshold + superThreshold) → numbersToBet
+    // - Exclusion+: loại 3 subTier (achieved + achievedSuper + superThreshold, KHÔNG loại threshold/cam)
+    console.log('[Daily Analysis] Đang lấy dữ liệu từ suggestionsController (đồng bộ Distribution)...');
 
-    // currentIndex là index của ngày cuối cùng có kết quả (để dự đoán cho ngày mai)
-    const currentIndex = rawData.length - 1;
-    console.log(`[Daily Analysis] Current Index: ${currentIndex}, Raw Data Length: ${rawData.length}`);
-
-    // Sử dụng getExclusions với logic tier (đỏ, tím, cam, light_red) - ĐỒNG NHẤT với suggestionsController
-    // exclusionService đã tự động điều chỉnh để đảm bảo 20-40 số đánh
-    const excludedNumbers = await exclusionService.getExclusions(rawData, currentIndex, globalStats);
-    console.log(`[Daily Analysis] Excluded Numbers Count: ${excludedNumbers.size}`);
-
-    // Tạo dàn số đánh (Tất cả - Loại trừ)
     const allNumbers = Array.from({ length: 100 }, (_, k) => k.toString().padStart(2, '0'));
-    let numbersBet = allNumbers.filter(n => !excludedNumbers.has(parseInt(n, 10)));
+    let suggestionsData = null;
+    try {
+        await new Promise((resolve) => {
+            const mockReq = { query: {} };
+            const mockRes = {
+                json: (data) => { suggestionsData = data; resolve(); },
+                status: () => mockRes
+            };
+            suggestionsController.getSuggestions(mockReq, mockRes).catch(() => resolve());
+        });
+    } catch (e) {
+        console.error('[Daily Analysis] Lỗi khi lấy suggestions:', e.message);
+    }
 
-    // exclusionService đã tự động điều chỉnh để đạt 20-40 số đánh
-    // Chỉ cảnh báo nếu vẫn nằm ngoài phạm vi (hiếm khi xảy ra)
+    let numbersBet = [];
+    let excludedNumbers = new Set();
     let isSkipped = false;
 
-    if (numbersBet.length < 20 || numbersBet.length > 40) {
-        console.log(`[Daily Analysis] WARNING: Bet count ${numbersBet.length} is outside 20-40 range`);
-        // Không skip, vẫn tiếp tục với số đánh hiện tại
+    if (suggestionsData && suggestionsData.numbersToBet) {
+        // Exclusion = numbersToBet = 100 - (achieved ∪ achievedSuper ∪ threshold ∪ superThreshold)
+        numbersBet = suggestionsData.numbersToBet.map(n => String(n).padStart(2, '0')).sort();
+        (suggestionsData.excludedNumbers || []).forEach(n => excludedNumbers.add(parseInt(n)));
+        console.log(`[Daily Analysis] Exclusion (4 subTier): ${numbersBet.length} số đánh, ${excludedNumbers.size} loại trừ`);
+    } else {
+        // Fallback: dùng exclusionService nếu suggestionsController lỗi
+        const fallbackExcl = await exclusionService.getExclusions(rawData, rawData.length - 1, {});
+        numbersBet = allNumbers.filter(n => !fallbackExcl.has(parseInt(n)));
+        fallbackExcl.forEach(n => excludedNumbers.add(n));
+        console.warn(`[Daily Analysis] Exclusion (fallback exclusionService): ${numbersBet.length} số đánh`);
     }
 
     // ============ UNIFIED PREDICTION METHOD ============
@@ -440,35 +452,30 @@ async function analyzeAndSavePrediction() {
     let exclusionPlusNumbers = [];
     let exclusionPlusExcluded = [];
     try {
-        // Lấy suggestions data (chỉ RED + PURPLE) từ suggestionsController
-        const quickStats = await statisticsService.getQuickStats();
-        // Lấy dữ liệu từ suggestionsController để đồng bộ với Distribution tab
-        const mockReq = { query: {} };
-        let suggestionsData = null;
-        await new Promise((resolve) => {
-            const mockRes = {
-                json: (data) => { suggestionsData = data; resolve(); },
-                status: () => mockRes
-            };
-            suggestionsController.getSuggestions(mockReq, mockRes).catch(() => resolve());
-        });
-
-        if (suggestionsData && suggestionsData.numbersToBet) {
-            // numbersToBet = số đánh sau khi loại trừ RED+PURPLE
-            exclusionPlusNumbers = suggestionsData.numbersToBet.map(n => String(n).padStart(2, '0')).sort();
-            exclusionPlusExcluded = suggestionsData.excludedNumbers
-                ? suggestionsData.excludedNumbers.map(n => String(n).padStart(2, '0'))
-                : [];
+        // Exclusion+ = loại chỉ 3 subTier: achieved + achievedSuper + superThreshold (KHÔNG loại threshold/cam)
+        // Dùng exclusionsBySubTier từ suggestionsData đã lấy ở trên
+        if (suggestionsData && suggestionsData.exclusionsBySubTier) {
+            const eSub = suggestionsData.exclusionsBySubTier;
+            // Tập số bị loại bởi Exclusion+: achieved ∪ achievedSuper ∪ superThreshold
+            const exPlusExcludedSet = new Set([
+                ...(eSub.achieved || []).map(Number),
+                ...(eSub.achievedSuper || []).map(Number),
+                ...(eSub.superThreshold || []).map(Number)
+            ]);
+            exclusionPlusNumbers = allNumbers
+                .filter(n => !exPlusExcludedSet.has(parseInt(n)))
+                .sort();
+            exclusionPlusExcluded = allNumbers
+                .filter(n => exPlusExcludedSet.has(parseInt(n)))
+                .sort();
         } else {
-            // Fallback: dùng numbersBet từ Exclusion thông thường
+            // Fallback: dùng numbersBet từ Exclusion
             exclusionPlusNumbers = [...numbersBet];
             exclusionPlusExcluded = Array.from(excludedNumbers).map(n => String(n).padStart(2, '0'));
         }
-
-        console.log(`[Daily Analysis] Exclusion Plus: ${exclusionPlusNumbers.length} số đánh, ${exclusionPlusExcluded.length} số loại trừ (chỉ RED+PURPLE)`);
+        console.log(`[Daily Analysis] Exclusion Plus (3 subTier, không có threshold/cam): ${exclusionPlusNumbers.length} số đánh, ${exclusionPlusExcluded.length} loại trừ`);
     } catch (error) {
         console.error('[Daily Analysis] Lỗi khi tạo Exclusion Plus prediction:', error.message);
-        // Fallback: dùng numbersBet từ Exclusion
         exclusionPlusNumbers = [...numbersBet];
         exclusionPlusExcluded = [];
     }

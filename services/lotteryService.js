@@ -24,12 +24,12 @@ async function loadJson(filePath) {
 
 const loadRawData = async () => {
     console.log('[LotteryService] Đang tải dữ liệu thô và thống kê vào cache...');
-    
+
     // Tải song song các file
     [
-        rawDataCache, 
-        numberStatsCache, 
-        headTailStatsCache, 
+        rawDataCache,
+        numberStatsCache,
+        headTailStatsCache,
         sumDiffStatsCache
     ] = await Promise.all([
         loadJson(RAW_DATA_PATH),
@@ -37,7 +37,7 @@ const loadRawData = async () => {
         loadJson(HEAD_TAIL_STATS_PATH),
         loadJson(SUM_DIFF_STATS_PATH)
     ]);
-    
+
     if (rawDataCache) {
         console.log(`[LotteryService] Đã tải thành công ${rawDataCache.length} bản ghi kết quả.`);
     }
@@ -57,6 +57,17 @@ const getNumberStats = () => numberStatsCache;
 const getHeadTailStats = () => headTailStatsCache;
 const getSumDiffStats = () => sumDiffStatsCache;
 
+const getTotalYears = () => {
+    let firstDate = new Date('2005-10-01');
+    let lastDate = new Date();
+    if (rawDataCache && rawDataCache.length > 0) {
+        firstDate = new Date(rawDataCache[0].date);
+        lastDate = new Date(rawDataCache[rawDataCache.length - 1].date);
+    }
+    const years = (lastDate - firstDate) / (1000 * 60 * 60 * 24 * 365.25);
+    return years > 1 ? years : 1;
+};
+
 const clearCache = () => {
     rawDataCache = null;
     numberStatsCache = null;
@@ -71,5 +82,6 @@ module.exports = {
     getNumberStats,
     getHeadTailStats,
     getSumDiffStats,
+    getTotalYears,
     clearCache
 };

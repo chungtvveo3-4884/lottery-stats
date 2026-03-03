@@ -92,17 +92,13 @@ function findStreaks(data, dateMap, { condition, description }) {
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
-// [FIXED] "1 Đầu/Đít về so le" (Thường) -> Strict Alternating (A - !A - A)
+// [FIXED] "1 Đầu/Đít về so le" (Thường) -> Loose Alternating (A - ? - A)
 function findAlternatingStreaks(data, dateMap, { description, valueExtractor }) {
     const allStreaks = [];
     const processedStreaks = new Set();
     for (let i = 0; i < data.length - 2; i++) {
         const startValue = valueExtractor(data[i]);
         if (!startValue) continue;
-
-        // Strict: Check if day i+1 is DIFFERENT from startValue
-        const nextDayValue = valueExtractor(data[i + 1]);
-        if (startValue === nextDayValue) continue;
 
         if (isConsecutive(data[i].date, data[i + 1].date) && isConsecutive(data[i + 1].date, data[i + 2].date)) {
             const nextValue = valueExtractor(data[i + 2]);
@@ -116,9 +112,6 @@ function findAlternatingStreaks(data, dateMap, { description, valueExtractor }) 
                     if (data[nextPossibleIndex] && data[lastIndex + 1] &&
                         isConsecutive(data[lastIndex].date, data[lastIndex + 1].date) &&
                         isConsecutive(data[lastIndex + 1].date, data[nextPossibleIndex].date)) {
-
-                        // Strict: Check intermediate day
-                        if (startValue === valueExtractor(data[lastIndex + 1])) break;
 
                         if (startValue === valueExtractor(data[nextPossibleIndex])) {
                             streak.push(data[nextPossibleIndex]);
@@ -155,19 +148,23 @@ function findAlternatingStreaks(data, dateMap, { description, valueExtractor }) 
  * @param {string} options.description - The description for the final result object.
  * @returns {object} - An object containing the description and the found streaks.
  */
-// [FIXED] "Dạng ... về so le" (Thường) -> Strict Alternating (A - !A - A)
+// [FIXED] "Dạng ... về so le" (Thường) -> Loose Alternating (A - ? - A)
 function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     const allStreaks = [];
+    const processedStreaks = new Set();
     for (let i = 0; i < data.length - 2; i++) {
         const dayA = data[i];
         const dayB = data[i + 1];
         const dayC = data[i + 2];
 
-        // Strict: Day A matches, Day B does NOT match, Day C matches
+        // Loose: Day A matches, Day C matches. Day B is ignored.
         if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
             condition(dayA) &&
-            !condition(dayB) && // Strict check
             condition(dayC)) {
+
+            const streakKey = `${dayA.date}`;
+            if (processedStreaks.has(streakKey)) continue;
+
             let streak = [dayA, dayC];
             let lastIndex = i + 2;
 
@@ -179,7 +176,6 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
                 if (nextDay && nextStreakDay &&
                     isConsecutive(data[lastIndex].date, nextDay.date) &&
                     isConsecutive(nextDay.date, nextStreakDay.date) &&
-                    !condition(nextDay) && // Strict check
                     condition(nextStreakDay)) {
                     streak.push(nextStreakDay);
                     lastIndex += 2;
@@ -191,8 +187,11 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
             if (streak.length >= 2) {
                 const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
                 if (span % 2 === 1) {
-                    allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                    i = lastIndex - 1;
+                    const finalStreak = createStreakObject(data, dateMap, streak, { value: "Theo dạng" });
+                    if (finalStreak) {
+                        allStreaks.push(finalStreak);
+                        streak.forEach(item => processedStreaks.add(`${item.date}`));
+                    }
                 }
             }
         }
@@ -200,19 +199,24 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
-// [FIXED] "Dạng ... về so le (mới)" -> Loose Alternating (A - ? - A)
+// [FIXED] "Dạng ... về so le (mới)" -> Strict Alternating (A - !A - A)
 function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     const allStreaks = [];
+    const processedStreaks = new Set();
     for (let i = 0; i < data.length - 2; i++) {
         const dayA = data[i];
         const dayB = data[i + 1];
         const dayC = data[i + 2];
 
-        // Loose: Day A matches, Day C matches. Day B ignored.
+        // Strict: Day A matches, Day C matches. Day B DOES NOT match.
         if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
             numberMap.has(dayA.value) &&
-            // !numberMap.has(dayB.value) && // REMOVED Strict check
+            !numberMap.has(dayB.value) &&
             numberMap.has(dayC.value)) {
+
+            const streakKey = `${dayA.date}`;
+            if (processedStreaks.has(streakKey)) continue;
+
             let streak = [dayA, dayC];
             let lastIndex = i + 2;
 
@@ -220,7 +224,7 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
                 const nextDay = data[lastIndex + 1];
                 const nextStreakDay = data[lastIndex + 2];
                 if (nextDay && nextStreakDay && isConsecutive(data[lastIndex].date, nextDay.date) && isConsecutive(nextDay.date, nextStreakDay.date) &&
-                    // !numberMap.has(nextDay.value) && // REMOVED Strict check
+                    !numberMap.has(nextDay.value) &&
                     numberMap.has(nextStreakDay.value)) {
                     streak.push(nextStreakDay);
                     lastIndex += 2;
@@ -231,8 +235,11 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
             if (streak.length >= 2) {
                 const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
                 if (span % 2 === 1) {
-                    allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
-                    i = lastIndex - 1;
+                    const finalStreak = createStreakObject(data, dateMap, streak, { value: "Theo dạng" });
+                    if (finalStreak) {
+                        allStreaks.push(finalStreak);
+                        streak.forEach(item => processedStreaks.add(`${item.date}`));
+                    }
                 }
             }
         }
@@ -244,7 +251,7 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
 * Tìm chuỗi "so le mới" cho một đầu/đít cụ thể.
 * Quy tắc: Ngày xen kẽ (ngày ở giữa) KHÔNG được có cùng đầu/đít.
 */
-// [FIXED] "1 Đầu/Đít về so le (mới)" -> Loose Alternating (A - ? - A)
+// [FIXED] "1 Đầu/Đít về so le (mới)" -> Strict Alternating (A - !A - A)
 function findAlternatingStreaksNew(data, dateMap, { description, valueExtractor }) {
     const allStreaks = [];
     const processedStreaks = new Set(); // Dùng để tránh lặp lại chuỗi đã xử lý
@@ -257,9 +264,10 @@ function findAlternatingStreaksNew(data, dateMap, { description, valueExtractor 
         const startValue = valueExtractor(dayA);
         if (!startValue) continue;
 
-        // Loose: Day A == Day C. Day B ignored.
+        // Strict: Day A == Day C, and Day B != startValue.
         if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
-            startValue === valueExtractor(dayC)) { // REMOVED Strict check for dayB
+            startValue === valueExtractor(dayC) &&
+            startValue !== valueExtractor(dayB)) {
 
             const streakKey = `${startValue}-${dayA.date}`;
             if (processedStreaks.has(streakKey)) continue;
@@ -273,7 +281,8 @@ function findAlternatingStreaksNew(data, dateMap, { description, valueExtractor 
                 const nextStreakDay = data[lastIndex + 2];
 
                 if (nextDay && nextStreakDay && isConsecutive(data[lastIndex].date, nextDay.date) && isConsecutive(nextDay.date, nextStreakDay.date) &&
-                    startValue === valueExtractor(nextStreakDay)) { // REMOVED Strict check for nextDay
+                    startValue === valueExtractor(nextStreakDay) &&
+                    startValue !== valueExtractor(nextDay)) {
                     streak.push(nextStreakDay);
                     lastIndex += 2;
                 } else {

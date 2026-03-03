@@ -97,6 +97,9 @@ app.get('/distribution', (req, res) => {
     res.render('distribution.html');
 });
 
+// Streak Backtest Route
+const streakBacktestRoutes = require('./routes/streakBacktestRoutes');
+app.use('/', streakBacktestRoutes);
 
 // --- KHỞI ĐỘNG SERVER VÀ LÊN LỊCH TÁC VỤ ---
 const startServer = async () => {

@@ -100,20 +100,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Thêm legend cho tier (không còn light_orange)
             if (data.tierInfo) {
-                const lightRedLabel = data.tierInfo.lightRedThreshold
-                    ? `Đỏ nhạt ${data.tierInfo.lightRedThreshold} (${data.tierInfo.countByTier?.light_red || 0})`
-                    : `Đỏ nhạt (${data.tierInfo.countByTier?.light_red || 0})`;
-
                 excludedNumbersHtml += `
                     <div class="mt-4 flex flex-wrap gap-3 text-sm">
                         <span class="flex items-center"><span class="w-3 h-3 rounded bg-red-600 mr-1"></span>Đỏ (${data.tierInfo.countByTier?.red || 0})</span>
                         <span class="flex items-center"><span class="w-3 h-3 rounded bg-purple-600 mr-1"></span>Tím (${data.tierInfo.countByTier?.purple || 0})</span>
-                        <span class="flex items-center"><span class="w-3 h-3 rounded bg-orange-500 mr-1"></span>Cam (${data.tierInfo.countByTier?.orange || 0})</span>
-                        <span class="flex items-center"><span class="w-3 h-3 rounded bg-red-400 mr-1"></span>${lightRedLabel}</span>
                     </div>
                     <div class="mt-2 text-sm text-gray-600">
-                        Tổng: ${data.excludedCount || 0} số | Yêu cầu tối thiểu: ${data.tierInfo.minRequired || 40} số | 
-                        Các tier đã áp dụng: ${data.tierInfo.appliedTiers?.join(', ') || 'N/A'}
+                        Tổng: ${data.excludedCount || 0} số
                     </div>
                 `;
             }

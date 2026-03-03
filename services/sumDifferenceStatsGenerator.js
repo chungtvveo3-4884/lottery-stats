@@ -159,7 +159,8 @@ function findAlternatingValueStreaks(data, dateMap, { valueExtractor, descriptio
                 const valueB = valueExtractor(dayB);
                 const valueC = valueExtractor(dayC);
 
-                // Điều kiện của "so le mới" là ngày ở giữa phải khác giá trị
+                // "So le mới" (stricter): ngày ở giữa phải KHÁC giá trị -> valueB !== startValue
+                // "So le thường" (looser): ngày ở giữa có thể là bất kỳ giá trị nào -> luôn true
                 const newTypeCondition = isNewType ? valueB !== startValue : true;
 
                 if (valueC === startValue && newTypeCondition) {
@@ -183,11 +184,11 @@ function findAlternatingValueStreaks(data, dateMap, { valueExtractor, descriptio
 
 
 // [FIXED] Sửa lại logic để không bỏ sót chuỗi
-// [FIXED] Hàm này giờ dùng cho "Về so le" (Thường) -> Strict Alternating (A - !A - A)
+// [FIXED] Hàm này giờ dùng cho "Về so le" (Thường) -> Loose Alternating (A - ? - A)
 // Chỉ chấp nhận chuỗi có số ngày là số lẻ
 function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     const allStreaks = [];
-
+    const processedStreaks = new Set();
     const getDaySpan = (startDate, endDate) => {
         const [d1, m1, y1] = startDate.split('/').map(Number);
         const [d2, m2, y2] = endDate.split('/').map(Number);
@@ -197,40 +198,57 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     };
 
     for (let i = 0; i < data.length - 2; i++) {
-        // Strict: Day A matches, Day B does NOT match
-        if (!condition(data[i]) || condition(data[i + 1])) continue;
+        const dayA = data[i];
+        const dayB = data[i + 1];
+        const dayC = data[i + 2];
 
-        let streak = [data[i]];
-        let currentIndex = i;
-        while (currentIndex < data.length - 2) {
-            const nextIndex = currentIndex + 2;
-            // Strict: Day B (currentIndex+1) does NOT match, Day C (nextIndex) matches
-            if (data[currentIndex + 1] && data[nextIndex] &&
-                isConsecutive(data[currentIndex].date, data[currentIndex + 1].date) &&
-                isConsecutive(data[currentIndex + 1].date, data[nextIndex].date) &&
-                !condition(data[currentIndex + 1]) && // Strict check
-                condition(data[nextIndex])) {
-                streak.push(data[nextIndex]);
-                currentIndex = nextIndex;
-            } else {
-                break;
+        // Loose: Day A matches, Day C matches
+        if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
+            condition(dayA) &&
+            condition(dayC)) {
+
+            const streakKey = `${dayA.date}`;
+            if (processedStreaks.has(streakKey)) continue;
+
+            let streak = [dayA, dayC];
+            let lastIndex = i + 2;
+
+            // Continue searching to extend the current streak
+            while (lastIndex < data.length - 2) {
+                const nextDay = data[lastIndex + 1];
+                const nextStreakDay = data[lastIndex + 2];
+
+                if (nextDay && nextStreakDay &&
+                    isConsecutive(data[lastIndex].date, nextDay.date) &&
+                    isConsecutive(nextDay.date, nextStreakDay.date) &&
+                    condition(nextStreakDay)) {
+                    streak.push(nextStreakDay);
+                    lastIndex += 2;
+                } else {
+                    break;
+                }
             }
-        }
-        if (streak.length >= 2) {
-            const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
-            if (span % 2 === 1) {
-                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
+
+            if (streak.length >= 2) {
+                const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
+                if (span % 2 === 1) {
+                    const finalStreak = createStreakObject(data, dateMap, streak, { value: "Theo dạng" });
+                    if (finalStreak) {
+                        allStreaks.push(finalStreak);
+                        streak.forEach(item => processedStreaks.add(`${item.date}`));
+                    }
+                }
             }
         }
     }
     return { description, streaks: allStreaks.filter(Boolean) };
 }
 
-// [FIXED] Hàm này giờ dùng cho "Về so le (mới)" -> Loose Alternating (A - ? - A)
+// [FIXED] Hàm này giờ dùng cho "Về so le (mới)" -> Strict Alternating (A - !A - A)
 // Chỉ chấp nhận chuỗi có số ngày là số lẻ
 function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     const allStreaks = [];
-
+    const processedStreaks = new Set();
     const getDaySpan = (startDate, endDate) => {
         const [d1, m1, y1] = startDate.split('/').map(Number);
         const [d2, m2, y2] = endDate.split('/').map(Number);
@@ -240,29 +258,43 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     };
 
     for (let i = 0; i < data.length - 2; i++) {
-        if (!numberMap.has(data[i].value)) continue;
+        const dayA = data[i];
+        const dayB = data[i + 1];
+        const dayC = data[i + 2];
 
-        let streak = [data[i]];
-        let currentIndex = i;
-        while (currentIndex < data.length - 2) {
-            const nextIndex = currentIndex + 2;
-            const dayB = data[currentIndex + 1];
-            const dayC = data[nextIndex];
-            // Loose: Only check if Day C matches. Day B is ignored (can be anything)
-            if (dayB && dayC &&
-                isConsecutive(data[currentIndex].date, dayB.date) &&
-                isConsecutive(dayB.date, dayC.date) &&
-                numberMap.has(dayC.value)) { // Loose check
-                streak.push(dayC);
-                currentIndex = nextIndex;
-            } else {
-                break;
+        // Strict: Day A matches, Day C matches. Day B DOES NOT match.
+        if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
+            numberMap.has(dayA.value) &&
+            !numberMap.has(dayB.value) &&
+            numberMap.has(dayC.value)) {
+
+            const streakKey = `${dayA.date}`;
+            if (processedStreaks.has(streakKey)) continue;
+
+            let streak = [dayA, dayC];
+            let lastIndex = i + 2;
+
+            while (lastIndex < data.length - 2) {
+                const nextDay = data[lastIndex + 1];
+                const nextStreakDay = data[lastIndex + 2];
+                if (nextDay && nextStreakDay && isConsecutive(data[lastIndex].date, nextDay.date) && isConsecutive(nextDay.date, nextStreakDay.date) &&
+                    !numberMap.has(nextDay.value) &&
+                    numberMap.has(nextStreakDay.value)) {
+                    streak.push(nextStreakDay);
+                    lastIndex += 2;
+                } else {
+                    break;
+                }
             }
-        }
-        if (streak.length >= 2) {
-            const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
-            if (span % 2 === 1) {
-                allStreaks.push(createStreakObject(data, dateMap, streak, { value: "Theo dạng" }));
+            if (streak.length >= 2) {
+                const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
+                if (span % 2 === 1) {
+                    const finalStreak = createStreakObject(data, dateMap, streak, { value: "Theo dạng" });
+                    if (finalStreak) {
+                        allStreaks.push(finalStreak);
+                        streak.forEach(item => processedStreaks.add(`${item.date}`));
+                    }
+                }
             }
         }
     }

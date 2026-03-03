@@ -184,4 +184,26 @@ router.post('/simulation/future', async (req, res) => {
     }
 });
 
+// === API CHO BACKTEST LỊCH SỬ ===
+router.get('/simulation/backtest', async (req, res) => {
+    try {
+        const days = parseInt(req.query.days) || 30;
+
+        if (days < 7 || days > 365) {
+            return res.status(400).json({ error: 'Số ngày phải từ 7 đến 365' });
+        }
+
+        const results = futureSimulationService.runHistoricalBacktest(days);
+
+        if (results.error) {
+            return res.status(400).json({ error: results.error });
+        }
+
+        res.json(results);
+    } catch (error) {
+        console.error('Lỗi khi chạy backtest:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;

@@ -172,7 +172,7 @@ async function getExclusionScores() {
         });
     }
 
-    return scores;
+    return { scores, explanations: exclusions.explanations };
 }
 
 // ============ METHOD 4: ROLLING 360-DAY TREND ANALYSIS ============
@@ -330,18 +330,21 @@ async function getDailyPrediction(options = {}) {
     const [
         distributionScores,
         streakScores,
-        exclusionScores,
+        exclusionResult,
         yearlyScores,
         dayPatternScores,
         recentScores
     ] = await Promise.all([
         getDistributionScores(),
         getStreakScores(),
-        getExclusionScores(),
+        getExclusionScores(), // Now we will make this return { scores, explanations }
         getYearlyTrendScores(targetDate),
         getDayPatternScores(targetDate),
         getRecentHistoryScores()
     ]);
+
+    const exclusionScores = exclusionResult.scores || exclusionResult;
+    const explanations = exclusionResult.explanations || [];
 
     // Combine scores with weights
     const combinedScores = {};
@@ -395,6 +398,9 @@ async function getDailyPrediction(options = {}) {
 
         // Top exclusions (numbers to AVOID)
         exclusions: sortedNumbers.slice(-CONFIG.TOP_EXCLUSIONS).reverse(),
+
+        // Include explanations for exclusions
+        explanations: explanations,
 
         // All numbers with scores
         allNumbers: sortedNumbers,

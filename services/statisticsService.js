@@ -152,6 +152,7 @@ async function getQuickStats() {
     const quickStats = {};
     latestDate = await getLatestDate();
     const today = latestDate ? parseDate(latestDate) : new Date();
+    const latestLotteryDay = await getLatestLotteryResult();
 
     const analyzeCategory = (key, categoryData) => {
         if (!categoryData || !Array.isArray(categoryData.streaks) || categoryData.streaks.length === 0) {
@@ -192,22 +193,12 @@ async function getQuickStats() {
                     };
 
                     // Thêm ngày hôm nay vào fullSequence (để hiển thị, nhưng KHÔNG dùng cho dự đoán)
-                    const lotteryService = require('./lotteryService');
-                    const rawData = lotteryService.getRawData();
-                    if (rawData && rawData.length > 0) {
-                        const latestDayData = rawData.find(d => {
-                            const dDate = new Date(d.date);
-                            const dStr = `${String(dDate.getDate()).padStart(2, '0')}/${String(dDate.getMonth() + 1).padStart(2, '0')}/${dDate.getFullYear()}`;
-                            return dStr === latestDate;
+                    if (latestLotteryDay && latestLotteryDay.special) {
+                        current.fullSequence.push({
+                            date: latestDate,
+                            value: String(latestLotteryDay.special).padStart(2, '0'),
+                            isLatest: true // Đánh dấu là ngày mới nhất (KHÔNG thuộc chuỗi)
                         });
-
-                        if (latestDayData && latestDayData.special) {
-                            current.fullSequence.push({
-                                date: latestDate,
-                                value: latestDayData.special,
-                                isLatest: true // Đánh dấu là ngày mới nhất (KHÔNG thuộc chuỗi)
-                            });
-                        }
                     }
                 }
             } else if (isTienLuiSoLe) {
@@ -252,8 +243,8 @@ async function getQuickStats() {
         const calcLimit = maxLen + 1;
 
         // Detect if this is a "so le" pattern
-        const isSoLePattern = (key.includes('veSole') || key.includes('veSoleMoi')) &&
-            key !== 'tienLuiSoLe' && key !== 'luiTienSoLe';
+        const isSoLePattern = (key.toLowerCase().includes('sole') || key.toLowerCase().includes('solemoi')) &&
+            !key.includes('tienLuiSoLe') && !key.includes('luiTienSoLe');
 
         // Helper function to calculate stats for a set of streaks
         // currentStreakInfo: the ongoing current streak (if any) to exclude from calculations
@@ -473,6 +464,78 @@ async function getQuickStats() {
             exactGapStats,
             extensionGapStats // NEW: Gap from streak N to streak N+step
         };
+
+        // === ÁP DỤNG CÁCH TÍNH MỐC KỶ LỤC MỚI ===
+        // Công thức: Tần suất chính xác (số lần xảy ra == len) / tổng số năm thực tế <= 1.5 thì len là mốc kỷ lục
+        let computedMaxStreak = longestLength;
+        let isSuperMaxThreshold = false;
+
+        const lotteryService = require('./lotteryService');
+        const totalYears = lotteryService.getTotalYears();
+
+        const isTienLuiSoLePattern = key.includes('tienLuiSoLe') || key.includes('luiTienSoLe');
+        let startLen = 2;
+        let increment = 1;
+
+        if (isSoLePattern) {
+            // Dạng so le (tính theo số ngày kéo dài thực tế: 1, 3, 5, 7, 9)
+            // Chuỗi độ dài 1 không phải là mốc kỷ lục, nên bắt đầu đánh giá từ 3, tăng dần 2
+            startLen = 3;
+            increment = 2;
+        } else if (isTienLuiSoLePattern) {
+            // Dạng tiến lùi / lùi tiến so le ít nhất 4 ngày mới hình thành chuỗi
+            startLen = 4;
+            increment = 1;
+        }
+
+        for (let len = startLen; len <= calcLimit; len += increment) {
+            const count = exactGapStats[len] ? exactGapStats[len].count : 0;
+            const freqYear = count / totalYears; // Sử dụng tổng số năm thực tế
+
+            if (freqYear <= 1.5) {
+                computedMaxStreak = len;
+                isSuperMaxThreshold = freqYear <= 0.5;
+                break; // Đạt mốc kỷ lục đầu tiên
+            }
+        }
+
+        // Cập nhật vào quickStats
+        quickStats[key].computedMaxStreak = computedMaxStreak;
+        quickStats[key].isSuperMaxThreshold = isSuperMaxThreshold;
+
+        // === ÁP DỤNG TIỀM NĂNG KỶ LỤC 2 NGÀY (chuỗi 1 ngày) ===
+        // Nếu chui vào đây, pattern đang k có chuỗi diễn ra >= 2 ngày, nhưng mốc kỷ lục lại là 2!
+        if (!quickStats[key].current && computedMaxStreak === 2) {
+            const [category, subcategory] = key.split(':');
+            const isSoLePatternStrict = key.toLowerCase().includes('sole');
+
+            // Dạng so le (tối thiểu 3 ngày mới thành chuỗi), nên không áp dụng cho 1 ngày
+            if (!isSoLePatternStrict && category && latestDate) {
+                if (latestLotteryDay && latestLotteryDay.special) {
+                    const { identifyCategories } = require('../utils/numberAnalysis');
+                    const numStr = String(latestLotteryDay.special).padStart(2, '0');
+                    const matchedCategories = identifyCategories(numStr);
+
+                    // Lọc các subcategory ghép string ở quickStats (vd dau_4, chanChan)
+                    if (matchedCategories.includes(category)) {
+                        // Đã match 1 ngày hôm nay. Kiểm tra if frequency <= 1.5 để gắn vào
+                        const cnt = exactGapStats[2] ? exactGapStats[2].count : 0;
+                        const freqY = cnt / totalYears;
+
+                        if (freqY <= 1.5) {
+                            quickStats[key].current = {
+                                length: 1,
+                                startDate: latestDate,
+                                endDate: latestDate,
+                                values: [numStr],
+                                dates: [latestDate],
+                                fullSequence: [{ date: latestDate, value: numStr, isLatest: true }]
+                            };
+                        }
+                    }
+                }
+            }
+        }
     };
 
     for (const key in allStats) {
@@ -486,6 +549,8 @@ async function getQuickStats() {
         }
     }
 
+    const lotteryServiceForMeta = require('./lotteryService');
+    quickStats._meta = { totalYears: lotteryServiceForMeta.getTotalYears() };
     return quickStats;
 };
 
