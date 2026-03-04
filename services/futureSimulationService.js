@@ -121,7 +121,6 @@ class FutureSimulationService {
         return { avgGap, minGap, lastGap, count: gaps.length };
     }
 
-    // Phương pháp loại trừ (dựa vào giải đặc biệt + chuỗi + gap)
     exclusionMethod(historicalData) {
         const recentData = historicalData.slice(-60); // 60 ngày gần nhất (giảm để nhạy hơn)
         const excluded = new Set();
@@ -257,6 +256,178 @@ class FutureSimulationService {
             streakInfo
         };
     }
+
+    /**
+     * [MỚI] Phương pháp loại trừ dựa trên KỶ LỤC - Đồng bộ với suggestionsController
+     * Logic: Tính chuỗi rolling từ historicalData → loại trừ nếu freq <= 1.5 lần/năm
+     * Exclusion: loại 4 subTier (achieved + achievedSuper + threshold + superThreshold)
+     * @param {Array} data - Dữ liệu lịch sử đến trước ngày cần dự đoán
+     * @returns {{toBet: number[], excluded: number[], excludedPlus: number[]}}
+     */
+    exclusionByRecordMethod(data) {
+        const totalYears = data.length / 365.25;
+        const excluded4 = new Set(); // Exclusion: loại cả 4 subTier
+        const excluded3 = new Set(); // Exclusion+: loại 3 subTier (bỏ threshold/cam)
+        const MAX_BET = 65;
+
+        // Hàm tính chuỗi liên tiếp của một điều kiện (rolling streak kết thúc tại data[data.length-1])
+        const calcStreak = (checkFn) => {
+            let streak = 0;
+            for (let i = data.length - 1; i >= 0; i--) {
+                const sp = this.getSpecialNumber(data[i]);
+                if (sp !== null && checkFn(sp)) streak++;
+                else break;
+            }
+            return streak;
+        };
+
+        // Hàm tính kỷ lục và tần suất từ lịch sử toàn bộ data
+        const calcRecordAndFreq = (checkFn, targetLen) => {
+            // Tìm tất cả các chuỗi đã xảy ra và độ dài lớn nhất
+            let maxStreak = 0;
+            let countExact = 0; // Số lần chuỗi đạt chính xác targetLen
+            let i = 0;
+            while (i < data.length) {
+                const sp = this.getSpecialNumber(data[i]);
+                if (sp !== null && checkFn(sp)) {
+                    let len = 1;
+                    while (i + len < data.length) {
+                        const spNext = this.getSpecialNumber(data[i + len]);
+                        if (spNext !== null && checkFn(spNext)) len++;
+                        else break;
+                    }
+                    if (len > maxStreak) maxStreak = len;
+                    if (len === targetLen) countExact++;
+                    i += len;
+                } else {
+                    i++;
+                }
+            }
+            const freqYear = totalYears > 0 ? countExact / totalYears : 0;
+            return { maxStreak, freqYear };
+        };
+
+        // Hàm loại trừ các số cho một category
+        const excludeCategory = (checkFn, getNumbersFn) => {
+            const currentStreak = calcStreak(checkFn);
+            if (currentStreak === 0) return;
+
+            const targetLen = currentStreak + 1; // Nếu tiếp tục sẽ đạt targetLen
+            const { maxStreak, freqYear } = calcRecordAndFreq(checkFn, targetLen);
+
+            const isAchieved = currentStreak >= maxStreak && maxStreak > 0; // Đạt kỷ lục
+            const isThreshold = freqYear <= 1.5; // Tới hạn (freq <= 1.5)
+            const isSuper = freqYear <= 0.5;    // Siêu kỷ lục
+
+            if (!isAchieved && !isThreshold) return; // Không đủ điều kiện loại trừ
+
+            const nums = getNumbersFn();
+            nums.forEach(n => {
+                excluded4.add(n); // Exclusion: loại tất cả
+                // Exclusion+: chỉ loại achieved + achievedSuper + superThreshold (KHÔNG threshold thường)
+                if (isAchieved || isSuper) {
+                    excluded3.add(n);
+                }
+            });
+        };
+
+        // 1. Kiểm tra ĐẦU (0-9): chuỗi đầu về liên tiếp
+        for (let val = 0; val <= 9; val++) {
+            excludeCategory(
+                n => Math.floor(n / 10) === val,
+                () => this.getNumbersForCategory('dau', val)
+            );
+        }
+
+        // 2. Kiểm tra ĐÍT (0-9): chuỗi đít về liên tiếp
+        for (let val = 0; val <= 9; val++) {
+            excludeCategory(
+                n => n % 10 === val,
+                () => this.getNumbersForCategory('dit', val)
+            );
+        }
+
+        // 3. Kiểm tra TỔNG TT (1-10): chuỗi tổng về liên tiếp
+        for (let val = 1; val <= 10; val++) {
+            excludeCategory(
+                n => this.getTongTT(n) === val,
+                () => this.getNumbersForCategory('tong', val)
+            );
+        }
+
+        // 4. Kiểm tra HIỆU (0-9): chuỗi hiệu về liên tiếp
+        for (let val = 0; val <= 9; val++) {
+            excludeCategory(
+                n => this.getHieu(n) === val,
+                () => this.getNumbersForCategory('hieu', val)
+            );
+        }
+
+        // 5. Kiểm tra 1 SỐ cụ thể (00-99): số về liên tiếp
+        for (let num = 0; num < 100; num++) {
+            excludeCategory(
+                n => n === num,
+                () => [num]
+            );
+        }
+
+        // 6. Kiểm tra CHẴN/LẺ (veSole)
+        excludeCategory(
+            n => n % 2 === 0, // Số chẵn về liên tiếp
+            () => Array.from({ length: 50 }, (_, i) => i * 2) // 00,02,04...98
+        );
+        excludeCategory(
+            n => n % 2 === 1, // Số lẻ về liên tiếp
+            () => Array.from({ length: 50 }, (_, i) => i * 2 + 1) // 01,03,05...99
+        );
+
+        // 7. Kiểm tra ĐẦU chẵn/đầu lẻ liên tiếp
+        excludeCategory(
+            n => Math.floor(n / 10) % 2 === 0, // Đầu chẵn (0,2,4,6,8x)
+            () => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89]
+        );
+        excludeCategory(
+            n => Math.floor(n / 10) % 2 === 1, // Đầu lẻ (1,3,5,7,9x)
+            () => [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+        );
+
+        // 8. Kiểm tra ĐÍT chẵn/đít lẻ liên tiếp
+        excludeCategory(
+            n => n % 10 % 2 === 0, // Đít chẵn
+            () => [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98]
+        );
+        excludeCategory(
+            n => n % 10 % 2 === 1, // Đít lẻ
+            () => [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 71, 73, 75, 77, 79, 81, 83, 85, 87, 89, 91, 93, 95, 97, 99]
+        );
+
+        // Tính số đánh Exclusion (loại 4 subTier)
+        let toBet4 = [];
+        for (let i = 0; i < 100; i++) {
+            if (!excluded4.has(i)) toBet4.push(i);
+        }
+
+        // Tính số đánh Exclusion+ (loại 3 subTier)
+        let toBet3 = [];
+        for (let i = 0; i < 100; i++) {
+            if (!excluded3.has(i)) toBet3.push(i);
+        }
+
+        // Áp dụng giới hạn 65 số: nếu > 65 thì skip (trả về mảng rỗng)
+        const finalToBet4 = toBet4.length <= MAX_BET ? toBet4 : [];
+        const finalToBet3 = toBet3.length <= MAX_BET ? toBet3 : [];
+
+        return {
+            toBet: finalToBet4,          // Exclusion
+            toBetPlus: finalToBet3,      // Exclusion+
+            excluded: Array.from(excluded4),
+            excludedPlus: Array.from(excluded3),
+            skipped: toBet4.length > MAX_BET,
+            skippedPlus: toBet3.length > MAX_BET
+        };
+    }
+
+
 
     // Phương pháp Unified (Gap + Tần suất + Chu kỳ)
     unifiedMethod(historicalData) {
@@ -787,7 +958,8 @@ class FutureSimulationService {
         const startIndex = endIndex - days;
 
         const results = {
-            exclusion: { wins: 0, losses: 0, details: [] },
+            exclusion: { wins: 0, losses: 0, skips: 0, details: [] },
+            exclusionPlus: { wins: 0, losses: 0, skips: 0, details: [] },
             unified: { wins: 0, losses: 0, details: [] },
             advanced: { wins: 0, losses: 0, details: [] },
             hybridAI: { wins: 0, losses: 0, details: [] },
@@ -816,15 +988,20 @@ class FutureSimulationService {
                 new Date(actualDay.date).toLocaleDateString('vi-VN') :
                 `Ngày ${i + 1}`;
 
-            // Chạy 4 phương pháp
-            const exclusion = this.exclusionMethod(dataForPrediction);
+            // ===== PHƯƠNG PHÁP MỚI: Exclusion & Exclusion+ theo Kỷ lục =====
+            const recordExcl = this.exclusionByRecordMethod(dataForPrediction);
+            const exclusionRecord = { toBet: recordExcl.toBet, excluded: recordExcl.excluded, skipped: recordExcl.skipped };
+            const exclusionPlusRecord = { toBet: recordExcl.toBetPlus, excluded: recordExcl.excludedPlus, skipped: recordExcl.skippedPlus };
+
+            // Chạy 4 phương pháp cũ (giữ lại cho các method khác)
+            const exclusion = exclusionRecord; // Dùng record method cho exclusion
             const unified = this.unifiedMethod(dataForPrediction);
             const advanced = this.advancedMethod(dataForPrediction);
             const hybridAI = this.hybridAIMethod(dataForPrediction);
 
-            // Combined = UNION của 4 phương pháp (bao gồm Exclusion)
+            // Combined = UNION của 4 phương pháp (bao gồm Exclusion record)
             const combinedSet = new Set([
-                ...exclusion.toBet,
+                ...exclusionRecord.toBet,
                 ...unified.toBet,
                 ...advanced.toBet,
                 ...hybridAI.toBet
@@ -840,10 +1017,10 @@ class FutureSimulationService {
                     countMap.set(num, (countMap.get(num) || 0) + 1);
                 });
             });
-            // Lọc số có trong ít nhất 2 phương pháp VÀ có trong exclusion
+            // Lọc số có trong ít nhất 2 phương pháp VÀ có trong exclusion record
             const consensusNumbers = [];
             for (const [num, count] of countMap) {
-                if (count >= 2 && exclusion.toBet.includes(num)) {
+                if (count >= 2 && exclusionRecord.toBet.includes(num)) {
                     consensusNumbers.push(num);
                 }
             }
@@ -853,15 +1030,15 @@ class FutureSimulationService {
 
             // Smart = Top 25 số có điểm cao nhất từ tất cả phương pháp
             const scoreMap = new Map();
-            // Điểm từ exclusion: +3 (mạnh nhất)
-            exclusion.toBet.forEach((num, idx) => {
-                const score = 3 + (exclusion.toBet.length - idx) / exclusion.toBet.length;
+            // Điểm từ exclusion record: +3 (mạnh nhất)
+            exclusionRecord.toBet.forEach((num, idx) => {
+                const score = 3 + (exclusionRecord.toBet.length - idx) / (exclusionRecord.toBet.length || 1);
                 scoreMap.set(num, (scoreMap.get(num) || 0) + score);
             });
             // Điểm từ unified/advanced/hybridAI: +1 mỗi cái
             [unified.toBet, advanced.toBet, hybridAI.toBet].forEach(arr => {
                 arr.forEach((num, idx) => {
-                    const score = 1 + (arr.length - idx) / arr.length;
+                    const score = 1 + (arr.length - idx) / (arr.length || 1);
                     scoreMap.set(num, (scoreMap.get(num) || 0) + score);
                 });
             });
@@ -878,7 +1055,10 @@ class FutureSimulationService {
             const smart30 = { toBet: sortedByScore.slice(0, 30).map(e => e[0]).sort((a, b) => a - b) };
 
             // Kiểm tra kết quả
-            const exclusionWin = exclusion.toBet.includes(actualNumber);
+            // Exclusion record: ngày skip không tính thắng/thua
+            const exclusionRecordWin = !exclusionRecord.skipped && exclusionRecord.toBet.includes(actualNumber);
+            const exclusionPlusRecordWin = !exclusionPlusRecord.skipped && exclusionPlusRecord.toBet.includes(actualNumber);
+            const exclusionWin = exclusionRecordWin; // Alias
             const unifiedWin = unified.toBet.includes(actualNumber);
             const advancedWin = advanced.toBet.includes(actualNumber);
             const hybridAIWin = hybridAI.toBet.includes(actualNumber);
@@ -887,12 +1067,28 @@ class FutureSimulationService {
             const smart5Win = smart5.toBet.includes(actualNumber);
             const smart10Win = smart10.toBet.includes(actualNumber);
             const smart15Win = smart15.toBet.includes(actualNumber);
+
             const smart20Win = smart20.toBet.includes(actualNumber);
             const smartWin = smart.toBet.includes(actualNumber);
             const smart30Win = smart30.toBet.includes(actualNumber);
 
             // Cập nhật thống kê
-            if (exclusionWin) results.exclusion.wins++; else results.exclusion.losses++;
+            // Exclusion record: ngày skip sẽ không tính vào wins/losses
+            if (exclusionRecord.skipped) {
+                results.exclusion.skips = (results.exclusion.skips || 0) + 1;
+            } else if (exclusionRecordWin) {
+                results.exclusion.wins++;
+            } else {
+                results.exclusion.losses++;
+            }
+            // Exclusion+ record
+            if (exclusionPlusRecord.skipped) {
+                results.exclusionPlus.skips = (results.exclusionPlus.skips || 0) + 1;
+            } else if (exclusionPlusRecordWin) {
+                results.exclusionPlus.wins++;
+            } else {
+                results.exclusionPlus.losses++;
+            }
             if (unifiedWin) results.unified.wins++; else results.unified.losses++;
             if (advancedWin) results.advanced.wins++; else results.advanced.losses++;
             if (hybridAIWin) results.hybridAI.wins++; else results.hybridAI.losses++;
@@ -910,9 +1106,16 @@ class FutureSimulationService {
                 date: dateStr,
                 actualNumber: String(actualNumber).padStart(2, '0'),
                 exclusion: {
-                    count: exclusion.toBet.length,
-                    win: exclusionWin,
-                    numbers: exclusion.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                    count: exclusionRecord.toBet.length,
+                    win: exclusionRecordWin,
+                    skipped: exclusionRecord.skipped,
+                    numbers: exclusionRecord.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
+                },
+                exclusionPlus: {
+                    count: exclusionPlusRecord.toBet.length,
+                    win: exclusionPlusRecordWin,
+                    skipped: exclusionPlusRecord.skipped,
+                    numbers: exclusionPlusRecord.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
                 },
                 unified: {
                     count: unified.toBet.length,
@@ -972,6 +1175,7 @@ class FutureSimulationService {
             };
 
             results.exclusion.details.push(detail);
+            results.exclusionPlus.details.push(detail);
             results.unified.details.push(detail);
             results.advanced.details.push(detail);
             results.hybridAI.details.push(detail);
@@ -1011,9 +1215,22 @@ class FutureSimulationService {
                 exclusion: {
                     wins: results.exclusion.wins,
                     losses: results.exclusion.losses,
+                    skips: results.exclusion.skips || 0,
                     total: results.exclusion.wins + results.exclusion.losses,
-                    winRate: ((results.exclusion.wins / (results.exclusion.wins + results.exclusion.losses)) * 100).toFixed(1),
+                    winRate: (results.exclusion.wins + results.exclusion.losses) > 0
+                        ? ((results.exclusion.wins / (results.exclusion.wins + results.exclusion.losses)) * 100).toFixed(1)
+                        : '0.0',
                     avgBets: calcAvgBets(results.exclusion.details, 'exclusion')
+                },
+                exclusionPlus: {
+                    wins: results.exclusionPlus.wins,
+                    losses: results.exclusionPlus.losses,
+                    skips: results.exclusionPlus.skips || 0,
+                    total: results.exclusionPlus.wins + results.exclusionPlus.losses,
+                    winRate: (results.exclusionPlus.wins + results.exclusionPlus.losses) > 0
+                        ? ((results.exclusionPlus.wins / (results.exclusionPlus.wins + results.exclusionPlus.losses)) * 100).toFixed(1)
+                        : '0.0',
+                    avgBets: calcAvgBets(results.exclusionPlus.details, 'exclusionPlus')
                 },
                 unified: {
                     wins: results.unified.wins,
