@@ -317,9 +317,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const isRecord = hasReachedRecordOuter || isNextRecordOuter;
                     const isSuperRecord = (hasReachedRecordOuter ? streak.isSuperRecord : isNextSuperRecordOuter);
 
-                    const borderColor = isRecord ? (isSuperRecord ? 'border-l-purple-700' : 'border-l-red-700') : 'border-l-red-500';
+                    const borderColor = isRecord ? (isSuperRecord ? 'border-l-purple-700' : 'border-l-red-700') : 'border-l-blue-300';
                     const bgColor = isRecord ? (isSuperRecord ? 'bg-purple-50' : 'bg-red-50') : 'bg-white';
                     const titleWeight = isRecord ? 'font-bold' : 'font-semibold';
+
 
                     const superBadge = isSuperRecord ? '<span class="ml-2 inline-block bg-purple-600 text-white text-[9px] px-1 py-0.5 rounded uppercase">Siêu KL</span>' : '';
 
@@ -457,24 +458,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const isNextRecord = targetFreqYear <= 1.5;
 
                             // Badge - show different messages based on condition
+                            // LOGIC MỚI: Chỉ hiện "Khó" khi là Kỷ lục/Siêu kỷ lục (freq <= 1.5)
+                            // Gap analysis cũ bị bỏ qua nếu tần suất > 1.5 lần/năm
                             let probBadge;
                             if (hasReachedRecord) {
                                 probBadge = `<span class="inline-block ${streak.isSuperRecord ? 'bg-purple-600' : 'bg-red-600'} text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🏆 Đạt ${streak.isSuperRecord ? 'Siêu KL' : 'Kỷ Lục'}</span>`;
                             } else if (isNextRecord) {
+                                // Tới hạn kỷ lục/siêu kỷ lục (freq <= 1.5)
                                 probBadge = `<span class="inline-block ${isNextSuperRecord ? 'bg-purple-600' : 'bg-red-600'} text-white text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">🚧 Tới hạn ${isNextSuperRecord ? 'Siêu KL' : 'Kỷ Lục'}</span>`;
-                            } else if (isLowProbExt && !isLowProb) {
-                                // Only extension gap is low
-                                const step = isSoLePattern ? 2 : 1;
-                                probBadge = `<span class="inline-block bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">⚠️ Khó kéo dài ${streakLen}→${streakLen + step}</span>`;
-                            } else if (isLowProbFinal) {
-                                probBadge = `<span class="inline-block bg-red-100 text-red-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Khó lên ${nextLen} ngày</span>`;
                             } else {
-                                probBadge = `<span class="inline-block bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">Dễ Tiếp Tục</span>`;
+                                // targetFreqYear > 1.5 → Dễ tiếp tục (bất kể gap analysis nói gì)
+                                // Gap "Khó lên/Khó kéo dài" không còn áp dụng vì logic chỉ dựa trên kỷ lục
+                                probBadge = `<span class="inline-block bg-green-100 text-green-800 text-[10px] px-1.5 py-0.5 rounded font-bold mt-1">✅ Dễ Tiếp Tục</span>`;
                             }
 
-                            const isWarning = hasReachedRecord || isNextRecord || isLowProbFinal;
+
+                            // isWarning chỉ dựa trên kỷ lục/siêu kỷ lục (không còn dùng gap analysis)
+                            const isWarning = hasReachedRecord || isNextRecord;
                             const isSuperLevel = hasReachedRecord ? streak.isSuperRecord : isNextSuperRecord;
-                            const cardBg = (hasReachedRecord || isNextRecord) ? (isSuperLevel ? 'bg-purple-50' : 'bg-red-50') : (isWarning ? 'bg-red-50' : 'bg-white');
+                            const cardBg = (hasReachedRecord || isNextRecord) ? (isSuperLevel ? 'bg-purple-50' : 'bg-red-50') : 'bg-white';
+
 
                             let freqHtml = '';
                             if (targetCount > 0) {
