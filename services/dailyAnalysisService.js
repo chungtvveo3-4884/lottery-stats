@@ -219,6 +219,8 @@ async function analyzeAndSavePrediction() {
     let excludedNumbers = new Set();
     let isSkipped = false;
 
+    const MAX_BET_COUNT = 65; // Nếu số đánh > 65 thì bỏ qua ngày đó
+
     if (suggestionsData && suggestionsData.numbersToBet) {
         // Exclusion = numbersToBet = 100 - (achieved ∪ achievedSuper ∪ threshold ∪ superThreshold)
         numbersBet = suggestionsData.numbersToBet.map(n => String(n).padStart(2, '0')).sort();
@@ -230,6 +232,13 @@ async function analyzeAndSavePrediction() {
         numbersBet = allNumbers.filter(n => !fallbackExcl.has(parseInt(n)));
         fallbackExcl.forEach(n => excludedNumbers.add(n));
         console.warn(`[Daily Analysis] Exclusion (fallback exclusionService): ${numbersBet.length} số đánh`);
+    }
+
+    // Kiểm tra giới hạn 65 số cho Exclusion
+    if (numbersBet.length > MAX_BET_COUNT) {
+        console.log(`[Daily Analysis] Exclusion SKIP: ${numbersBet.length} số > ${MAX_BET_COUNT} → Bỏ qua ngày này.`);
+        isSkipped = true;
+        numbersBet = [];
     }
 
     // ============ UNIFIED PREDICTION METHOD ============
@@ -366,9 +375,10 @@ async function analyzeAndSavePrediction() {
         date: predictionDateStr,
         // Phương pháp 1: Exclusion (Chuỗi + Gap) - ĐỒNG NHẤT với /api/suggestions
         danh: {
-            numbers: numbersBet, // Sử dụng biến đã check skip
+            numbers: numbersBet,
             count: numbersBet.length,
-            excluded: Array.from(excludedNumbers) // Danh sách số loại trừ
+            excluded: Array.from(excludedNumbers),
+            isSkipped: isSkipped
         },
         betAmount: betAmount,
         analysisDetails: {
@@ -480,16 +490,25 @@ async function analyzeAndSavePrediction() {
         exclusionPlusExcluded = [];
     }
 
+    // Kiểm tra giới hạn 65 số cho Exclusion+
+    let isSkippedSmart = false;
+    if (exclusionPlusNumbers.length > MAX_BET_COUNT) {
+        console.log(`[Daily Analysis] Exclusion+ SKIP: ${exclusionPlusNumbers.length} số > ${MAX_BET_COUNT} → Bỏ qua ngày này.`);
+        isSkippedSmart = true;
+        exclusionPlusNumbers = [];
+    }
+
     // Thêm Exclusion Plus vào newPrediction (thay thế Smart Pick)
     newPrediction.danhSmart = {
         numbers: exclusionPlusNumbers,
         count: exclusionPlusNumbers.length,
-        excluded: exclusionPlusExcluded
+        excluded: exclusionPlusExcluded,
+        isSkipped: isSkippedSmart
     };
     newPrediction.betAmountSmart = calculateBetAmount(0);
     newPrediction.analysisDetailsSmart = {
         method: 'exclusionPlus',
-        description: 'Exclusion +: Đánh tất cả số sau khi loại trừ Đạt kỷ lục và Tới hạn siêu kỷ lục (RED + PURPLE tiers)'
+        description: 'Exclusion +: Đánh tất cả số sau khi loại trừ Đạt kỷ lục và Tới hạn siêu kỷ lục (RED + PURPLE tiers). Bỏ qua nếu > 65 số.'
     };
     newPrediction.resultSmart = null;
 

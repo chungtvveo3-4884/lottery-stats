@@ -283,15 +283,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const danh = item[danhKey];
         const numCount = danh?.numbers?.length || 0;
 
-        // Kiểm tra nếu ngày bỏ qua (skip) do > 65 số
-        if (result && result.skipped && result.winningNumber) {
-            if (totals) totals.skipDays++;
+        // Kiểm tra skip: từ danh.isSkipped (chưa có kết quả) hoặc result.skipped (đã có kết quả)
+        const isSkipped = danh?.isSkipped || (result && result.skipped);
+        if (isSkipped) {
+            if (totals && result?.winningNumber) totals.skipDays++;
             return `
                 <td class="p-1 text-center bg-${color}-50 border-l-2 border-${color}-300">
-                    <span class="text-gray-400 text-[10px]">${numCount}</span>
+                    <span class="text-gray-400 text-[10px]">—</span>
                 </td>
-                <td class="p-1 text-center bg-${color}-50 text-gray-400 text-[10px]">Bỏ qua</td>
-                <td class="p-1 text-center bg-${color}-50 text-gray-400">⏩</td>
+                <td class="p-1 text-center bg-${color}-50 text-gray-400 text-[10px]" colspan="2">Bỏ qua (&gt;65)</td>
             `;
         }
 
@@ -315,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="p-1 text-right bg-${color}-50 font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}">${Math.round(profit).toLocaleString()}k</td>
                 <td class="p-1 text-center bg-${color}-50">${isWin ? '\u2705' : '\u274c'}</td>
             `;
-        } else if (danh && danh.numbers) {
+        } else if (danh && danh.numbers && danh.numbers.length > 0) {
             return `
                 <td class="p-1 text-center bg-${color}-50 border-l-2 border-${color}-300">${numCount}</td>
                 <td class="p-1 text-center bg-${color}-50 text-gray-400" colspan="2">⏳</td>
