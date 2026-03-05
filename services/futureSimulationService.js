@@ -3,6 +3,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const historicalExclusionSvc = require('./historicalExclusionService');
+const lotteryService = require('./lotteryService');
 
 class FutureSimulationService {
     constructor() {
@@ -988,10 +990,29 @@ class FutureSimulationService {
                 new Date(actualDay.date).toLocaleDateString('vi-VN') :
                 `Ngày ${i + 1}`;
 
-            // ===== PHƯƠNG PHÁP MỚI: Exclusion & Exclusion+ theo Kỷ lục =====
-            const recordExcl = this.exclusionByRecordMethod(dataForPrediction);
-            const exclusionRecord = { toBet: recordExcl.toBet, excluded: recordExcl.excluded, skipped: recordExcl.skipped };
-            const exclusionPlusRecord = { toBet: recordExcl.toBetPlus, excluded: recordExcl.excludedPlus, skipped: recordExcl.skippedPlus };
+            // ===== PHƯƠNG PHÁP MỚI: Exclusion & Exclusion+ theo Kỷ lục (dùng historicalExclusionService) =====
+            // Format ngày i thành 'dd/mm/yyyy' để dùng với historicalExclusionService
+            let targetDateDDMMYYYY;
+            if (actualDay.date) {
+                const d = new Date(actualDay.date);
+                targetDateDDMMYYYY = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            } else {
+                // Fallback: dùng exclusionByRecordMethod cũ
+                const recordExclFb = this.exclusionByRecordMethod(dataForPrediction);
+                targetDateDDMMYYYY = null;
+            }
+
+            let exclusionRecord, exclusionPlusRecord;
+            if (targetDateDDMMYYYY) {
+                const totalYears = lotteryService.getTotalYears();
+                const excl = historicalExclusionSvc.getExclusionsForDateCached(targetDateDDMMYYYY, totalYears);
+                exclusionRecord = { toBet: excl.toBet, excluded: excl.excluded, skipped: excl.skipped };
+                exclusionPlusRecord = { toBet: excl.toBetPlus, excluded: excl.excludedPlus, skipped: excl.skippedPlus };
+            } else {
+                const recordExclFb = this.exclusionByRecordMethod(dataForPrediction);
+                exclusionRecord = { toBet: recordExclFb.toBet, excluded: recordExclFb.excluded, skipped: recordExclFb.skipped };
+                exclusionPlusRecord = { toBet: recordExclFb.toBetPlus, excluded: recordExclFb.excludedPlus, skipped: recordExclFb.skippedPlus };
+            }
 
             // Chạy 4 phương pháp cũ (giữ lại cho các method khác)
             const exclusion = exclusionRecord; // Dùng record method cho exclusion
