@@ -154,6 +154,63 @@
             </div>
         </div>
 
+        <!-- Exclusion & Exclusion+ Summary -->
+        <div id="exclusionSummaryStats" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 hidden">
+            <!-- Exclusion -->
+            <div class="bg-gray-800 p-5 rounded-xl border border-orange-500/40 shadow-[0_0_12px_rgba(249,115,22,0.15)]">
+                <h4 class="text-orange-300 text-sm uppercase mb-3 font-bold text-center">📊 Exclusion (4 Tier)</h4>
+                <div class="flex justify-around items-center">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold" id="exclWinRate" style="color:#f97316"></div>
+                        <div class="text-xs text-gray-500 mt-1">Win Rate</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-green-400" id="exclWins"></div>
+                        <div class="text-xs text-gray-500">Thắng</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-red-400" id="exclLosses"></div>
+                        <div class="text-xs text-gray-500">Thua</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-gray-500" id="exclSkips"></div>
+                        <div class="text-xs text-gray-500">Skip</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-blue-300" id="exclAvg"></div>
+                        <div class="text-xs text-gray-500">TB số</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Exclusion+ -->
+            <div class="bg-gray-800 p-5 rounded-xl border border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+                <h4 class="text-cyan-300 text-sm uppercase mb-3 font-bold text-center">📊 Exclusion+ (3 Tier, Không Cam)
+                </h4>
+                <div class="flex justify-around items-center">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold" id="epWinRate" style="color:#22d3ee"></div>
+                        <div class="text-xs text-gray-500 mt-1">Win Rate</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-green-400" id="epWins"></div>
+                        <div class="text-xs text-gray-500">Thắng</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-red-400" id="epLosses"></div>
+                        <div class="text-xs text-gray-500">Thua</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-gray-500" id="epSkips"></div>
+                        <div class="text-xs text-gray-500">Skip</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-blue-300" id="epAvg"></div>
+                        <div class="text-xs text-gray-500">TB số</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Results Table -->
         <div id="resultsTable" class="hidden">
             <h3 class="text-xl font-bold mb-4">📋 Chi Tiết Từng Ngày <span
@@ -217,6 +274,7 @@
             loading.classList.remove('hidden');
             summaryStats.classList.add('hidden');
             detailedSummaryStats.classList.add('hidden');
+            document.getElementById('exclusionSummaryStats').classList.add('hidden');
             resultsTable.classList.add('hidden');
             expandAllBtn.classList.add('hidden');
             collapseAllBtn.classList.add('hidden');
@@ -262,6 +320,26 @@
                 document.getElementById('finalPlayDays').textContent = data.summary.finalPlayDays;
                 document.getElementById('finalSkipDays').textContent = data.summary.finalSkipDays;
                 document.getElementById('avgFinal').textContent = data.summary.avgFinalCount;
+
+                // Exclusion summary
+                const exclRate = parseFloat(data.summary.exclusionWinRate);
+                document.getElementById('exclWinRate').textContent = data.summary.exclusionWinRate || '-';
+                document.getElementById('exclWinRate').style.color = exclRate > 50 ? '#22c55e' : (exclRate > 35 ? '#f97316' : '#ef4444');
+                document.getElementById('exclWins').textContent = data.summary.exclusionWins || 0;
+                document.getElementById('exclLosses').textContent = data.summary.exclusionLosses || 0;
+                document.getElementById('exclSkips').textContent = data.summary.exclusionSkipDays || 0;
+                document.getElementById('exclAvg').textContent = data.summary.exclusionAvgCount || '-';
+
+                // Exclusion+ summary
+                const epRate = parseFloat(data.summary.exclusionPlusWinRate);
+                document.getElementById('epWinRate').textContent = data.summary.exclusionPlusWinRate || '-';
+                document.getElementById('epWinRate').style.color = epRate > 50 ? '#22c55e' : (epRate > 35 ? '#f97316' : '#ef4444');
+                document.getElementById('epWins').textContent = data.summary.exclusionPlusWins || 0;
+                document.getElementById('epLosses').textContent = data.summary.exclusionPlusLosses || 0;
+                document.getElementById('epSkips').textContent = data.summary.exclusionPlusSkipDays || 0;
+                document.getElementById('epAvg').textContent = data.summary.exclusionPlusAvgCount || '-';
+
+                document.getElementById('exclusionSummaryStats').classList.remove('hidden');
 
                 // Render Results
                 resultsContainer.innerHTML = data.results.map((r, idx) => {
@@ -356,20 +434,25 @@
                                         <div class="font-bold text-purple-400">${r.streakCount}</div>
                                     </div>
                                     <div class="text-center">
-                                        <div class="text-xs text-gray-400">Số đánh (Final)</div>
-                                        <div class="font-bold ${r.skipped ? 'text-gray-500 line-through' : 'text-green-300'}">${r.finalCount}</div>
+                                        <div class="text-xs text-gray-400">Final</div>
+                                        <div class="font-bold ${r.skipped ? 'text-gray-500 line-through' : (r.isFinalWin ? 'text-green-300' : 'text-white')}">${r.finalCount}</div>
                                     </div>
                                     <div class="text-center">
-                                        <div class="text-xs text-gray-400">Số loại</div>
-                                        <div class="font-bold text-red-300">${r.excludedCount}</div>
+                                        <div class="text-xs text-orange-400">Excl</div>
+                                        <div class="font-bold ${r.exclusionSkipped ? 'text-gray-500 line-through' : (r.isExclusionWin ? 'text-green-300' : 'text-orange-300')}">${r.exclusionSkipped ? 'SKIP' : r.exclusionCount}</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-xs text-cyan-400">Excl+</div>
+                                        <div class="font-bold ${r.exclusionPlusSkipped ? 'text-gray-500 line-through' : (r.isExclusionPlusWin ? 'text-green-300' : 'text-cyan-300')}">${r.exclusionPlusSkipped ? 'SKIP' : r.exclusionPlusCount}</div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-xs text-gray-400">Số về</div>
-                                        <div class="text-2xl font-bold ${r.isFinalWin ? 'text-green-400' : (r.isExcludedWin ? 'text-orange-400' : 'text-gray-400')}">${r.actualNumber < 10 ? '0' + r.actualNumber : r.actualNumber}</div>
+                                        <div class="text-2xl font-bold ${r.isFinalWin ? 'text-green-400' : (r.isExclusionWin ? 'text-orange-400' : (r.isExclusionPlusWin ? 'text-cyan-400' : (r.isExcludedWin ? 'text-orange-400' : 'text-gray-400')))}">${r.actualNumber < 10 ? '0' + r.actualNumber : r.actualNumber}</div>
                                     </div>
-                                    <div class="text-right min-w-[80px]">
+                                    <div class="text-right min-w-[100px]">
                                         <div class="font-bold ${statusClass}">${statusIcon}</div>
-                                        <div class="text-xs ${excludeStatusClass} mt-1">${excludeStatusIcon}</div>
+                                        <div class="text-xs mt-1 ${r.isExclusionWin ? 'text-orange-400' : 'text-gray-500'}">${r.exclusionSkipped ? '⏭️ Skip(E)' : (r.isExclusionWin ? '🟠 E:WIN' : '⚫ E:MISS')}</div>
+                                        <div class="text-xs ${r.isExclusionPlusWin ? 'text-cyan-400' : 'text-gray-500'}">${r.exclusionPlusSkipped ? '⏭️ Skip(E+)' : (r.isExclusionPlusWin ? '🩵 E+:WIN' : '⚫ E+:MISS')}</div>
                                     </div>
                                 </div>
                             </div>

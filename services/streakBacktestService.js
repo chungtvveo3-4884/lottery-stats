@@ -4,6 +4,7 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+const historicalExclusionSvc = require('./historicalExclusionService');
 
 const NUMBER_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'number_stats.json');
 const HEAD_TAIL_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics', 'head_tail_stats.json');
@@ -80,8 +81,20 @@ async function runBacktest(days = 30) {
             const dateObj = new Date(dateData.date);
             const dateStr = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
 
+            // Ngày tiếp theo cần dự đoán (ngày i+1)
+            const nextDayObj = new Date(nextDayData.date);
+            const nextDayStr = `${String(nextDayObj.getDate()).padStart(2, '0')}/${String(nextDayObj.getMonth() + 1).padStart(2, '0')}/${nextDayObj.getFullYear()}`;
+
             const actualNumber = nextDayData.special;
             const actualNumberStr = String(actualNumber).padStart(2, '0');
+
+            // === EXCLUSION & EXCLUSION+ (dùng historicalExclusionService) ===
+            const totalYears = lotteryService.getTotalYears();
+            const exclResult = historicalExclusionSvc.getExclusionsForDateCached(nextDayStr, totalYears);
+            const exclusionNumbers = exclResult.toBet;   // Exclusion: 4 subTier
+            const exclusionPlusNumbers = exclResult.toBetPlus; // Exclusion+: 3 subTier
+            const exclusionSkipped = exclResult.skipped;
+            const exclusionPlusSkipped = exclResult.skippedPlus;
 
             // Tìm tất cả chuỗi kết thúc vào ngày này (đang diễn ra)
             const activeStreaks = findActiveStreaksAtDate(allStats, dateStr, suggestionsController);
@@ -116,6 +129,10 @@ async function runBacktest(days = 30) {
             const isExcludedWin = excludedNumbers.includes(actualNumber);
             const isFinalWin = !skipped && finalNumbers.includes(actualNumber);
 
+            // Kiểm tra Exclusion & Exclusion+
+            const isExclusionWin = !exclusionSkipped && exclusionNumbers.includes(actualNumber);
+            const isExclusionPlusWin = !exclusionPlusSkipped && exclusionPlusNumbers.includes(actualNumber);
+
             if (isWin) totalWins++;
             else totalLosses++;
 
@@ -139,6 +156,18 @@ async function runBacktest(days = 30) {
                 isFinalWin: isFinalWin,
                 finalNumbers: finalNumbers,
 
+                // Exclusion (historicalExclusionService)
+                exclusionCount: exclusionNumbers.length,
+                exclusionSkipped: exclusionSkipped,
+                isExclusionWin: isExclusionWin,
+                exclusionNumbers: exclusionNumbers,
+
+                // Exclusion+ (historicalExclusionService)
+                exclusionPlusCount: exclusionPlusNumbers.length,
+                exclusionPlusSkipped: exclusionPlusSkipped,
+                isExclusionPlusWin: isExclusionPlusWin,
+                exclusionPlusNumbers: exclusionPlusNumbers,
+
                 allNumbers: allNumbers,
                 streakDetails: activeStreaks,
                 streakCount: activeStreaks.length
@@ -152,11 +181,29 @@ async function runBacktest(days = 30) {
         const excludedFailCount = results.filter(r => r.isExcludedWin).length;
         const excludedSuccessRate = results.length > 0 ? (results.length - excludedFailCount) / results.length : 0;
 
-        // Final Win Rate (Chỉ tính trên những ngày KHÔNG SKIP)
+        // Final Win Rate (Chứ tính trên những ngày KHÔNG SKIP)
         const playedDays = results.filter(r => !r.skipped);
         const finalWins = playedDays.filter(r => r.isFinalWin).length;
         const finalLosses = playedDays.length - finalWins;
         const finalWinRate = playedDays.length > 0 ? finalWins / playedDays.length : 0;
+
+        // Exclusion Stats
+        const exclusionPlayed = results.filter(r => !r.exclusionSkipped);
+        const exclusionWins = exclusionPlayed.filter(r => r.isExclusionWin).length;
+        const exclusionLosses = exclusionPlayed.length - exclusionWins;
+        const exclusionWinRate = exclusionPlayed.length > 0 ? exclusionWins / exclusionPlayed.length : 0;
+        const exclusionAvgCount = exclusionPlayed.length > 0
+            ? (exclusionPlayed.reduce((a, b) => a + b.exclusionCount, 0) / exclusionPlayed.length).toFixed(1)
+            : 0;
+
+        // Exclusion+ Stats
+        const exclusionPlusPlayed = results.filter(r => !r.exclusionPlusSkipped);
+        const exclusionPlusWins = exclusionPlusPlayed.filter(r => r.isExclusionPlusWin).length;
+        const exclusionPlusLosses = exclusionPlusPlayed.length - exclusionPlusWins;
+        const exclusionPlusWinRate = exclusionPlusPlayed.length > 0 ? exclusionPlusWins / exclusionPlusPlayed.length : 0;
+        const exclusionPlusAvgCount = exclusionPlusPlayed.length > 0
+            ? (exclusionPlusPlayed.reduce((a, b) => a + b.exclusionPlusCount, 0) / exclusionPlusPlayed.length).toFixed(1)
+            : 0;
 
         return {
             summary: {
@@ -177,7 +224,23 @@ async function runBacktest(days = 30) {
                 finalWins: finalWins,
                 finalLosses: finalLosses,
                 finalWinRate: (finalWinRate * 100).toFixed(2) + '%',
-                avgFinalCount: (playedDays.reduce((a, b) => a + b.finalCount, 0) / (playedDays.length || 1)).toFixed(1)
+                avgFinalCount: (playedDays.reduce((a, b) => a + b.finalCount, 0) / (playedDays.length || 1)).toFixed(1),
+
+                // Exclusion summary
+                exclusionPlayDays: exclusionPlayed.length,
+                exclusionSkipDays: results.length - exclusionPlayed.length,
+                exclusionWins: exclusionWins,
+                exclusionLosses: exclusionLosses,
+                exclusionWinRate: (exclusionWinRate * 100).toFixed(2) + '%',
+                exclusionAvgCount: exclusionAvgCount,
+
+                // Exclusion+ summary
+                exclusionPlusPlayDays: exclusionPlusPlayed.length,
+                exclusionPlusSkipDays: results.length - exclusionPlusPlayed.length,
+                exclusionPlusWins: exclusionPlusWins,
+                exclusionPlusLosses: exclusionPlusLosses,
+                exclusionPlusWinRate: (exclusionPlusWinRate * 100).toFixed(2) + '%',
+                exclusionPlusAvgCount: exclusionPlusAvgCount
             },
             results: results
         };
