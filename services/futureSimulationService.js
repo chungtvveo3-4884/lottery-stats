@@ -1006,12 +1006,12 @@ class FutureSimulationService {
             if (targetDateDDMMYYYY) {
                 const totalYears = lotteryService.getTotalYears();
                 const excl = historicalExclusionSvc.getExclusionsForDateCached(targetDateDDMMYYYY, totalYears);
-                exclusionRecord = { toBet: excl.toBet, excluded: excl.excluded, skipped: excl.skipped };
-                exclusionPlusRecord = { toBet: excl.toBetPlus, excluded: excl.excludedPlus, skipped: excl.skippedPlus };
+                exclusionRecord = { toBet: excl.toBet, excluded: excl.excluded, skipped: excl.skipped, totalBet: excl.totalBet4 };
+                exclusionPlusRecord = { toBet: excl.toBetPlus, excluded: excl.excludedPlus, skipped: excl.skippedPlus, totalBet: excl.totalBet3 };
             } else {
                 const recordExclFb = this.exclusionByRecordMethod(dataForPrediction);
-                exclusionRecord = { toBet: recordExclFb.toBet, excluded: recordExclFb.excluded, skipped: recordExclFb.skipped };
-                exclusionPlusRecord = { toBet: recordExclFb.toBetPlus, excluded: recordExclFb.excludedPlus, skipped: recordExclFb.skippedPlus };
+                exclusionRecord = { toBet: recordExclFb.toBet, excluded: recordExclFb.excluded, skipped: recordExclFb.skipped, totalBet: recordExclFb.toBet.length };
+                exclusionPlusRecord = { toBet: recordExclFb.toBetPlus, excluded: recordExclFb.excludedPlus, skipped: recordExclFb.skippedPlus, totalBet: recordExclFb.toBetPlus.length };
             }
 
             // Chạy 4 phương pháp cũ (giữ lại cho các method khác)
@@ -1127,13 +1127,13 @@ class FutureSimulationService {
                 date: dateStr,
                 actualNumber: String(actualNumber).padStart(2, '0'),
                 exclusion: {
-                    count: exclusionRecord.toBet.length,
+                    count: exclusionRecord.totalBet || exclusionRecord.toBet.length,
                     win: exclusionRecordWin,
                     skipped: exclusionRecord.skipped,
                     numbers: exclusionRecord.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
                 },
                 exclusionPlus: {
-                    count: exclusionPlusRecord.toBet.length,
+                    count: exclusionPlusRecord.totalBet || exclusionPlusRecord.toBet.length,
                     win: exclusionPlusRecordWin,
                     skipped: exclusionPlusRecord.skipped,
                     numbers: exclusionPlusRecord.toBet.slice(0, 10).map(n => String(n).padStart(2, '0'))
@@ -1224,10 +1224,20 @@ class FutureSimulationService {
         };
 
         // Tính lại average bets cho từng phương pháp
+        // Chỉ tính trên ngày KHÔNG SKIP (loại ngày skip có count=0 khỏi averge)
         const calcAvgBets = (details, methodName) => {
             if (details.length === 0) return 0;
-            const sum = details.reduce((s, d) => s + (d[methodName]?.count || 0), 0);
-            return Math.round(sum / details.length);
+            // Exclusion và ExclusionPlus: chỉ tính ngày không skip
+            const isExclusionMethod = methodName === 'exclusion' || methodName === 'exclusionPlus';
+            let playedDetails;
+            if (isExclusionMethod) {
+                playedDetails = details.filter(d => d[methodName] && !d[methodName].skipped);
+            } else {
+                playedDetails = details;
+            }
+            if (playedDetails.length === 0) return 0;
+            const sum = playedDetails.reduce((s, d) => s + (d[methodName]?.count || 0), 0);
+            return Math.round(sum / playedDetails.length);
         };
 
         return {

@@ -502,8 +502,9 @@ function getExclusionsForDate(targetDateStr, totalYears) {
         if (!excluded3.has(i)) toBet3.push(i);
     }
 
-    const skipped = toBet4.length > MAX_BET_COUNT;
-    const skippedPlus = toBet3.length > MAX_BET_COUNT;
+    // Skip khi > MAX_BET_COUNT (quá nhiều số) HOẶC = 0 (không có gì để đánh)
+    const skipped = toBet4.length > MAX_BET_COUNT || toBet4.length === 0;
+    const skippedPlus = toBet3.length > MAX_BET_COUNT || toBet3.length === 0;
 
     return {
         toBet: skipped ? [] : toBet4,
@@ -512,8 +513,8 @@ function getExclusionsForDate(targetDateStr, totalYears) {
         excludedPlus: Array.from(excluded3),
         skipped,
         skippedPlus,
-        totalBet4: toBet4.length,
-        totalBet3: toBet3.length
+        totalBet4: toBet4.length,  // Số thực trước khi skip
+        totalBet3: toBet3.length   // Số thực trước khi skip
     };
 }
 
