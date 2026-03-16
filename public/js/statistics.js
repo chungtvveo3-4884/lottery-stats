@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             sortField: false, // Giữ nguyên thứ tự ban đầu của optgroup
             searchField: ['text'], // Cho phép search theo text của option
             placeholder: "Gõ để tìm kiếm loại thống kê... (VD: Đầu lẻ, Dạng)",
-            maxOptions: null, // Không giới hạn số lượng hiển thị khi search
+            maxOptions: 100, // Tối ưu performance: Giới hạn render 100 lựa chọn phù hợp nhất
             onFocus: function () {
                 // Lưu lại item hiện tại và clear đi để ô search hoàn toàn trống 100% khi bắt đầu gõ
                 this._backupValue = this.getValue();
@@ -146,61 +146,122 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Khởi tạo lần đầu với chế độ 'default'
         populateMinLength('default');
 
+        let globalActiveStreaksHistory = [];
+        let currentSelectedHistoryDate = null;
+        let recentLotteryData = [];
+
         const today = new Date();
         endDateInput.valueAsDate = today;
         const pastDate = new Date();
         pastDate.setDate(today.getDate() - 360);
         startDateInput.valueAsDate = pastDate;
 
+        // Remove `fetchQuickStats();` from here because we will call `fetchQuickStats` inside `fetchRecentResults` if needed? No, `fetchQuickStats` is standalone. 
         fetchQuickStats();
         fetchLastUpdateDate();
     };
 
     const fetchRecentResults = async () => {
         try {
-            const response = await fetch(`${BASE_URL}/api/recent-results?limit=7`);
-            if (!response.ok) throw new Error('Network response was not ok');
-            const data = await response.json();
-            renderRecentResults(data);
+            const [recentRes, historyRes] = await Promise.all([
+                fetch(`${BASE_URL}/api/recent-results?limit=7`),
+                fetch(`${BASE_URL}/statistics/api/v2/quick-stats-history`)
+            ]);
+            if (!recentRes.ok || !historyRes.ok) throw new Error('Network response was not ok');
+
+            recentLotteryData = await recentRes.json();
+            globalActiveStreaksHistory = await historyRes.json();
+
+            if (globalActiveStreaksHistory.length > 0) {
+                currentSelectedHistoryDate = globalActiveStreaksHistory[0].date;
+            }
+
+            renderRecentResults();
+            renderSelectedHistoryDate();
         } catch (error) {
-            console.error('Lỗi khi tải kết quả gần đây:', error);
-            resultContainer.innerHTML = '<p class="text-red-500">Không thể tải kết quả xổ số gần đây.</p>';
+            console.error('Lỗi khi tải kết quả hoặc lịch sử gần đây:', error);
         }
     };
 
-    const renderRecentResults = (data) => {
-        if (!data || data.length === 0) {
-            resultContainer.innerHTML = '<p class="text-gray-500">Không có dữ liệu kết quả gần đây.</p>';
+    const renderRecentResults = () => {
+        let container = document.getElementById('recent-results-selector');
+
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'recent-results-selector';
+            container.className = 'mb-6';
+            const currentStreaksSec = document.getElementById('current-streaks-section');
+            if (currentStreaksSec) {
+                currentStreaksSec.parentNode.insertBefore(container, currentStreaksSec);
+            } else {
+                return;
+            }
+        }
+
+        if (!recentLotteryData || recentLotteryData.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">Không có dữ liệu kết quả gần đây.</p>';
             return;
         }
 
         let html = `
-            <h4 class="text-lg font-bold text-gray-800 mb-4">Kết quả xổ số 7 ngày gần nhất</h4>
-            <div class="flex flex-wrap gap-4 justify-start">
+            <div class="bg-white rounded-lg shadow-md p-5 flex flex-col border-t-4 border-indigo-500 animate-fade-in-up">
+                <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center"><i class="bi bi-calendar-range text-indigo-500 me-2"></i> Lịch sử Chuỗi Đang Diễn Ra (7 Ngày)</h4>
+                <div class="flex gap-3 overflow-x-auto py-2 px-1 justify-start items-center">
         `;
 
-        data.forEach(item => {
-            // Format date dd/mm/yyyy
+        const displayData = [...recentLotteryData].reverse();
+
+        displayData.forEach(item => {
             const dateObj = new Date(item.date);
             const dateStr = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
-
-            // Use item.special instead of item.value
             const specialValue = item.special !== undefined ? item.special : '??';
 
+            const isActive = currentSelectedHistoryDate === dateStr;
+            const activeClasses = isActive ? 'border-2 border-red-500 bg-red-50 shadow-md' : 'border border-gray-200 bg-white hover:bg-gray-50 hover:shadow-sm opacity-80 cursor-pointer';
+
             html += `
-                <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4 flex flex-col items-center min-w-[100px]">
-                    <span class="text-2xl font-bold text-red-600 mb-2">${specialValue}</span>
-                    <span class="text-xs text-gray-500">${dateStr}</span>
+                <div onclick="window.selectHistoryDate('${dateStr}')" class="transition-all duration-200 rounded-xl p-3 flex flex-col items-center min-w-[80px] ${activeClasses}">
+                    <span class="text-2xl font-bold ${isActive ? 'text-red-600' : 'text-gray-600'} mb-1">${specialValue}</span>
+                    <span class="text-xs ${isActive ? 'text-red-500 font-semibold' : 'text-gray-500'} whitespace-nowrap">${dateStr}</span>
                 </div>
             `;
         });
 
         html += `
+                </div>
             </div>
-            <p class="mt-4 text-sm text-gray-500 italic">Chọn loại thống kê và nhấn "Thống Kê" để xem phân tích chi tiết.</p>
         `;
 
-        resultContainer.innerHTML = html;
+        container.innerHTML = html;
+        resultContainer.innerHTML = '<p class="text-gray-500">Vui lòng chọn loại thống kê và nhấn nút "Thống Kê" để xem kết quả.</p>';
+    };
+
+    window.selectHistoryDate = (dateStr) => {
+        currentSelectedHistoryDate = dateStr;
+        renderRecentResults();
+        renderSelectedHistoryDate();
+    };
+
+    const renderSelectedHistoryDate = () => {
+        if (!currentSelectedHistoryDate || globalActiveStreaksHistory.length === 0) return;
+
+        const historyForDate = globalActiveStreaksHistory.find(h => h.date === currentSelectedHistoryDate);
+        if (historyForDate) {
+            const streaksByLength = historyForDate.streaks.reduce((acc, streak) => {
+                if (!acc[streak.length]) { acc[streak.length] = []; }
+                acc[streak.length].push(streak);
+                return acc;
+            }, {});
+
+            renderCurrentStreaks(streaksByLength, historyForDate.streaks.length, window.GLOBAL_TOTAL_YEARS || 20.41, currentSelectedHistoryDate);
+        } else {
+            const container = document.getElementById('current-streaks-container');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500 p-4">Không có chuỗi nào cho ngày này.</p>';
+                currentStreaksTitle.innerHTML = `Chuỗi Đang Diễn Ra (${currentSelectedHistoryDate}) <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">0</span>`;
+                currentStreaksSection.classList.remove('d-none');
+            }
+        }
     };
 
     const fetchLastUpdateDate = async () => {
@@ -277,18 +338,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 acc[streak.length].push(streak);
                 return acc;
             }, {});
-            renderCurrentStreaks(streaksByLength, allCurrentStreaks.length, totalYears);
+
+            // We no longer call renderCurrentStreaks here as it's handled by selectHistoryDate
         } catch (error) {
             console.error("Lỗi khi tải thống kê nhanh:", error);
         }
     };
 
-    const renderCurrentStreaks = (streaksByLength, totalCount, totalYears = 20.41) => {
+    const renderCurrentStreaks = (streaksByLength, totalCount, totalYears = 20.41, forDate = '') => {
         console.log('[DEBUG] streaksByLength:', streaksByLength);
         const sortedLengths = Object.keys(streaksByLength).sort((a, b) => b - a);
         if (totalCount > 0) {
             currentStreaksSection.classList.remove('d-none');
-            currentStreaksTitle.innerHTML = `Chuỗi Đang Diễn Ra <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">${totalCount}</span>`;
+            const dateSuffix = forDate ? ` (${forDate})` : '';
+            currentStreaksTitle.innerHTML = `Chuỗi Đang Diễn Ra${dateSuffix} <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">${totalCount}</span>`;
             let finalHtml = '';
             sortedLengths.forEach(length => {
                 finalHtml += `
@@ -327,7 +390,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     finalHtml += `
                                 <div class="${bgColor} rounded-lg shadow-sm border border-l-4 ${borderColor} transition hover:shadow-lg hover:-translate-y-1">
                                     <div class="p-4 flex flex-col h-full">
-                                        <h6 class="${titleWeight} text-gray-800">${streak.description}${superBadge}</h6>
+                                        
+                                        <div class="relative group cursor-pointer" onclick="this.querySelector('.group-hover\\:block').classList.toggle('hidden')">
+                                            <h6 class="${titleWeight} text-gray-800 hover:text-indigo-600 transition flex items-center gap-1">
+                                                ${streak.description}${superBadge} <i class="bi bi-info-circle text-xs text-gray-400"></i>
+                                            </h6>
+                                            ${streak.patternNumbers && streak.patternNumbers.length > 0 ? `
+                                            <div class="absolute left-0 top-full mt-2 w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 hidden group-hover:block transition shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                                                <p class="text-xs text-gray-400 mb-2 border-b border-gray-700 pb-1">Các số có thể xuất hiện tiếp theo (${streak.patternNumbers.length} số):</p>
+                                                <div class="flex flex-wrap gap-1">
+                                                    ${streak.patternNumbers.map(n => `<span class="px-1 py-0.5 bg-gray-800 text-gray-200 text-[10px] rounded border border-gray-700">${String(n).padStart(2, '0')}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+
                                         <p class="text-xs text-gray-500 mb-1">Từ ngày: ${streak.startDate}</p>
                                         <p class="text-xs ${isRecord ? 'text-red-500 font-bold' : 'text-gray-500'}">Mốc kỷ lục mới: ${streak.recordLength} ngày</p>
                                         <div class="mt-auto pt-2">
@@ -380,7 +457,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             let isLowProbExact = false;
                             let isLowProbExt = false;
 
-                            if (gapInfoGE) {
+                            if (gapInfoGE && gapInfoGE.minGap !== undefined) {
                                 const threshold = gapInfoGE.minGap !== null ? gapInfoGE.minGap * (1 + GAP_BUFFER) : 0;
                                 const isLow = gapInfoGE.minGap !== null && gapInfoGE.lastGap < threshold;
                                 if (isLow) isLowProbGE = true;
@@ -400,7 +477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 </div>`;
                             }
 
-                            if (gapInfoExact) {
+                            if (gapInfoExact && gapInfoExact.minGap !== undefined) {
                                 const threshold = gapInfoExact.minGap !== null ? gapInfoExact.minGap * (1 + GAP_BUFFER) : 0;
                                 const isLow = gapInfoExact.minGap !== null && gapInfoExact.lastGap < threshold;
                                 if (isLow) isLowProbExact = true;
@@ -748,7 +825,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sortedStreaks = streaks.sort((a, b) => parseDate(b.endDate) - parseDate(a.endDate));
         let content = sortedStreaks.map(streak => `
                     <div class="py-3 border-b border-gray-200 last:border-b-0">
-                        <p class="font-semibold">${formatStreakValue(streak, description)}</p>
+                        <div class="relative group cursor-pointer inline-block" onclick="this.querySelector('.group-hover\\\\:block').classList.toggle('hidden')">
+                            <p class="font-semibold hover:text-indigo-600 transition flex items-center gap-1">
+                                ${formatStreakValue(streak, description)} <i class="bi bi-info-circle text-xs text-gray-400"></i>
+                            </p>
+                            ${streak.patternNumbers && streak.patternNumbers.length > 0 ? `
+                            <div class="absolute left-0 top-full mt-2 w-64 p-3 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-50 hidden group-hover:block transition shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+                                <p class="text-xs text-gray-400 mb-2 border-b border-gray-700 pb-1">Các số thuộc dạng chuỗi này (${streak.patternNumbers.length} số):</p>
+                                <div class="flex flex-wrap gap-1">
+                                    ${streak.patternNumbers.map(n => `<span class="px-1 py-0.5 bg-gray-800 text-gray-200 text-[10px] rounded border border-gray-700">${String(n).padStart(2, '0')}</span>`).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
                         <p class="text-sm text-gray-600">${streak.startDate} đến ${streak.endDate} (${streak.length} ngày)</p>
                         <div class="flex flex-wrap gap-1 mt-1">${renderFullSequence(streak, description)}</div>
                     </div>`).join('');
@@ -857,7 +946,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const understandVersionBtn = document.getElementById('understandVersionBtn');
 
     if (versionModal && closeVersionModalBtn && understandVersionBtn) {
-        const v2PopupShown = localStorage.getItem('v2_1_popup_shown_2026_03_01');
+        const v2PopupShown = localStorage.getItem('v2_2_popup_shown_2026_03_08');
 
         if (!v2PopupShown) {
             versionModal.classList.remove('hidden');
@@ -865,7 +954,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const closeModal = () => {
             versionModal.classList.add('hidden');
-            localStorage.setItem('v2_1_popup_shown_2026_03_01', 'true');
+            localStorage.setItem('v2_2_popup_shown_2026_03_08', 'true');
         };
 
         closeVersionModalBtn.addEventListener('click', closeModal);

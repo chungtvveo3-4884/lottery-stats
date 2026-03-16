@@ -68,6 +68,12 @@ function computeQuickStatsForDate(targetDateStr, totalYears) {
     prevDate.setDate(prevDate.getDate() - 1);
     const prevDateStr = formatDate(prevDate);
 
+    const lotteryService = require('./lotteryService');
+    const { getNumbersFromCategory } = require('../controllers/suggestionsController');
+    const rawData = lotteryService.getRawData() || [];
+    const prevDateISOPrefix = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+    const targetLotteryDay = rawData.find(r => r.date && String(r.date).startsWith(prevDateISOPrefix));
+
     const quickStats = {};
 
     const analyzeCategory = (key, categoryData) => {
@@ -105,8 +111,53 @@ function computeQuickStatsForDate(targetDateStr, totalYears) {
         // Tìm chuỗi đang diễn ra tại ngày cần dự đoán
         let current = null;
         if (isSoLePattern) {
-            // So le: chuỗi kết thúc ngày hôm qua
-            current = historicalStreaks.find(s => s.endDate === prevDateStr);
+            // So le: chuỗi kết thúc 2 ngày trước (targetDate là ngày khớp pattern)
+            // hoặc kết thúc ngày hôm qua (targetDate là ngày xen kẽ)
+            const targetDateObj = parseDate(targetDateStr);
+            const twoDaysAgo = new Date(targetDateObj);
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+            const twoDaysAgoStr = formatDate(twoDaysAgo);
+
+            let streak = historicalStreaks.find(s => s.endDate === twoDaysAgoStr);
+            if (streak) {
+                const isSoLeMoi = key.toLowerCase().includes('solemoi') || key.toLowerCase().includes('sole_moi');
+                let isValid = true;
+
+                if (isSoLeMoi && targetLotteryDay && targetLotteryDay.special !== undefined) {
+                    try {
+                        const { predictNextInSequence } = require('../controllers/suggestionsController');
+                        const [categoryName, subcategoryStr] = key.split(':');
+                        const matchNumbers = predictNextInSequence({ current: streak }, categoryName, subcategoryStr || '');
+                        if (matchNumbers && matchNumbers.length > 0) {
+                            const stringNumbers = matchNumbers.map(n => String(n).padStart(2, '0'));
+                            const specialNum = String(targetLotteryDay.special).padStart(2, '0');
+                            if (stringNumbers.includes(specialNum)) {
+                                isValid = false; // Bị gãy chuỗi vì ngày xen kẽ trùng với chuỗi!
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Lỗi khi validate So le mới for history:', e.message);
+                    }
+                }
+
+                if (isValid) {
+                    current = {
+                        ...streak,
+                        fullSequence: streak.fullSequence ? [...streak.fullSequence] : []
+                    };
+                    if (targetLotteryDay && targetLotteryDay.special !== undefined) {
+                        current.fullSequence.push({
+                            date: prevDateStr,
+                            value: String(targetLotteryDay.special).padStart(2, '0'),
+                            isLatest: true
+                        });
+                    }
+                }
+            }
+
+            if (!current) {
+                current = historicalStreaks.find(s => s.endDate === prevDateStr);
+            }
         } else if (isTienLuiSoLe) {
             current = historicalStreaks.find(s => s.endDate === prevDateStr && s.length >= 4);
         } else {
@@ -142,6 +193,24 @@ function computeQuickStatsForDate(targetDateStr, totalYears) {
             }
         }
 
+        let isPotentialRecord = false;
+        if (!current && computedMaxStreak === 2 && !isSoLePattern && !isTienLuiSoLe) {
+            const isGeneric = (key.includes('veLienTiep') || key.includes('veCungGiaTri') || key.includes('dongTien') || key.includes('dongLui'));
+            const isSingleChar = (key.startsWith('cacDau') || key.startsWith('motDau') || key.startsWith('cacDit') || key.startsWith('motDit'));
+
+            if (isGeneric || isSingleChar) {
+                const todayStreak = historicalStreaks.find(s => s.endDate === prevDateStr && s.length === 1);
+                if (todayStreak) {
+                    current = {
+                        ...todayStreak,
+                        mockPotential: true,
+                        length: 1
+                    };
+                    isPotentialRecord = true;
+                }
+            }
+        }
+
         quickStats[key] = {
             description: categoryData.description,
             longest,
@@ -149,6 +218,7 @@ function computeQuickStatsForDate(targetDateStr, totalYears) {
             current,
             computedMaxStreak,
             isSuperMaxThreshold,
+            isPotentialRecord,
             exactGapStats,
             gapStats: exactGapStats // Dùng exactGapStats cho cả gapStats (đủ cho freq calc)
         };
@@ -172,148 +242,13 @@ function computeQuickStatsForDate(targetDateStr, totalYears) {
     return quickStats;
 }
 
-// ==== PORT predictNextInSequence từ suggestionsController ====
-function predictNextInSequence(stat, category, subcategory) {
-    let lastValue = null;
-    if (stat.current.values && stat.current.values.length > 0) {
-        lastValue = stat.current.values[stat.current.values.length - 1];
-    } else if (stat.current.value) {
-        lastValue = stat.current.value;
-    } else {
-        return [];
-    }
+// ==== REUSE logic từ suggestionsController ====
+const suggestionsController = require('../controllers/suggestionsController');
 
-    const isProgressive = subcategory.includes('tien');
-
-    if (category === 'tienLuiSoLe' || category === 'luiTienSoLe') {
-        if (stat.current.values && stat.current.values.length >= 2) {
-            const values = stat.current.values;
-            const lastVal = parseInt(values[values.length - 1], 10);
-            const prevVal = parseInt(values[values.length - 2], 10);
-            const isTien = lastVal > prevVal;
-            if (isTien) return Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastVal);
-            else return Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastVal);
-        }
-        return [];
-    }
-
-    // Helper: Extract giá trị từ 2-digit number cho category
-    const extractVal = (numStr, cat) => {
-        const n = parseInt(numStr, 10);
-        if (isNaN(n)) return null;
-        const s = String(n).padStart(2, '0');
-        const d0 = parseInt(s[0], 10);
-        const d1 = parseInt(s[1], 10);
-
-        if (cat.startsWith('dau_')) return d0; // đầu
-        if (cat.startsWith('dit_')) return d1; // đít
-        if (cat.startsWith('tong_tt_')) {
-            const sum = d0 + d1;
-            return sum === 0 ? 10 : (sum % 10 === 0 ? 10 : sum % 10);
-        }
-        if (cat.startsWith('tong_moi_')) return d0 + d1; // tổng mới 0-18
-        if (cat.startsWith('hieu_')) return Math.abs(d0 - d1); // hiệu 0-9
-        return null;
-    };
-
-    // Xác định sequence
-    const getSeq = (cat) => {
-        if (cat.startsWith('dau_')) {
-            const suffix = cat.replace('dau_', '');
-            if (suffix === 'chan') return ['0', '2', '4', '6', '8'];
-            if (suffix === 'le') return ['1', '3', '5', '7', '9'];
-            if (suffix === 'nho') return ['0', '1', '2', '3', '4'];
-            if (suffix === 'to') return ['5', '6', '7', '8', '9'];
-            return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; // General dau
-        }
-        if (cat.startsWith('dit_')) {
-            const suffix = cat.replace('dit_', '');
-            if (suffix === 'chan') return ['0', '2', '4', '6', '8'];
-            if (suffix === 'le') return ['1', '3', '5', '7', '9'];
-            if (suffix === 'nho') return ['0', '1', '2', '3', '4'];
-            if (suffix === 'to') return ['5', '6', '7', '8', '9'];
-            return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; // General dit
-        }
-        if (cat.startsWith('tong_tt_')) {
-            const s = cat.replace('tong_tt_', '');
-            if (s === 'cac_tong') return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-            if (s === 'chan') return ['2', '4', '6', '8', '10'];
-            if (s === 'le') return ['1', '3', '5', '7', '9'];
-            // For range like 5_7, chan_le, etc. → tổng TT sequence chung
-            return ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-        }
-        if (cat.startsWith('tong_moi_')) {
-            const s = cat.replace('tong_moi_', '');
-            if (s === 'cac_tong') return Array.from({ length: 19 }, (_, i) => String(i));
-            if (s === 'chan') return Array.from({ length: 10 }, (_, i) => String(i * 2));
-            if (s === 'le') return Array.from({ length: 9 }, (_, i) => String(i * 2 + 1));
-            return Array.from({ length: 19 }, (_, i) => String(i)); // General tong_moi
-        }
-        if (cat.startsWith('hieu_')) {
-            const s = cat.replace('hieu_', '');
-            if (s === 'cac_hieu') return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-            if (s === 'chan') return ['0', '2', '4', '6', '8'];
-            if (s === 'le') return ['1', '3', '5', '7', '9'];
-            return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; // General hieu
-        }
-        return null;
-    };
-
-    const sequence = getSeq(category);
-    if (!sequence) return [];
-
-    // Extract derived value for lookup in sequence
-    const derivedVal = extractVal(String(lastValue), category);
-    const seqMap = new Map(sequence.map((v, i) => [v, i]));
-
-    // Try both derived value and raw value for lookup
-    let idx = undefined;
-    if (derivedVal !== null) {
-        idx = seqMap.get(String(derivedVal));
-    }
-    if (idx === undefined) {
-        const lastStr = String(lastValue);
-        idx = seqMap.get(lastStr) ?? seqMap.get(lastStr.padStart(2, '0')) ?? seqMap.get(String(parseInt(lastStr, 10)));
-    }
-
-    if (idx === undefined) return [];
-
-    // Tìm giá trị tiếp theo
-    const targetSeqValue = isProgressive
-        ? sequence[(idx + 1) % sequence.length]
-        : sequence[(idx - 1 + sequence.length) % sequence.length];
-
-    const targetNum = parseInt(targetSeqValue, 10);
-
-    // Map giá trị target về các số 2 chữ số
-    if (category.startsWith('dau_')) {
-        return Array.from({ length: 100 }, (_, i) => i).filter(n => Math.floor(n / 10) === targetNum);
-    }
-    if (category.startsWith('dit_')) {
-        return Array.from({ length: 100 }, (_, i) => i).filter(n => n % 10 === targetNum);
-    }
-    if (category.startsWith('tong_tt_')) {
-        const setKey = `TONG_TT_${targetNum}`;
-        if (SETS[setKey]) return SETS[setKey].map(n => parseInt(n, 10));
-    }
-    if (category.startsWith('tong_moi_')) {
-        const setKey = `TONG_MOI_${targetNum}`;
-        if (SETS[setKey]) return SETS[setKey].map(n => parseInt(n, 10));
-    }
-    if (category.startsWith('hieu_')) {
-        const setKey = `HIEU_${targetNum}`;
-        if (SETS[setKey]) return SETS[setKey].map(n => parseInt(n, 10));
-    }
-
-    return [];
-}
-
-// ==== PORT addExcludedNumber từ suggestionsController ====
 function resolveExcludedNumbers(stat, key) {
     let nums = [];
     let category, subcategory;
-
-    let cleanKey = key.replace(/^\[TIỀM NĂNG\]\s*/, '');
+    let cleanKey = key.replace(/^[TIỀM NĂNG]s*/, '');
 
     if (cleanKey.includes(':')) {
         [category, subcategory] = cleanKey.split(':');
@@ -339,94 +274,91 @@ function resolveExcludedNumbers(stat, key) {
         }
     }
 
-    const trendPatterns = [
-        'tienDeuLienTiep', 'luiDeuLienTiep', 'tienLienTiep', 'luiLienTiep',
-        'tienDeu', 'luiDeu', 'tien', 'lui'
-    ];
-
-    if (trendPatterns.includes(subcategory)) {
-        let normalizedSubcategory = subcategory;
-        if (subcategory === 'lui') normalizedSubcategory = 'luiLienTiep';
-        else if (subcategory === 'tien') normalizedSubcategory = 'tienLienTiep';
-        else if (subcategory === 'luiDeu') normalizedSubcategory = 'luiDeuLienTiep';
-        else if (subcategory === 'tienDeu') normalizedSubcategory = 'tienDeuLienTiep';
-        nums = predictNextInSequence(stat, category, normalizedSubcategory);
+    // NẾU CÓ TRONG CACHE patternNumbers THÌ DÙNG LUÔN
+    if (stat.current && stat.current.patternNumbers && stat.current.patternNumbers.length > 0) {
+        nums = [...stat.current.patternNumbers];
     }
-    else if (subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
-        if (category.startsWith('dau_')) {
-            const digit = category.split('_')[1];
-            if (digit && digit.match(/^\d$/)) {
-                nums = Array.from({ length: 100 }, (_, i) => i)
-                    .filter(n => String(n).padStart(2, '0')[0] === digit);
-            } else {
-                nums = getNumbersFromCategory(category);
-            }
-        } else if (category.startsWith('dit_')) {
-            const digit = category.split('_')[1];
-            if (digit && digit.match(/^\d$/)) {
-                nums = Array.from({ length: 100 }, (_, i) => i)
-                    .filter(n => String(n).padStart(2, '0')[1] === digit);
-            } else {
-                nums = getNumbersFromCategory(category);
-            }
-        } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
-            const specificSet = getNumbersFromCategory(category);
-            if (specificSet && specificSet.length > 0) {
-                nums = specificSet;
-            } else if (stat.current.values && stat.current.values.length > 0) {
-                nums = stat.current.values.map(v => parseInt(v, 10));
-            }
-        } else {
-            if (stat.current.values && stat.current.values.length > 0) {
-                nums = stat.current.values.map(v => parseInt(v, 10));
-            }
-        }
-    }
-    else if (category === 'tienLuiSoLe' || key === 'tienLuiSoLe' || category === 'luiTienSoLe' || key === 'luiTienSoLe') {
-        if (stat.current.values && stat.current.values.length >= 2) {
-            const values = stat.current.values;
-            const lastValue = parseInt(values[values.length - 1], 10);
-            const prevValue = parseInt(values[values.length - 2], 10);
-            const isTien = lastValue > prevValue;
-            if (isTien) {
-                nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastValue);
-            } else {
-                nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastValue);
-            }
-        }
-    }
-    else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
-        const valuesToExclude = stat.current.values || [];
-        if (category === 'motDit' || category === 'cacDit') {
-            const lastVal = valuesToExclude[valuesToExclude.length - 1];
-            if (lastVal !== null && lastVal !== undefined) {
-                const dit = String(lastVal).padStart(2, '0')[1];
-                nums = Array.from({ length: 100 }, (_, i) => i)
-                    .filter(n => String(n).padStart(2, '0')[1] === dit);
-            }
-        } else if (category === 'motDau' || category === 'cacDau') {
-            const lastVal = valuesToExclude[valuesToExclude.length - 1];
-            if (lastVal !== null && lastVal !== undefined) {
-                const dau = String(lastVal).padStart(2, '0')[0];
-                nums = Array.from({ length: 100 }, (_, i) => i)
-                    .filter(n => String(n).padStart(2, '0')[0] === dau);
-            }
-        } else {
-            const patternNums = getNumbersFromCategory(category);
-            if (patternNums && patternNums.length > 0 && patternNums.length <= 50) {
-                nums = patternNums;
-            } else if (valuesToExclude.length > 0) {
-                nums = valuesToExclude.map(v => parseInt(v, 10));
-            }
-        }
-    }
+    // NẾU KHÔNG CÓ THÌ TÍNH TOÁN LẠI
     else {
-        nums = getNumbersFromCategory(category);
-    }
+        const trendPatterns = [
+            'tienDeuLienTiep', 'luiDeuLienTiep', 'tienLienTiep', 'luiLienTiep',
+            'tienDeu', 'luiDeu', 'tien', 'lui'
+        ];
 
-    if (!nums || nums.length === 0) {
-        nums = getNumbersFromCategory(category);
-    }
+        if (trendPatterns.includes(subcategory)) {
+            let normalizedSubcategory = subcategory;
+            if (subcategory === 'lui') normalizedSubcategory = 'luiLienTiep';
+            else if (subcategory === 'tien') normalizedSubcategory = 'tienLienTiep';
+            else if (subcategory === 'luiDeu') normalizedSubcategory = 'luiDeuLienTiep';
+            else if (subcategory === 'tienDeu') normalizedSubcategory = 'tienDeuLienTiep';
+            nums = suggestionsController.predictNextInSequence(stat, category, normalizedSubcategory);
+        }
+        else if (subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
+            if (category.startsWith('dau_')) {
+                const digit = category.split('_')[1];
+                if (digit && digit.match(/^d$/)) {
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[0] === digit);
+                } else {
+                    nums = suggestionsController.getNumbersFromCategory(category);
+                }
+            } else if (category.startsWith('dit_')) {
+                const digit = category.split('_')[1];
+                if (digit && digit.match(/^d$/)) {
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[1] === digit);
+                } else {
+                    nums = suggestionsController.getNumbersFromCategory(category);
+                }
+            } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
+                const specificSet = suggestionsController.getNumbersFromCategory(category);
+                if (specificSet && specificSet.length > 0) {
+                    nums = specificSet;
+                } else if (stat.current.values && stat.current.values.length > 0) {
+                    nums = stat.current.values.map(v => parseInt(v, 10));
+                }
+            } else {
+                if (stat.current.values && stat.current.values.length > 0) {
+                    nums = stat.current.values.map(v => parseInt(v, 10));
+                }
+            }
+        }
+        else if (category === 'tienLuiSoLe' || key.includes('tienLuiSoLe') || category === 'luiTienSoLe' || key.includes('luiTienSoLe') || subcategory === 'tienLuiSoLe' || subcategory === 'luiTienSoLe') {
+            nums = suggestionsController.predictNextInSequence(stat, category, subcategory || key);
+        }
+        else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
+            const valuesToExclude = stat.current.values || [];
+            if (category === 'motDit' || category === 'cacDit') {
+                const lastVal = valuesToExclude[valuesToExclude.length - 1];
+                if (lastVal !== null && lastVal !== undefined) {
+                    const dit = String(lastVal).padStart(2, '0')[1];
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[1] === dit);
+                }
+            } else if (category === 'motDau' || category === 'cacDau') {
+                const lastVal = valuesToExclude[valuesToExclude.length - 1];
+                if (lastVal !== null && lastVal !== undefined) {
+                    const dau = String(lastVal).padStart(2, '0')[0];
+                    nums = Array.from({ length: 100 }, (_, i) => i)
+                        .filter(n => String(n).padStart(2, '0')[0] === dau);
+                }
+            } else {
+                const patternNums = suggestionsController.getNumbersFromCategory(category);
+                if (patternNums && patternNums.length > 0 && patternNums.length <= 50) {
+                    nums = patternNums;
+                } else if (valuesToExclude.length > 0) {
+                    nums = valuesToExclude.map(v => parseInt(v, 10));
+                }
+            }
+        }
+        else {
+            nums = suggestionsController.getNumbersFromCategory(category);
+        }
+
+        if (!nums || nums.length === 0) {
+            nums = suggestionsController.getNumbersFromCategory(category);
+        }
+    } // Đóng cache else
 
     if (nums && nums.length > 0) {
         nums = nums.filter(n => n !== null && n !== undefined && !isNaN(n) && typeof n === 'number');
@@ -455,8 +387,8 @@ function getExclusionsForDate(targetDateStr, totalYears) {
 
         const currentLen = stat.current.length;
         const [category, subcategory] = key.split(':');
-        const isSoLePattern = (subcategory && (subcategory.toLowerCase() === 'vesole' || subcategory.toLowerCase() === 'vesolemoi')) &&
-            key !== 'tienLuiSoLe' && key !== 'luiTienSoLe';
+        const isSoLePattern = (key.toLowerCase().includes('sole') || key.toLowerCase().includes('solemoi')) &&
+            !key.toLowerCase().includes('tienluisole') && !key.toLowerCase().includes('luitiensole');
         const targetLen = isSoLePattern ? currentLen + 2 : currentLen + 1;
 
         const recordLen = stat.computedMaxStreak || (stat.longest && stat.longest[0] && stat.longest[0].length) || 0;
@@ -481,6 +413,13 @@ function getExclusionsForDate(targetDateStr, totalYears) {
         }
 
         if (!shouldExclude) continue;
+
+        // Bỏ qua các pattern chứa Tổng lớn/nhỏ, hiệu lớn/nhỏ
+        const isExcludedPattern = category === 'tong_tt_lon' || category === 'tong_tt_nho' ||
+            category === 'tong_moi_lon' || category === 'tong_moi_nho' ||
+            category === 'hieu_lon' || category === 'hieu_nho';
+
+        if (isExcludedPattern) continue;
 
         // Lấy các số bị ảnh hưởng
         const nums = resolveExcludedNumbers(stat, key);

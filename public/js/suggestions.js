@@ -3,7 +3,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const suggestionsContainer = document.getElementById('suggestions-container');
 
     // Tự động tải gợi ý khi trang load
-    loadSuggestions();
+    if (suggestionsSection && suggestionsContainer) {
+        loadSuggestions();
+    }
 
     async function loadSuggestions() {
         try {

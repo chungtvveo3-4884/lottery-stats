@@ -14,6 +14,8 @@ router.get('/', (req, res) => {
 router.get('/api/v2/stats', statisticsController.getStats);
 // API Endpoint cho thống kê nhanh khi tải trang
 router.get('/api/v2/quick-stats', statisticsController.getQuickStats);
+// API Endpoint cho lịch sử 7 ngày của Chuỗi Đang Diễn Ra
+router.get('/api/v2/quick-stats-history', statisticsController.getQuickStatsHistory);
 // API Endpoint cho Potential Streaks (Chuỗi có thể xảy ra)
 router.get('/api/v2/potential-streaks', statisticsController.getPotentialStreaks);
 

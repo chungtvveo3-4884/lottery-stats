@@ -157,10 +157,9 @@
                 <div>
                     <h2 class="text-2xl font-bold flex items-center gap-2">
                         <i class="bi bi-rocket-takeoff-fill text-yellow-300"></i>
-                        Cập nhật Phiên bản v2.1
+                        Cập nhật Phiên bản v2.2
                     </h2>
-                    <p class="text-indigo-200 text-sm mt-1">Bản build: 01/03/2026 - Nâng cấp thuật toán dự đoán chính
-                        xác</p>
+                    <p class="text-indigo-200 text-sm mt-1">Bản build: 08/03/2026 - Tối ưu hóa Toàn Diện</p>
                 </div>
                 <button id="closeVersionModalBtn"
                     class="text-indigo-200 hover:text-white transition rounded-full p-1 bg-white/10 hover:bg-white/20">
@@ -171,42 +170,39 @@
             <!-- Body -->
             <div class="p-6 overflow-y-auto custom-scrollbar flex-1 text-gray-700 bg-gray-50">
                 <div class="mb-6">
-                    <p class="mb-3 text-lg">Hệ thống đã được cập nhật toàn diện với <strong
-                            class="text-purple-700">Thuật toán Dự đoán Kéo dài theo Tần Suất Xảy Ra</strong>.</p>
+                    <p class="mb-3 text-lg">Hệ thống đã được cập nhật phiên bản lớn giúp <strong
+                            class="text-purple-700">Tốc độ truy xuất và Lọc số thông minh</strong> vượt trội hơn.</p>
                 </div>
 
                 <div class="space-y-4">
                     <div class="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm relative overflow-hidden">
                         <h3 class="text-[15px] font-bold text-indigo-700 mb-1 flex items-center gap-2">
-                            <i class="bi bi-pie-chart-fill"></i> Tần Suất Thực Tế Thay Vì Gap
+                            <i class="bi bi-ui-radios-grid"></i> Cải thiệu siêu tốc Load Danh Sách (1500 cấu hình)
                         </h3>
                         <p
                             class="text-[13px] border-l-2 border-indigo-200 pl-3 py-1 bg-indigo-50/50 rounded-r text-gray-600">
-                            Hiển thị trực quan <strong>Dự đoán Kéo dài</strong> cho từng độ dài chuỗi bằng Tần suất xuất
-                            hiện chuẩn mực, giúp lý giải tường minh tại sao chuỗi bị cảnh báo đỏ (<= 1.5 lần/năm) thay
-                                vì dùng logic min/max hỗn loạn. </p>
+                            Loại bỏ tình trạng đơ/nặng trình duyệt khi nhấn vào hộp tìm kiếm "Loại thống kê". Hệ thống áp dụng <strong>Virtual Scroll Rendering</strong> giúp thao tác xổ xuống cũng như lọc gợi ý nhẹ tựa lông hồng.
+                        </p>
                     </div>
 
                     <div class="bg-white p-4 rounded-lg border border-red-100 shadow-sm relative overflow-hidden">
                         <h3 class="text-[15px] font-bold text-red-600 mb-1 flex items-center gap-2">
-                            <i class="bi bi-shield-exclamation"></i> Giải quyết triệt để Ảo giác Kỷ lục
+                            <i class="bi bi-eye-fill"></i> Hiển thị Popup Thông Minh hơn
                         </h3>
                         <p class="text-[13px] border-l-2 border-red-200 pl-3 py-1 bg-red-50/50 rounded-r text-gray-600">
-                            Hệ thống đã tự động nội suy số năm (hiện tại tính chính xác lấy dữ liệu lịch sử chia cho
-                            <strong>~20.4 năm</strong>) thay vì lấy số năm fix cứng (25.4), giúp tỷ lệ cảnh báo kỷ lục
-                            chính xác 100%. Các trạng thái "Siêu KL", "Kỷ Lục", và "Khó Lên" được rạch ròi.
+                            Popup các dãy số bây giờ đã phân tích sâu ngữ cảnh:<br/>
+                            1. <strong>Chuỗi đang diễn ra</strong>: Chỉ hiển thị các bộ số có <strong>khả năng xuất hiện</strong> tiếp theo. Giúp thu gọn phán đoán.<br/>
+                            2. <strong>Lịch sử Thống Kê</strong>: Liệt kê minh bạch <strong>toàn bộ</strong> mảng số cấu thành định dạng của chuỗi. Cực kỳ dễ hiểu!
                         </p>
                     </div>
 
                     <div class="bg-white p-4 rounded-lg border border-purple-100 shadow-sm relative overflow-hidden">
                         <h3 class="text-[15px] font-bold text-purple-700 mb-1 flex items-center gap-2">
-                            <i class="bi bi-lightning-charge-fill"></i> Detect Chuỗi Tiềm Năng 1 Ngày (Màu Tím)
+                            <i class="bi bi-funnel-fill"></i> Chuẩn Hoá Bộ Lọc Tiến Lùi Vô Hình
                         </h3>
                         <p
                             class="text-[13px] border-l-2 border-purple-200 pl-3 py-1 bg-purple-50/50 rounded-r text-gray-600">
-                            Sửa thành công tính năng truy xuất trực tiếp các chuỗi hiếm ngay từ ngày thứ nhất (với những
-                            hình thái có kỷ lục là 2 ngày). Những dạng này lập tức chui vào diện theo dõi Loại Trừ sớm.
-                            Nâng cấp bộ đệm Cache Backend xử lý trơn tru hơn.
+                            Khắc phục hoàn toàn lỗi lọt số rác. Với hơn <strong>142 tổ hợp phức tạp</strong> (Đầu Nhỏ Đít Lớn, Tổng Mới...), thuật toán lọc Tiến Lùi/So Le giờ đây tự động quét cả 2 lớp base logic giúp phán đoán đúng 100% con số thoả mãn.
                         </p>
                     </div>
                 </div>
@@ -219,7 +215,7 @@
                     <i class="bi bi-check2-circle"></i> Xác nhận & Đóng
                 </button>
             </div>
-        </div>
+        </div></div>
     </div>
     <style>
         @keyframes scale {

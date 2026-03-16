@@ -200,7 +200,7 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
 }
 
 // [FIXED] "Dạng ... về so le (mới)" -> Strict Alternating (A - !A - A)
-function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
+function findAlternatingTypeStreaksNew(data, dateMap, { condition }) {
     const allStreaks = [];
     const processedStreaks = new Set();
     for (let i = 0; i < data.length - 2; i++) {
@@ -210,9 +210,9 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
 
         // Strict: Day A matches, Day C matches. Day B DOES NOT match.
         if (isConsecutive(dayA.date, dayB.date) && isConsecutive(dayB.date, dayC.date) &&
-            numberMap.has(dayA.value) &&
-            !numberMap.has(dayB.value) &&
-            numberMap.has(dayC.value)) {
+            condition(dayA) &&
+            !condition(dayB) &&
+            condition(dayC)) {
 
             const streakKey = `${dayA.date}`;
             if (processedStreaks.has(streakKey)) continue;
@@ -224,8 +224,8 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
                 const nextDay = data[lastIndex + 1];
                 const nextStreakDay = data[lastIndex + 2];
                 if (nextDay && nextStreakDay && isConsecutive(data[lastIndex].date, nextDay.date) && isConsecutive(nextDay.date, nextStreakDay.date) &&
-                    !numberMap.has(nextDay.value) &&
-                    numberMap.has(nextStreakDay.value)) {
+                    !condition(nextDay) &&
+                    condition(nextStreakDay)) {
                     streak.push(nextStreakDay);
                     lastIndex += 2;
                 } else {
@@ -398,7 +398,7 @@ function findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
         if (currentStreak.length >= minLength) {
             allStreaks.push(createStreakObject(data, dateMap, currentStreak, {
                 direction,
-                values: currentStreak.map(item => valueExtractor(item))
+                values: currentStreak.map(item => item.value)
             }));
             i += currentStreak.length - 2; // Skip processed items
         }
@@ -423,7 +423,7 @@ function analyzeType(data, dateMap, { typeName, descriptionPrefix, valueExtracto
         }),
         veSoleMoi: { // This is the fix from our previous conversation
             description: `${descriptionPrefix} về so le (mới)`,
-            ...findAlternatingTypeStreaksNew(data, dateMap, MAPS[typeName])
+            ...findAlternatingTypeStreaksNew(data, dateMap, { condition: (a) => MAPS[typeName].has(a.value) })
         },
         tienLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: false, valueExtractor, numberSet, numberMap, typeCondition, description: `${descriptionPrefix} tiến liên tiếp` }),
         tienDeuLienTiep: findSequence(data, dateMap, { isProgressive: true, isUniform: true, valueExtractor, numberSet, numberMap, typeCondition, description: `${descriptionPrefix} tiến ĐỀU liên tiếp` }),
@@ -465,6 +465,11 @@ async function generateHeadTailStats() {
             cacDitLuiDeu: findSequence(lotteryData, dateToIndexMap, { isProgressive: false, isUniform: true, valueExtractor: getTail, numberSet: DIGIT_SETS.DIGITS, numberMap: DIGIT_MAPS.DIGITS, typeCondition: () => true, description: "Các Đít lùi ĐỀU liên tiếp" }),
             motDauVeSoleMoi: findAlternatingStreaksNew(lotteryData, dateToIndexMap, { description: "1 Đầu về so le (mới)", valueExtractor: getHead }),
             motDitVeSoleMoi: findAlternatingStreaksNew(lotteryData, dateToIndexMap, { description: "1 Đít về so le (mới)", valueExtractor: getTail }),
+            // [MỚI] Tiến lùi So le và Lùi tiến So le
+            cacDauTienLuiSoLe: findAlternatingProgressiveRegressiveStreaksForType(lotteryData, dateToIndexMap, { typeCondition: () => true, valueExtractor: getHead, descriptionPrefix: "Các Đầu", startProgressive: true, minLength: 4 }),
+            cacDauLuiTienSoLe: findAlternatingProgressiveRegressiveStreaksForType(lotteryData, dateToIndexMap, { typeCondition: () => true, valueExtractor: getHead, descriptionPrefix: "Các Đầu", startProgressive: false, minLength: 4 }),
+            cacDitTienLuiSoLe: findAlternatingProgressiveRegressiveStreaksForType(lotteryData, dateToIndexMap, { typeCondition: () => true, valueExtractor: getTail, descriptionPrefix: "Các Đít", startProgressive: true, minLength: 4 }),
+            cacDitLuiTienSoLe: findAlternatingProgressiveRegressiveStreaksForType(lotteryData, dateToIndexMap, { typeCondition: () => true, valueExtractor: getTail, descriptionPrefix: "Các Đít", startProgressive: false, minLength: 4 }),
         };
         const analysisConfigs = [
             // [MỚI] Tự động thêm 8 dạng cơ bản
@@ -595,7 +600,7 @@ async function generateHeadTailStats() {
                 }),
                 veSoleMoi: {
                     description: `${description} về so le (mới)`,
-                    ...findAlternatingTypeStreaksNew(lotteryData, dateToIndexMap, numberMap)
+                    ...findAlternatingTypeStreaksNew(lotteryData, dateToIndexMap, { condition: typeCondition })
                 },
                 // [MỚI] Tiến-Lùi So Le cho các dạng fixed set
                 tienLuiSoLe: findAlternatingProgressiveRegressiveStreaksForType(lotteryData, dateToIndexMap, {

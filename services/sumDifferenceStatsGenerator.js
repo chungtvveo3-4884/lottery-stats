@@ -361,7 +361,7 @@ function findAlternatingProgressiveRegressiveStreaksForType(data, dateMap, {
         if (currentStreak.length >= minLength) {
             allStreaks.push(createStreakObject(data, dateMap, currentStreak, {
                 direction,
-                values: currentStreak.map(item => valueExtractor(item))
+                values: currentStreak.map(item => item.value)
             }));
             i += currentStreak.length - 2;
         }
@@ -540,7 +540,6 @@ async function generateSumDifferenceStats() {
             descriptionPrefix: 'Tổng Mới - Tổng Lẻ',
             typeCondition: (item) => getTongMoi(item.value) % 2 !== 0
         });
-
         stats['hieu_chan'] = analyzeValueSequence(lotteryData, dateToIndexMap, {
             valueExtractor: (item) => getHieu(item.value),
             valueSet: SETS.HIEU_CHAN_SEQUENCE,

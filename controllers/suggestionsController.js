@@ -121,7 +121,17 @@ exports.getSuggestions = async (req, res) => {
             // 2. BỢ QUA KIỂM TRA GAP THEO YÊu CẦU MỚI
             // Only add RED and PURPLE tier patterns immediately 
             if (shouldExclude && (tier === 'red' || tier === 'purple')) {
-                addExcludedNumber(stat, key, reason, tier, subTier);
+                // Không loại trừ các pattern Lớn, Nhỏ của Tổng TT, Tổng Mới, Hiệu
+                const [cat] = key.split(':');
+                const isExcludedPattern = cat === 'tong_tt_lon' || cat === 'tong_tt_nho' ||
+                    cat === 'tong_moi_lon' || cat === 'tong_moi_nho' ||
+                    cat === 'hieu_lon' || cat === 'hieu_nho';
+
+                if (!isExcludedPattern) {
+                    addExcludedNumber(stat, key, reason, tier, subTier);
+                } else {
+                    // console.log('Bỏ qua loại trừ pattern lớn/nhỏ của tổng và hiệu:', key);
+                }
             }
         }
 
@@ -151,6 +161,10 @@ exports.getSuggestions = async (req, res) => {
                     'cacDitTienDeu': 'Các Đít - Tiến Đều',
                     'cacDitLui': 'Các Đít - Lùi liên tiếp',
                     'cacDitLuiDeu': 'Các Đít - Lùi Đều',
+                    'cacDauTienLuiSoLe': 'Các Đầu - Tiến-Lùi So Le',
+                    'cacDauLuiTienSoLe': 'Các Đầu - Lùi-Tiến So Le',
+                    'cacDitTienLuiSoLe': 'Các Đít - Tiến-Lùi So Le',
+                    'cacDitLuiTienSoLe': 'Các Đít - Lùi-Tiến So Le',
                     // 1 đầu/đít
                     'motDauVeLienTiep': '1 Đầu - Về liên tiếp',
                     'motDauVeSole': '1 Đầu - Về so le',
@@ -181,6 +195,8 @@ exports.getSuggestions = async (req, res) => {
                 else if (suffix === 'chan_le') catName = 'Tổng TT - Dạng Chẵn-Lẻ';
                 else if (suffix === 'le_chan') catName = 'Tổng TT - Dạng Lẻ-Chẵn';
                 else if (suffix === 'le_le') catName = 'Tổng TT - Dạng Lẻ-Lẻ';
+                else if (suffix === 'lon') catName = 'Tổng TT - Tổng Lớn';
+                else if (suffix === 'nho') catName = 'Tổng TT - Tổng Nhỏ';
                 else if (suffix.match(/^\d+$/)) catName = `Tổng TT - Tổng ${suffix}`;
                 else if (suffix.includes('_')) {
                     const parts = suffix.split('_');
@@ -206,6 +222,8 @@ exports.getSuggestions = async (req, res) => {
                 else if (suffix === 'chan_le') catName = 'Tổng Mới - Dạng Chẵn-Lẻ';
                 else if (suffix === 'le_chan') catName = 'Tổng Mới - Dạng Lẻ-Chẵn';
                 else if (suffix === 'le_le') catName = 'Tổng Mới - Dạng Lẻ-Lẻ';
+                else if (suffix === 'lon') catName = 'Tổng Mới - Tổng Lớn';
+                else if (suffix === 'nho') catName = 'Tổng Mới - Tổng Nhỏ';
                 else if (suffix.match(/^\d+$/)) catName = `Tổng Mới - Tổng ${suffix}`;
                 else if (suffix.includes('_')) {
                     const parts = suffix.split('_');
@@ -422,246 +440,243 @@ exports.getSuggestions = async (req, res) => {
 
             // Xử lý các dạng Tiến/Lùi (Đều hoặc Liên Tiếp) - dự đoán giá trị tiếp theo
             // Hỗ trợ cả dạng có LienTiep (luiLienTiep) và không (lui)
-            const trendPatterns = [
-                'tienDeuLienTiep', 'luiDeuLienTiep', 'tienLienTiep', 'luiLienTiep',
-                'tienDeu', 'luiDeu', 'tien', 'lui'
-            ];
-            if (trendPatterns.includes(subcategory)) {
-                // Chuẩn hóa subcategory để predictNextInSequence xử lý đúng
-                let normalizedSubcategory = subcategory;
-                if (subcategory === 'lui') normalizedSubcategory = 'luiLienTiep';
-                else if (subcategory === 'tien') normalizedSubcategory = 'tienLienTiep';
-                else if (subcategory === 'luiDeu') normalizedSubcategory = 'luiDeuLienTiep';
-                else if (subcategory === 'tienDeu') normalizedSubcategory = 'tienDeuLienTiep';
-
-                nums = predictNextInSequence(stat, category, normalizedSubcategory);
+            // --- [ĐỒNG BỘ 100% VỚI STATISTICS] ---
+            if (stat.current && stat.current.patternNumbers && stat.current.patternNumbers.length > 0) {
+                nums = [...stat.current.patternNumbers];
             }
-            // Xử lý các dạng về liên tiếp - cùng số
-            else if (subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
-                // Kiểm tra xem đây là dạng gì
-                if (category.startsWith('dau_')) {
-                    // Đầu X về liên tiếp → tất cả số có đầu = X
-                    const digit = category.split('_')[1];
-                    nums = Array.from({ length: 100 }, (_, i) => i)
-                        .filter(n => String(n).padStart(2, '0')[0] === digit);
-                } else if (category.startsWith('dit_')) {
-                    // Đít X về liên tiếp → tất cả số có đít = X
-                    const digit = category.split('_')[1];
-                    nums = Array.from({ length: 100 }, (_, i) => i)
-                        .filter(n => String(n).padStart(2, '0')[1] === digit);
-                } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
-                    // Check if category is specific (e.g., tong_moi_11) or generic (e.g., tong_moi_cac_tong)
-                    let specificSet = getNumbersFromCategory(category);
+            // --- [HẾT ĐỒNG BỘ] ---
+            // NẾU KHÔNG CÓ TRONG CACHE HOẶC LÀ TỪ [TIỀM NĂNG], TÍNH TOÁN LẠI:
+            else {
+                const trendPatterns = [
+                    'tienDeuLienTiep', 'luiDeuLienTiep', 'tienLienTiep', 'luiLienTiep',
+                    'tienDeu', 'luiDeu', 'tien', 'lui'
+                ];
+                if (trendPatterns.includes(subcategory)) {
+                    // Chuẩn hóa subcategory để predictNextInSequence xử lý đúng
+                    let normalizedSubcategory = subcategory;
+                    if (subcategory === 'lui') normalizedSubcategory = 'luiLienTiep';
+                    else if (subcategory === 'tien') normalizedSubcategory = 'tienLienTiep';
+                    else if (subcategory === 'luiDeu') normalizedSubcategory = 'luiDeuLienTiep';
+                    else if (subcategory === 'tienDeu') normalizedSubcategory = 'tienDeuLienTiep';
 
-                    if (specificSet && specificSet.length > 0) {
-                        // Specific category (e.g., tong_moi_11) -> Exclude all numbers in that set
-                        nums = specificSet;
-                    } else {
-                        // Generic category -> Use current value to determine the set
-                        // values contains actual numbers (e.g., "26", "35"), need to calculate sum/diff
-                        let lastNumber = null;
-                        if (stat.current.value && stat.current.value !== 'Theo dạng') {
-                            lastNumber = String(stat.current.value).padStart(2, '0');
-                        } else if (stat.current.values && stat.current.values.length > 0) {
-                            lastNumber = String(stat.current.values[stat.current.values.length - 1]).padStart(2, '0');
-                        }
+                    nums = predictNextInSequence(stat, category, normalizedSubcategory);
+                }
+                // Xử lý các dạng về liên tiếp - cùng số
+                else if (subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri') {
+                    // Kiểm tra xem đây là dạng gì
+                    if (category.startsWith('dau_')) {
+                        // Đầu X về liên tiếp → tất cả số có đầu = X
+                        const digit = category.split('_')[1];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[0] === digit);
+                    } else if (category.startsWith('dit_')) {
+                        // Đít X về liên tiếp → tất cả số có đít = X
+                        const digit = category.split('_')[1];
+                        nums = Array.from({ length: 100 }, (_, i) => i)
+                            .filter(n => String(n).padStart(2, '0')[1] === digit);
+                    } else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
+                        // Check if category is specific (e.g., tong_moi_11) or generic (e.g., tong_moi_cac_tong)
+                        let specificSet = getNumbersFromCategory(category);
 
-                        if (lastNumber !== null && lastNumber.length === 2) {
-                            const digit1 = parseInt(lastNumber[0], 10);
-                            const digit2 = parseInt(lastNumber[1], 10);
-
-                            let calculatedValue = null;
-                            let tempCategory = '';
-
-                            if (category.startsWith('tong_tt_')) {
-                                // Tổng TT = digit1 + digit2 (1-10, với 10 là 0)
-                                calculatedValue = digit1 + digit2;
-                                if (calculatedValue === 0) calculatedValue = 10;
-                                tempCategory = `tong_tt_${calculatedValue}`;
-                            } else if (category.startsWith('tong_moi_')) {
-                                // Tổng Mới = tổng của 2 chữ số (0-18)
-                                calculatedValue = digit1 + digit2;
-                                tempCategory = `tong_moi_${calculatedValue}`;
-                            } else if (category.startsWith('hieu_')) {
-                                // Hiệu = |digit1 - digit2| (0-9)
-                                calculatedValue = Math.abs(digit1 - digit2);
-                                tempCategory = `hieu_${calculatedValue}`;
+                        if (specificSet && specificSet.length > 0) {
+                            // Specific category (e.g., tong_moi_11) -> Exclude all numbers in that set
+                            nums = specificSet;
+                        } else {
+                            // Generic category -> Use current value to determine the set
+                            // values contains actual numbers (e.g., "26", "35"), need to calculate sum/diff
+                            let lastNumber = null;
+                            if (stat.current.value && stat.current.value !== 'Theo dạng') {
+                                lastNumber = String(stat.current.value).padStart(2, '0');
+                            } else if (stat.current.values && stat.current.values.length > 0) {
+                                lastNumber = String(stat.current.values[stat.current.values.length - 1]).padStart(2, '0');
                             }
 
-                            if (tempCategory) {
+                            if (lastNumber !== null && lastNumber.length === 2) {
+                                const digit1 = parseInt(lastNumber[0], 10);
+                                const digit2 = parseInt(lastNumber[1], 10);
+
+                                let calculatedValue = null;
+                                let tempCategory = '';
+
+                                if (category.startsWith('tong_tt_')) {
+                                    // Tổng TT = digit1 + digit2 (1-10, với 10 là 0)
+                                    calculatedValue = digit1 + digit2;
+                                    if (calculatedValue === 0) calculatedValue = 10;
+                                    tempCategory = `tong_tt_${calculatedValue}`;
+                                } else if (category.startsWith('tong_moi_')) {
+                                    // Tổng Mới = tổng của 2 chữ số (0-18)
+                                    calculatedValue = digit1 + digit2;
+                                    tempCategory = `tong_moi_${calculatedValue}`;
+                                } else if (category.startsWith('hieu_')) {
+                                    // Hiệu = |digit1 - digit2| (0-9)
+                                    calculatedValue = Math.abs(digit1 - digit2);
+                                    tempCategory = `hieu_${calculatedValue}`;
+                                }
+
+                                if (tempCategory) {
+                                    nums = getNumbersFromCategory(tempCategory);
+                                }
+                            }
+                        }
+
+                        // Fallback if nums is still empty (e.g. could not parse value)
+                        if (!nums || nums.length === 0) {
+                            if (stat.current.value && stat.current.value !== 'Theo dạng') {
+                                nums = [parseInt(stat.current.value, 10)];
+                            } else if (stat.current.values && stat.current.values.length > 0) {
+                                nums = stat.current.values.map(v => parseInt(v, 10));
+                            }
+                        }
+                    } else {
+                        // For composite patterns (leChan, chanLe, etc.), use values array
+                        // because value contains 'Theo dạng' string
+                        if (stat.current.values && stat.current.values.length > 0) {
+                            nums = stat.current.values.map(v => parseInt(v, 10));
+                        } else if (stat.current.value && stat.current.value !== 'Theo dạng') {
+                            nums = [parseInt(stat.current.value, 10)];
+                        }
+                    }
+                }
+                // Xử lý Tiến-Lùi/Lùi-Tiến So Le
+                else if (category === 'tienLuiSoLe' || key.includes('tienLuiSoLe') || category === 'luiTienSoLe' || key.includes('luiTienSoLe') || subcategory === 'tienLuiSoLe' || subcategory === 'luiTienSoLe') {
+                    // Đồng bộ logic với "Chuỗi đang diễn ra". stat.current.patternNumbers đã được generate sẵn từ getQuickStats
+                    if (stat.current.patternNumbers && stat.current.patternNumbers.length > 0) {
+                        nums = [...stat.current.patternNumbers];
+                    } else {
+                        nums = predictNextInSequence(stat, category, subcategory || key);
+                    }
+                }
+                // Xử lý Về So Le (cho 1 số hoặc pattern dạng so le)
+                else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
+                    // Với so le, số sẽ về sau 1 ngày nghỉ
+                    // Lấy những số đã về trong chuỗi
+                    const valuesToExclude = stat.current.values || [];
+
+                    // SPECIAL CASE: motDit / cacDit - lấy nhóm số theo ĐÍT của giá trị cuối chuỗi
+                    if (category === 'motDit' || category === 'cacDit') {
+                        const lastVal = valuesToExclude[valuesToExclude.length - 1];
+                        if (lastVal !== null && lastVal !== undefined) {
+                            const dit = String(lastVal).padStart(2, '0')[1];
+                            nums = Array.from({ length: 100 }, (_, i) => i)
+                                .filter(n => String(n).padStart(2, '0')[1] === dit);
+                        }
+                    }
+                    // SPECIAL CASE: motDau / cacDau - lấy nhóm số theo ĐẦU của giá trị cuối chuỗi
+                    else if (category === 'motDau' || category === 'cacDau') {
+                        const lastVal = valuesToExclude[valuesToExclude.length - 1];
+                        if (lastVal !== null && lastVal !== undefined) {
+                            const dau = String(lastVal).padStart(2, '0')[0];
+                            nums = Array.from({ length: 100 }, (_, i) => i)
+                                .filter(n => String(n).padStart(2, '0')[0] === dau);
+                        }
+                    }
+                    // SPECIAL: Handle "cac_tong" patterns - need to identify the specific sum
+                    // values array contains actual numbers (e.g., "35", "26"), need to calculate their sums
+                    else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
+                        // Check if this is a generic category (cac_tong, chan, le, etc.)
+                        const suffix = category.replace(/^(tong_tt_|tong_moi_|hieu_)/, '');
+                        const isGeneric = ['cac_tong', 'chan', 'le', 'chan_chan', 'chan_le', 'le_chan', 'le_le'].includes(suffix)
+                            || suffix.includes('_'); // Range like 5_7
+
+                        if (isGeneric && valuesToExclude.length > 0) {
+                            // Calculate sums from the last few numbers to find the repeating pattern
+                            const sumCounts = {};
+                            valuesToExclude.forEach(val => {
+                                const numStr = String(val).padStart(2, '0');
+                                if (numStr.length === 2) {
+                                    const d1 = parseInt(numStr[0], 10);
+                                    const d2 = parseInt(numStr[1], 10);
+                                    let sum;
+                                    if (category.startsWith('tong_tt_')) {
+                                        sum = d1 + d2;
+                                        if (sum === 0) sum = 10;
+                                    } else if (category.startsWith('tong_moi_')) {
+                                        sum = d1 + d2;
+                                    } else if (category.startsWith('hieu_')) {
+                                        sum = Math.abs(d1 - d2);
+                                    }
+                                    if (sum !== undefined) {
+                                        sumCounts[sum] = (sumCounts[sum] || 0) + 1;
+                                    }
+                                }
+                            });
+
+                            // Find the most frequent sum (this is the one alternating)
+                            let dominantSum = null;
+                            let maxCount = 0;
+                            for (const [sum, count] of Object.entries(sumCounts)) {
+                                if (count > maxCount) {
+                                    maxCount = count;
+                                    dominantSum = parseInt(sum, 10);
+                                }
+                            }
+
+                            if (dominantSum !== null) {
+                                // Get all numbers with this sum
+                                let tempCategory = '';
+                                if (category.startsWith('tong_tt_')) {
+                                    tempCategory = `tong_tt_${dominantSum}`;
+                                } else if (category.startsWith('tong_moi_')) {
+                                    tempCategory = `tong_moi_${dominantSum}`;
+                                } else if (category.startsWith('hieu_')) {
+                                    tempCategory = `hieu_${dominantSum}`;
+                                }
                                 nums = getNumbersFromCategory(tempCategory);
                             }
                         }
                     }
 
-                    // Fallback if nums is still empty (e.g. could not parse value)
-                    if (!nums || nums.length === 0) {
-                        if (stat.current.value && stat.current.value !== 'Theo dạng') {
-                            nums = [parseInt(stat.current.value, 10)];
-                        } else if (stat.current.values && stat.current.values.length > 0) {
-                            nums = stat.current.values.map(v => parseInt(v, 10));
+                    // If not handled above, use existing logic
+                    if (nums.length === 0) {
+                        // FIRST: Check if category is a specific pattern (e.g., chanLe, dau_nho_dit_nho)
+                        // Priority: getNumbersFromCategory first for specific patterns
+                        const patternNums = getNumbersFromCategory(category);
+                        if (patternNums && patternNums.length > 0 && patternNums.length <= 50) {
+                            // Category represents a specific pattern, exclude the entire pattern
+                            nums = patternNums;
                         }
-                    }
-                } else {
-                    // For composite patterns (leChan, chanLe, etc.), use values array
-                    // because value contains 'Theo dạng' string
-                    if (stat.current.values && stat.current.values.length > 0) {
-                        nums = stat.current.values.map(v => parseInt(v, 10));
-                    } else if (stat.current.value && stat.current.value !== 'Theo dạng') {
-                        nums = [parseInt(stat.current.value, 10)];
-                    }
-                }
-            }
-            // Xử lý Tiến-Lùi/Lùi-Tiến So Le
-            else if (category === 'tienLuiSoLe' || key === 'tienLuiSoLe' || category === 'luiTienSoLe' || key === 'luiTienSoLe') {
-                // Tiến-Lùi So Le: Alternating progressive/regressive pattern
-                if (stat.current.values && stat.current.values.length >= 2) {
-                    const values = stat.current.values;
-                    const lastValue = parseInt(values[values.length - 1], 10);
-                    const prevValue = parseInt(values[values.length - 2], 10);
+                        // SECOND: Check if this is a 1-number pattern (motSoVeSole)
+                        else if (valuesToExclude.length > 0) {
+                            // Expand each value to its related categories' numbers
+                            for (const val of valuesToExclude) {
+                                const numberStr = String(val).padStart(2, '0');
+                                const relatedCategories = identifyCategories(numberStr);
 
-                    // Determine if last move was Tiến (up) or Lùi (down)
-                    const isTien = lastValue > prevValue;
-
-                    if (isTien) {
-                        // Lần trước Tiến, lần này logic SO LE YÊU CẦU LÙI
-                        nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastValue);
-                    } else {
-                        // Lần trước Lùi, lần này logic SO LE YÊU CẦU TIẾN
-                        nums = Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastValue);
-                    }
-                }
-            }
-            // Xử lý Về So Le (cho 1 số hoặc pattern dạng so le)
-            else if (subcategory === 'veSole' || subcategory === 'veSoleMoi') {
-                // Với so le, số sẽ về sau 1 ngày nghỉ
-                // Lấy những số đã về trong chuỗi
-                const valuesToExclude = stat.current.values || [];
-
-                // SPECIAL CASE: motDit / cacDit - lấy nhóm số theo ĐÍT của giá trị cuối chuỗi
-                if (category === 'motDit' || category === 'cacDit') {
-                    const lastVal = valuesToExclude[valuesToExclude.length - 1];
-                    if (lastVal !== null && lastVal !== undefined) {
-                        const dit = String(lastVal).padStart(2, '0')[1];
-                        nums = Array.from({ length: 100 }, (_, i) => i)
-                            .filter(n => String(n).padStart(2, '0')[1] === dit);
-                    }
-                }
-                // SPECIAL CASE: motDau / cacDau - lấy nhóm số theo ĐẦU của giá trị cuối chuỗi
-                else if (category === 'motDau' || category === 'cacDau') {
-                    const lastVal = valuesToExclude[valuesToExclude.length - 1];
-                    if (lastVal !== null && lastVal !== undefined) {
-                        const dau = String(lastVal).padStart(2, '0')[0];
-                        nums = Array.from({ length: 100 }, (_, i) => i)
-                            .filter(n => String(n).padStart(2, '0')[0] === dau);
-                    }
-                }
-                // SPECIAL: Handle "cac_tong" patterns - need to identify the specific sum
-                // values array contains actual numbers (e.g., "35", "26"), need to calculate their sums
-                else if (category.startsWith('tong_tt_') || category.startsWith('tong_moi_') || category.startsWith('hieu_')) {
-                    // Check if this is a generic category (cac_tong, chan, le, etc.)
-                    const suffix = category.replace(/^(tong_tt_|tong_moi_|hieu_)/, '');
-                    const isGeneric = ['cac_tong', 'chan', 'le', 'chan_chan', 'chan_le', 'le_chan', 'le_le'].includes(suffix)
-                        || suffix.includes('_'); // Range like 5_7
-
-                    if (isGeneric && valuesToExclude.length > 0) {
-                        // Calculate sums from the last few numbers to find the repeating pattern
-                        const sumCounts = {};
-                        valuesToExclude.forEach(val => {
-                            const numStr = String(val).padStart(2, '0');
-                            if (numStr.length === 2) {
-                                const d1 = parseInt(numStr[0], 10);
-                                const d2 = parseInt(numStr[1], 10);
-                                let sum;
-                                if (category.startsWith('tong_tt_')) {
-                                    sum = d1 + d2;
-                                    if (sum === 0) sum = 10;
-                                } else if (category.startsWith('tong_moi_')) {
-                                    sum = d1 + d2;
-                                } else if (category.startsWith('hieu_')) {
-                                    sum = Math.abs(d1 - d2);
+                                // For each category, get the full set of numbers (e.g., LE_LE -> all 25 numbers)
+                                let expandedNums = [];
+                                for (const cat of relatedCategories) {
+                                    const catNums = getNumbersFromCategory(cat);
+                                    if (catNums && catNums.length > 0) {
+                                        expandedNums = [...expandedNums, ...catNums];
+                                    }
                                 }
-                                if (sum !== undefined) {
-                                    sumCounts[sum] = (sumCounts[sum] || 0) + 1;
-                                }
+                                nums = [...nums, ...expandedNums];
                             }
-                        });
-
-                        // Find the most frequent sum (this is the one alternating)
-                        let dominantSum = null;
-                        let maxCount = 0;
-                        for (const [sum, count] of Object.entries(sumCounts)) {
-                            if (count > maxCount) {
-                                maxCount = count;
-                                dominantSum = parseInt(sum, 10);
-                            }
+                            nums = [...new Set(nums)];
                         }
-
-                        if (dominantSum !== null) {
-                            // Get all numbers with this sum
-                            let tempCategory = '';
-                            if (category.startsWith('tong_tt_')) {
-                                tempCategory = `tong_tt_${dominantSum}`;
-                            } else if (category.startsWith('tong_moi_')) {
-                                tempCategory = `tong_moi_${dominantSum}`;
-                            } else if (category.startsWith('hieu_')) {
-                                tempCategory = `hieu_${dominantSum}`;
+                        // THIRD: Fallback - try SNAKE_CASE lookup or use values directly
+                        else {
+                            const snakeKey = category.replace(/([A-Z])/g, "_$1").toUpperCase();
+                            if (SETS[snakeKey]) {
+                                nums = SETS[snakeKey].map(n => parseInt(n, 10));
+                            } else if (SETS[category.toUpperCase()]) {
+                                nums = SETS[category.toUpperCase()].map(n => parseInt(n, 10));
+                            } else {
+                                nums = valuesToExclude.map(v => parseInt(v, 10));
                             }
-                            nums = getNumbersFromCategory(tempCategory);
                         }
                     }
                 }
+                // Xử lý các dạng khác - toàn bộ set
+                else {
+                    nums = getNumbersFromCategory(category);
+                }
 
-                // If not handled above, use existing logic
+                // Fallback: nếu nums rỗng, thử lấy từ category
                 if (nums.length === 0) {
-                    // FIRST: Check if category is a specific pattern (e.g., chanLe, dau_nho_dit_nho)
-                    // Priority: getNumbersFromCategory first for specific patterns
-                    const patternNums = getNumbersFromCategory(category);
-                    if (patternNums && patternNums.length > 0 && patternNums.length <= 50) {
-                        // Category represents a specific pattern, exclude the entire pattern
-                        nums = patternNums;
-                    }
-                    // SECOND: Check if this is a 1-number pattern (motSoVeSole)
-                    else if (valuesToExclude.length > 0) {
-                        // Expand each value to its related categories' numbers
-                        for (const val of valuesToExclude) {
-                            const numberStr = String(val).padStart(2, '0');
-                            const relatedCategories = identifyCategories(numberStr);
-
-                            // For each category, get the full set of numbers (e.g., LE_LE -> all 25 numbers)
-                            let expandedNums = [];
-                            for (const cat of relatedCategories) {
-                                const catNums = getNumbersFromCategory(cat);
-                                if (catNums && catNums.length > 0) {
-                                    expandedNums = [...expandedNums, ...catNums];
-                                }
-                            }
-                            nums = [...nums, ...expandedNums];
-                        }
-                        nums = [...new Set(nums)];
-                    }
-                    // THIRD: Fallback - try SNAKE_CASE lookup or use values directly
-                    else {
-                        const snakeKey = category.replace(/([A-Z])/g, "_$1").toUpperCase();
-                        if (SETS[snakeKey]) {
-                            nums = SETS[snakeKey].map(n => parseInt(n, 10));
-                        } else if (SETS[category.toUpperCase()]) {
-                            nums = SETS[category.toUpperCase()].map(n => parseInt(n, 10));
-                        } else {
-                            nums = valuesToExclude.map(v => parseInt(v, 10));
-                        }
-                    }
+                    nums = getNumbersFromCategory(category);
                 }
-            }
-            // Xử lý các dạng khác - toàn bộ set
-            else {
-                nums = getNumbersFromCategory(category);
-            }
-
-            // Fallback: nếu nums rỗng, thử lấy từ category
-            if (nums.length === 0) {
-                nums = getNumbersFromCategory(category);
-            }
+            } // Đóng block else của patternNumbers
 
             // Filter out null, undefined, and NaN values
             if (nums.length > 0) {
@@ -951,6 +966,16 @@ function getNumbersFromCategory(category) {
         return SETS[setKey].map(n => parseInt(n, 10));
     }
 
+
+    // 0.1 Dynamic missing logic
+    if (category === 'tong_tt_lon') return Array.from({ length: 100 }, (_, i) => i).filter(n => getTongTT(String(n)) >= 5);
+    if (category === 'tong_tt_nho') return Array.from({ length: 100 }, (_, i) => i).filter(n => getTongTT(String(n)) < 5);
+    if (category === 'tong_moi_lon') return Array.from({ length: 100 }, (_, i) => i).filter(n => getTongMoi(String(n)) >= 5);
+    if (category === 'tong_moi_nho') return Array.from({ length: 100 }, (_, i) => i).filter(n => getTongMoi(String(n)) < 5);
+    if (category === 'tong_tt_cac_tong') return Array.from({ length: 100 }, (_, i) => i);
+    if (category === 'tong_moi_cac_tong') return Array.from({ length: 100 }, (_, i) => i);
+    if (category === 'hieu_cac_hieu') return Array.from({ length: 100 }, (_, i) => i);
+
     // Handle specific mappings
     if (category.startsWith('dau_')) {
         setKey = 'DAU_' + category.split('_')[1].toUpperCase();
@@ -1071,7 +1096,7 @@ exports.getNumbersFromCategory = getNumbersFromCategory;
 
 // === MOVED HELPER FUNCTIONS ===
 
-function predictNextInSequence(stat, category, subcategory) {
+function predictNextInSequence(stat, category, subcategory, isHistory = false) {
     // Lấy lastValue từ values hoặc value
     let lastValue = null;
     if (stat.current.values && stat.current.values.length > 0) {
@@ -1082,21 +1107,141 @@ function predictNextInSequence(stat, category, subcategory) {
         return [];
     }
 
-    const isProgressive = subcategory.includes('tien'); // tienDeuLienTiep or tienLienTiep
-    const isUniform = subcategory.includes('Deu'); // Đều = uniform sequence
-    const isVeLienTiep = subcategory === 'veLienTiep' || subcategory === 'veCungGiaTri'; // Về liên tiếp cùng giá trị
+    const subCatStr = subcategory || '';
+    let isProgressive = subCatStr.includes('tien') || category.includes('Tien'); // tienDeuLienTiep or tienLienTiep
+    const isUniform = subCatStr.includes('Deu') || category.includes('Deu'); // Đều = uniform sequence
+    const isVeLienTiep = subCatStr === 'veLienTiep' || subCatStr === 'veCungGiaTri' || category.includes('VeLienTiep'); // Về liên tiếp cùng giá trị
+    const isSoLe = subCatStr.toLowerCase().includes('sole') || category.toLowerCase().includes('sole'); // veSole, veSoleMoi
 
-    if (category === 'tienLuiSoLe' || category === 'luiTienSoLe' || subcategory === 'tienLuiSoLe' || subcategory === 'luiTienSoLe') {
+    const isTienLuiSoLe = subCatStr.toLowerCase().includes('tienluisole') || category.toLowerCase().includes('tienluisole') || subCatStr.toLowerCase().includes('luitiensole') || category.toLowerCase().includes('luitiensole');
+
+    if (isTienLuiSoLe && stat.current.values && stat.current.values.length >= 2) {
+        const vals = stat.current.values;
+        const v2 = parseInt(vals[vals.length - 1], 10);
+        const v1 = parseInt(vals[vals.length - 2], 10);
+        if (!isNaN(v1) && !isNaN(v2)) {
+            // If last step was progressive (v2 > v1), next step MUST BE regressive
+            isProgressive = (v2 < v1);
+        }
+    }
+
+    if (category === 'motDauVeLienTiep' || category === 'motDauVeSole' || category === 'motDauVeSoleMoi') {
+        let theHead = null;
+        if (stat.current.value) {
+            const matches = String(stat.current.value).match(/\d+/g);
+            if (matches && matches.length >= 2) {
+                theHead = parseInt(matches[matches.length - 1], 10); // Extract the actual head digit
+            }
+        }
+        if (theHead !== null && !isNaN(theHead)) {
+            return Array.from({ length: 100 }, (_, i) => i).filter(n => Math.floor(n / 10) === theHead);
+        }
+    }
+
+    if (category === 'motDitVeLienTiep' || category === 'motDitVeSole' || category === 'motDitVeSoleMoi') {
+        let theTail = null;
+        if (stat.current.value) {
+            const matches = String(stat.current.value).match(/\d+/g);
+            if (matches && matches.length >= 2) {
+                theTail = parseInt(matches[matches.length - 1], 10); // Extract the actual tail digit
+            }
+        }
+        if (theTail !== null && !isNaN(theTail)) {
+            return Array.from({ length: 100 }, (_, i) => i).filter(n => (n % 10) === theTail);
+        }
+    }
+
+    if (isSoLe && !isTienLuiSoLe) {
+        return getNumbersFromCategory(category);
+    }
+
+    // Helper: Extract value based on category type
+    const extractValue = (val, cat) => {
+        const strVal = String(val).padStart(2, '0');
+
+        // ALL composite patterns use full 2-digit number
+        // Check if category is a composite pattern (contains multiple conditions)
+        const compositePatterns = [
+            'chanChan', 'chanLe', 'leChan', 'leLe',
+            'dau_nho_dit_nho', 'dau_nho_dit_to', 'dau_to_dit_nho', 'dau_to_dit_to',
+            'dau_chan_lon_4_dit_chan_lon_4', 'dau_chan_lon_4_dit_chan_nho_4',
+            'dau_chan_nho_4_dit_chan_lon_4', 'dau_chan_nho_4_dit_chan_nho_4',
+            'dau_chan_lon_4_dit_le_lon_5', 'dau_chan_lon_4_dit_le_nho_5',
+            'dau_chan_nho_4_dit_le_lon_5', 'dau_chan_nho_4_dit_le_nho_5',
+            'dau_le_lon_5_dit_chan_lon_4', 'dau_le_lon_5_dit_chan_nho_4',
+            'dau_le_nho_5_dit_chan_lon_4', 'dau_le_nho_5_dit_chan_nho_4',
+            'dau_le_lon_5_dit_le_lon_5', 'dau_le_lon_5_dit_le_nho_5',
+            'dau_le_nho_5_dit_le_lon_5', 'dau_le_nho_5_dit_le_nho_5',
+            'dau_4_dit_chan_lon_4', 'dau_4_dit_chan_nho_4', 'dau_4_dit_le_lon_5', 'dau_4_dit_le_nho_5',
+            'dau_5_dit_chan_lon_4', 'dau_5_dit_chan_nho_4', 'dau_5_dit_le_lon_5', 'dau_5_dit_le_nho_5',
+            'dit_4_dau_chan_lon_4', 'dit_4_dau_chan_nho_4', 'dit_4_dau_le_lon_5', 'dit_4_dau_le_nho_5',
+            'dit_5_dau_chan_lon_4', 'dit_5_dau_chan_nho_4', 'dit_5_dau_le_lon_5', 'dit_5_dau_le_nho_5'
+        ];
+
+        if (compositePatterns.includes(cat)) return strVal;
+        if (cat.startsWith('dau_dit_tien_')) return strVal; // Đồng tiến dùng cả số
+
+        // Special cases
+        if (cat.startsWith('cacSo')) return strVal; // Full 2-digit number
+        if (cat.startsWith('cacDau')) return strVal[0]; // Head digit
+        if (cat.startsWith('cacDit')) return strVal[1]; // Tail digit
+
+        if (cat.startsWith('tong_tt_')) {
+            const suffix = cat.replace('tong_tt_', '');
+            if (suffix === 'cac_tong' || suffix.includes('chan') || suffix.includes('le') || suffix.includes('lon') || suffix.includes('nho') || suffix.includes('_')) return String(getTongTT(strVal));
+            return strVal;
+        }
+        if (cat.startsWith('tong_moi_')) {
+            const suffix = cat.replace('tong_moi_', '');
+            if (suffix === 'cac_tong' || suffix.includes('chan') || suffix.includes('le') || suffix.includes('lon') || suffix.includes('nho') || suffix.includes('_')) return String(getTongMoi(strVal));
+            return strVal;
+        }
+        if (cat.startsWith('hieu_')) {
+            const suffix = cat.replace('hieu_', '');
+            if (suffix === 'cac_hieu' || suffix.includes('chan') || suffix.includes('le') || suffix.includes('lon') || suffix.includes('nho') || suffix.includes('_')) return String(getHieu(strVal));
+            return strVal;
+        }
+        if (cat.startsWith('dau_')) {
+            const suffix = cat.replace('dau_', '');
+            if (suffix === 'cac_dau' || suffix === 'chan' || suffix === 'le' || suffix === 'nho' || suffix === 'to' || suffix.includes('lon_hon') || suffix.includes('nho_hon')) return strVal[0];
+            return strVal;
+        }
+        if (cat.startsWith('dit_')) {
+            const suffix = cat.replace('dit_', '');
+            if (suffix === 'cac_dit' || suffix === 'chan' || suffix === 'le' || suffix === 'nho' || suffix === 'to' || suffix.includes('lon_hon') || suffix.includes('nho_hon')) return strVal[1];
+            return strVal;
+        }
+        return strVal;
+    };
+
+    if (isTienLuiSoLe) {
         if (stat.current.values && stat.current.values.length >= 2) {
             const values = stat.current.values;
-            const lastVal = parseInt(values[values.length - 1], 10);
-            const prevVal = parseInt(values[values.length - 2], 10);
-            const isTien = lastVal > prevVal;
-            if (isTien) {
-                return Array.from({ length: 100 }, (_, i) => i).filter(n => n <= lastVal).map(String);
-            } else {
-                return Array.from({ length: 100 }, (_, i) => i).filter(n => n >= lastVal).map(String);
+            const lastValStr = values[values.length - 1];
+            const prevValStr = values[values.length - 2];
+
+            const lastVal = parseInt(extractValue(lastValStr, category), 10);
+            const prevVal = parseInt(extractValue(prevValStr, category), 10);
+
+            let baseNums = getNumbersFromCategory(category);
+            if (!baseNums || baseNums.length === 0) {
+                baseNums = Array.from({ length: 100 }, (_, i) => i);
             }
+
+            if (isHistory) {
+                return baseNums;
+            }
+
+            const isTien = lastVal > prevVal;
+            let possibleNextVals = [];
+
+            if (isTien) { // Must go down => next < lastVal
+                possibleNextVals = baseNums.filter(n => parseInt(extractValue(String(n).padStart(2, '0'), category), 10) < lastVal);
+            } else { // Must go up => next > lastVal
+                possibleNextVals = baseNums.filter(n => parseInt(extractValue(String(n).padStart(2, '0'), category), 10) > lastVal);
+            }
+
+            return [...new Set(possibleNextVals.map(n => parseInt(n, 10)))];
         }
         return [];
     }
@@ -1130,7 +1275,12 @@ function predictNextInSequence(stat, category, subcategory) {
                 return SETS[diffKey].map(n => parseInt(n, 10));
             }
         }
-        // Fallback: Trả về tất cả số của category
+        // Về liên tiếp:
+        // Các category động (1 đầu, 1 đít, 1 số) cần phải giữ nguyên giá trị cuối
+        if (['motDau', 'motDit', 'motSo', 'cacDau', 'cacDit', 'cacSo'].includes(category)) {
+            return [extractValue(lastValue, category)];
+        }
+        // Các category tĩnh (đầu 4 đít lẻ, etc) cho phép mọi số thoả mãn category
         return getNumbersFromCategory(category);
     }
 
@@ -1246,6 +1396,12 @@ function predictNextInSequence(stat, category, subcategory) {
         if (cat === 'dau_chan' || cat === 'dit_chan') return ['0', '2', '4', '6', '8'];
         if (cat === 'dau_le' || cat === 'dit_le') return ['1', '3', '5', '7', '9'];
 
+        // Trend patterns prefix
+        if (cat.startsWith('cacSo')) return Array.from({ length: 100 }, (_, i) => String(i).padStart(2, '0'));
+        if (cat.startsWith('cacDau')) return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        if (cat.startsWith('cacDit') && !cat.startsWith('cacDitTien')) return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        if (cat.startsWith('cacDit')) return ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; // Actually just cacDit
+
         // Các dạng Đầu/Đít cụ thể (dau_le_lon_hon_5, etc.)
         if (cat.includes('lon_hon_') || cat.includes('nho_hon_')) {
             // Logic này đã có trong code cũ, nhưng ta có thể tổng quát hóa
@@ -1336,64 +1492,7 @@ function predictNextInSequence(stat, category, subcategory) {
         return null;
     };
 
-    // Helper: Extract value based on category type
-    const extractValue = (val, cat) => {
-        const strVal = String(val).padStart(2, '0');
-
-        // ALL composite patterns use full 2-digit number
-        // Check if category is a composite pattern (contains multiple conditions)
-        const compositePatterns = [
-            'chanChan', 'chanLe', 'leChan', 'leLe',
-            'dau_nho_dit_nho', 'dau_nho_dit_to', 'dau_to_dit_nho', 'dau_to_dit_to',
-            'dau_chan_lon_4_dit_chan_lon_4', 'dau_chan_lon_4_dit_chan_nho_4',
-            'dau_chan_nho_4_dit_chan_lon_4', 'dau_chan_nho_4_dit_chan_nho_4',
-            'dau_chan_lon_4_dit_le_lon_5', 'dau_chan_lon_4_dit_le_nho_5',
-            'dau_chan_nho_4_dit_le_lon_5', 'dau_chan_nho_4_dit_le_nho_5',
-            'dau_le_lon_5_dit_chan_lon_4', 'dau_le_lon_5_dit_chan_nho_4',
-            'dau_le_nho_5_dit_chan_lon_4', 'dau_le_nho_5_dit_chan_nho_4',
-            'dau_le_lon_5_dit_le_lon_5', 'dau_le_lon_5_dit_le_nho_5',
-            'dau_le_nho_5_dit_le_lon_5', 'dau_le_nho_5_dit_le_nho_5',
-            'dau_4_dit_chan_lon_4', 'dau_4_dit_chan_nho_4', 'dau_4_dit_le_lon_5', 'dau_4_dit_le_nho_5',
-            'dau_5_dit_chan_lon_4', 'dau_5_dit_chan_nho_4', 'dau_5_dit_le_lon_5', 'dau_5_dit_le_nho_5',
-            'dit_4_dau_chan_lon_4', 'dit_4_dau_chan_nho_4', 'dit_4_dau_le_lon_5', 'dit_4_dau_le_nho_5',
-            'dit_5_dau_chan_lon_4', 'dit_5_dau_chan_nho_4', 'dit_5_dau_le_lon_5', 'dit_5_dau_le_nho_5'
-        ];
-
-        if (compositePatterns.includes(cat)) return strVal;
-        if (cat.startsWith('dau_dit_tien_')) return strVal; // Đồng tiến dùng cả số
-
-        // Special cases
-        if (cat === 'cacSo') return strVal; // Full 2-digit number
-        if (cat === 'cacDau') return strVal[0]; // Head digit
-        if (cat === 'cacDit') return strVal[1]; // Tail digit
-
-        if (cat.startsWith('tong_tt_')) {
-            const suffix = cat.replace('tong_tt_', '');
-            if (suffix === 'cac_tong' || suffix.includes('chan') || suffix.includes('le') || suffix.includes('_')) return String(getTongTT(strVal));
-            return strVal;
-        }
-        if (cat.startsWith('tong_moi_')) {
-            const suffix = cat.replace('tong_moi_', '');
-            if (suffix === 'cac_tong' || suffix.includes('chan') || suffix.includes('le') || suffix.includes('_')) return String(getTongMoi(strVal));
-            return strVal;
-        }
-        if (cat.startsWith('hieu_')) {
-            const suffix = cat.replace('hieu_', '');
-            if (suffix === 'cac_hieu' || suffix.includes('chan') || suffix.includes('le') || suffix.includes('_')) return String(getHieu(strVal));
-            return strVal;
-        }
-        if (cat.startsWith('dau_')) {
-            const suffix = cat.replace('dau_', '');
-            if (suffix === 'cac_dau' || suffix === 'chan' || suffix === 'le' || suffix === 'nho' || suffix === 'to' || suffix.includes('lon_hon') || suffix.includes('nho_hon')) return strVal[0];
-            return strVal;
-        }
-        if (cat.startsWith('dit_')) {
-            const suffix = cat.replace('dit_', '');
-            if (suffix === 'cac_dit' || suffix === 'chan' || suffix === 'le' || suffix === 'nho' || suffix === 'to' || suffix.includes('lon_hon') || suffix.includes('nho_hon')) return strVal[1];
-            return strVal;
-        }
-        return strVal;
-    };
+    // Helper extractValue moved to top.
 
     const lastValueToPredict = extractValue(lastValue, category);
 
@@ -1504,15 +1603,15 @@ function predictNextInSequence(stat, category, subcategory) {
             resultNumbers.push(parseInt(nextVal, 10));
         }
         // Special cases: cacSo, cacDau, cacDit
-        else if (category === 'cacSo') {
+        else if (category.startsWith('cacSo') || category.startsWith('motSo')) {
             resultNumbers.push(parseInt(nextVal, 10));
         }
-        else if (category === 'cacDau') {
+        else if (category.startsWith('cacDau') || category.startsWith('motDau')) {
             const targetDigit = nextVal;
             resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
                 .filter(n => String(n).padStart(2, '0')[0] === targetDigit));
         }
-        else if (category === 'cacDit') {
+        else if (category.startsWith('cacDit') || category.startsWith('motDit')) {
             const targetDigit = nextVal;
             resultNumbers.push(...Array.from({ length: 100 }, (_, i) => i)
                 .filter(n => String(n).padStart(2, '0')[1] === targetDigit));

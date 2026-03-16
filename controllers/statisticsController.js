@@ -53,6 +53,16 @@ exports.getSuggestions = async (req, res) => {
     }
 };
 
+exports.getQuickStatsHistory = async (req, res) => {
+    try {
+        const results = await statisticsService.getQuickStatsHistory();
+        res.json(results);
+    } catch (error) {
+        console.error('Lỗi khi lấy lịch sử thống kê nhanh:', error);
+        res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+    }
+};
+
 exports.getRecentLotteryResults = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 7;

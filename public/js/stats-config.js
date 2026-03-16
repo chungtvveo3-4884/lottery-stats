@@ -107,6 +107,10 @@ const STATS_OPTIONS = {
         { text: "Các Đít - Tiến Đều", category: "cacDitTienDeu" },
         { text: "Các Đít - Lùi liên tiếp", category: "cacDitLui" },
         { text: "Các Đít - Lùi Đều", category: "cacDitLuiDeu" },
+        { text: "Các Đầu - Tiến-Lùi So Le (>=4)", category: "cacDauTienLuiSoLe" },
+        { text: "Các Đầu - Lùi-Tiến So Le (>=4)", category: "cacDauLuiTienSoLe" },
+        { text: "Các Đít - Tiến-Lùi So Le (>=4)", category: "cacDitTienLuiSoLe" },
+        { text: "Các Đít - Lùi-Tiến So Le (>=4)", category: "cacDitLuiTienSoLe" },
         // --- TIẾN-LÙI SO LE cho Đầu/Đít ---
         { text: "Đầu chẵn - Tiến-Lùi So Le (>=4)", category: "dau_chan", subcategory: "tienLuiSoLe" },
         { text: "Đầu chẵn - Lùi-Tiến So Le (>=4)", category: "dau_chan", subcategory: "luiTienSoLe" },
@@ -242,6 +246,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn>4 & Đít chẵn>4 - Tiến Đều", category: "dau_chan_lon_4_dit_chan_lon_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn>4 & Đít chẵn>4 - Lùi liên tiếp", category: "dau_chan_lon_4_dit_chan_lon_4", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn>4 & Đít chẵn>4 - Lùi Đều", category: "dau_chan_lon_4_dit_chan_lon_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn>4 & Đít chẵn>4 - Tiến-Lùi So Le (>=4)", category: "dau_chan_lon_4_dit_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn>4 & Đít chẵn>4 - Lùi-Tiến So Le (>=4)", category: "dau_chan_lon_4_dit_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn>4 & Đít chẵn<4 - Về liên tiếp", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đầu chẵn>4 & Đít chẵn<4 - Về so le", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "veSole" },
         { text: "Đầu chẵn>4 & Đít chẵn<4 - Về so le Mới", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "veSoleMoi" },
@@ -249,6 +255,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn>4 & Đít chẵn<4 - Tiến Đều", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn>4 & Đít chẵn<4 - Lùi liên tiếp", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn>4 & Đít chẵn<4 - Lùi Đều", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn>4 & Đít chẵn<4 - Tiến-Lùi So Le (>=4)", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn>4 & Đít chẵn<4 - Lùi-Tiến So Le (>=4)", category: "dau_chan_lon_4_dit_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn<4 & Đít chẵn>4 - Về liên tiếp", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đầu chẵn<4 & Đít chẵn>4 - Về so le", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "veSole" },
         { text: "Đầu chẵn<4 & Đít chẵn>4 - Về so le Mới", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "veSoleMoi" },
@@ -256,6 +264,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn<4 & Đít chẵn>4 - Tiến Đều", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn<4 & Đít chẵn>4 - Lùi liên tiếp", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn<4 & Đít chẵn>4 - Lùi Đều", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn<4 & Đít chẵn>4 - Tiến-Lùi So Le (>=4)", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn<4 & Đít chẵn>4 - Lùi-Tiến So Le (>=4)", category: "dau_chan_nho_4_dit_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn<4 & Đít chẵn<4 - Về liên tiếp", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đầu chẵn<4 & Đít chẵn<4 - Về so le", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "veSole" },
         { text: "Đầu chẵn<4 & Đít chẵn<4 - Về so le Mới", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "veSoleMoi" },
@@ -263,6 +273,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn<4 & Đít chẵn<4 - Tiến Đều", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn<4 & Đít chẵn<4 - Lùi liên tiếp", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn<4 & Đít chẵn<4 - Lùi Đều", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn<4 & Đít chẵn<4 - Tiến-Lùi So Le (>=4)", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn<4 & Đít chẵn<4 - Lùi-Tiến So Le (>=4)", category: "dau_chan_nho_4_dit_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn>4 & Đít lẻ>5 - Về liên tiếp", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đầu chẵn>4 & Đít lẻ>5 - Về so le", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "veSole" },
         { text: "Đầu chẵn>4 & Đít lẻ>5 - Về so le Mới", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "veSoleMoi" },
@@ -270,6 +282,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn>4 & Đít lẻ>5 - Tiến Đều", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn>4 & Đít lẻ>5 - Lùi liên tiếp", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn>4 & Đít lẻ>5 - Lùi Đều", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn>4 & Đít lẻ>5 - Tiến-Lùi So Le (>=4)", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn>4 & Đít lẻ>5 - Lùi-Tiến So Le (>=4)", category: "dau_chan_lon_4_dit_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn>4 & Đít lẻ<5 - Về liên tiếp", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đầu chẵn>4 & Đít lẻ<5 - Về so le", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "veSole" },
         { text: "Đầu chẵn>4 & Đít lẻ<5 - Về so le Mới", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "veSoleMoi" },
@@ -277,6 +291,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn>4 & Đít lẻ<5 - Tiến Đều", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn>4 & Đít lẻ<5 - Lùi liên tiếp", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn>4 & Đít lẻ<5 - Lùi Đều", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn>4 & Đít lẻ<5 - Tiến-Lùi So Le (>=4)", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn>4 & Đít lẻ<5 - Lùi-Tiến So Le (>=4)", category: "dau_chan_lon_4_dit_le_nho_5", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn<4 & Đít lẻ>5 - Về liên tiếp", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đầu chẵn<4 & Đít lẻ>5 - Về so le", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "veSole" },
         { text: "Đầu chẵn<4 & Đít lẻ>5 - Về so le Mới", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "veSoleMoi" },
@@ -284,6 +300,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn<4 & Đít lẻ>5 - Tiến Đều", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn<4 & Đít lẻ>5 - Lùi liên tiếp", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn<4 & Đít lẻ>5 - Lùi Đều", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn<4 & Đít lẻ>5 - Tiến-Lùi So Le (>=4)", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn<4 & Đít lẻ>5 - Lùi-Tiến So Le (>=4)", category: "dau_chan_nho_4_dit_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đầu chẵn<4 & Đít lẻ<5 - Về liên tiếp", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đầu chẵn<4 & Đít lẻ<5 - Về so le", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "veSole" },
         { text: "Đầu chẵn<4 & Đít lẻ<5 - Về so le Mới", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "veSoleMoi" },
@@ -291,6 +309,8 @@ const STATS_OPTIONS = {
         { text: "Đầu chẵn<4 & Đít lẻ<5 - Tiến Đều", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu chẵn<4 & Đít lẻ<5 - Lùi liên tiếp", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "luiLienTiep" },
         { text: "Đầu chẵn<4 & Đít lẻ<5 - Lùi Đều", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu chẵn<4 & Đít lẻ<5 - Tiến-Lùi So Le (>=4)", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu chẵn<4 & Đít lẻ<5 - Lùi-Tiến So Le (>=4)", category: "dau_chan_nho_4_dit_le_nho_5", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ>5 & Đít chẵn>4 - Về liên tiếp", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đầu lẻ>5 & Đít chẵn>4 - Về so le", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "veSole" },
         { text: "Đầu lẻ>5 & Đít chẵn>4 - Về so le Mới", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "veSoleMoi" },
@@ -298,6 +318,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ>5 & Đít chẵn>4 - Tiến Đều", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ>5 & Đít chẵn>4 - Lùi liên tiếp", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ>5 & Đít chẵn>4 - Lùi Đều", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ>5 & Đít chẵn>4 - Tiến-Lùi So Le (>=4)", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ>5 & Đít chẵn>4 - Lùi-Tiến So Le (>=4)", category: "dau_le_lon_5_dit_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ>5 & Đít chẵn<4 - Về liên tiếp", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đầu lẻ>5 & Đít chẵn<4 - Về so le", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "veSole" },
         { text: "Đầu lẻ>5 & Đít chẵn<4 - Về so le Mới", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "veSoleMoi" },
@@ -305,6 +327,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ>5 & Đít chẵn<4 - Tiến Đều", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ>5 & Đít chẵn<4 - Lùi liên tiếp", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ>5 & Đít chẵn<4 - Lùi Đều", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ>5 & Đít chẵn<4 - Tiến-Lùi So Le (>=4)", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ>5 & Đít chẵn<4 - Lùi-Tiến So Le (>=4)", category: "dau_le_lon_5_dit_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ<5 & Đít chẵn>4 - Về liên tiếp", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đầu lẻ<5 & Đít chẵn>4 - Về so le", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "veSole" },
         { text: "Đầu lẻ<5 & Đít chẵn>4 - Về so le Mới", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "veSoleMoi" },
@@ -312,6 +336,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ<5 & Đít chẵn>4 - Tiến Đều", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ<5 & Đít chẵn>4 - Lùi liên tiếp", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ<5 & Đít chẵn>4 - Lùi Đều", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ<5 & Đít chẵn>4 - Tiến-Lùi So Le (>=4)", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ<5 & Đít chẵn>4 - Lùi-Tiến So Le (>=4)", category: "dau_le_nho_5_dit_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ<5 & Đít chẵn<4 - Về liên tiếp", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đầu lẻ<5 & Đít chẵn<4 - Về so le", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "veSole" },
         { text: "Đầu lẻ<5 & Đít chẵn<4 - Về so le Mới", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "veSoleMoi" },
@@ -319,6 +345,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ<5 & Đít chẵn<4 - Tiến Đều", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ<5 & Đít chẵn<4 - Lùi liên tiếp", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ<5 & Đít chẵn<4 - Lùi Đều", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ<5 & Đít chẵn<4 - Tiến-Lùi So Le (>=4)", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ<5 & Đít chẵn<4 - Lùi-Tiến So Le (>=4)", category: "dau_le_nho_5_dit_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ>5 & Đít lẻ>5 - Về liên tiếp", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đầu lẻ>5 & Đít lẻ>5 - Về so le", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "veSole" },
         { text: "Đầu lẻ>5 & Đít lẻ>5 - Về so le Mới", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "veSoleMoi" },
@@ -326,6 +354,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ>5 & Đít lẻ>5 - Tiến Đều", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ>5 & Đít lẻ>5 - Lùi liên tiếp", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ>5 & Đít lẻ>5 - Lùi Đều", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ>5 & Đít lẻ>5 - Tiến-Lùi So Le (>=4)", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ>5 & Đít lẻ>5 - Lùi-Tiến So Le (>=4)", category: "dau_le_lon_5_dit_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ>5 & Đít lẻ<5 - Về liên tiếp", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đầu lẻ>5 & Đít lẻ<5 - Về so le", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "veSole" },
         { text: "Đầu lẻ>5 & Đít lẻ<5 - Về so le Mới", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "veSoleMoi" },
@@ -333,6 +363,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ>5 & Đít lẻ<5 - Tiến Đều", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ>5 & Đít lẻ<5 - Lùi liên tiếp", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ>5 & Đít lẻ<5 - Lùi Đều", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ>5 & Đít lẻ<5 - Tiến-Lùi So Le (>=4)", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ>5 & Đít lẻ<5 - Lùi-Tiến So Le (>=4)", category: "dau_le_lon_5_dit_le_nho_5", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ<5 & Đít lẻ>5 - Về liên tiếp", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đầu lẻ<5 & Đít lẻ>5 - Về so le", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "veSole" },
         { text: "Đầu lẻ<5 & Đít lẻ>5 - Về so le Mới", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "veSoleMoi" },
@@ -340,6 +372,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ<5 & Đít lẻ>5 - Tiến Đều", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ<5 & Đít lẻ>5 - Lùi liên tiếp", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ<5 & Đít lẻ>5 - Lùi Đều", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ<5 & Đít lẻ>5 - Tiến-Lùi So Le (>=4)", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ<5 & Đít lẻ>5 - Lùi-Tiến So Le (>=4)", category: "dau_le_nho_5_dit_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đầu lẻ<5 & Đít lẻ<5 - Về liên tiếp", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đầu lẻ<5 & Đít lẻ<5 - Về so le", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "veSole" },
         { text: "Đầu lẻ<5 & Đít lẻ<5 - Về so le Mới", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "veSoleMoi" },
@@ -347,6 +381,8 @@ const STATS_OPTIONS = {
         { text: "Đầu lẻ<5 & Đít lẻ<5 - Tiến Đều", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "tienDeuLienTiep" },
         { text: "Đầu lẻ<5 & Đít lẻ<5 - Lùi liên tiếp", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "luiLienTiep" },
         { text: "Đầu lẻ<5 & Đít lẻ<5 - Lùi Đều", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "luiDeuLienTiep" },
+    { text: "Đầu lẻ<5 & Đít lẻ<5 - Tiến-Lùi So Le (>=4)", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu lẻ<5 & Đít lẻ<5 - Lùi-Tiến So Le (>=4)", category: "dau_le_nho_5_dit_le_nho_5", subcategory: "luiTienSoLe" },
         // Dạng Đầu 0-9 (20 * 3 = 60 options)
         { text: "Dạng Đầu 0 - Về liên tiếp", category: "dau_0", subcategory: "veLienTiep" },
         { text: "Dạng Đầu 0 - Về so le", category: "dau_0", subcategory: "veSole" },
@@ -454,51 +490,83 @@ const STATS_OPTIONS = {
         { text: "Đầu 4 và Đít chẵn > 4 - Về liên tiếp", category: "dau_4_dit_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đầu 4 và Đít chẵn > 4 - Về so le", category: "dau_4_dit_chan_lon_4", subcategory: "veSole" },
         { text: "Đầu 4 và Đít chẵn > 4 - Về so le Mới", category: "dau_4_dit_chan_lon_4", subcategory: "veSoleMoi" },
+    { text: "Đầu 4 và Đít chẵn > 4 - Tiến-Lùi So Le (>=4)", category: "dau_4_dit_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 4 và Đít chẵn > 4 - Lùi-Tiến So Le (>=4)", category: "dau_4_dit_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đầu 4 và Đít chẵn < 4 - Về liên tiếp", category: "dau_4_dit_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đầu 4 và Đít chẵn < 4 - Về so le", category: "dau_4_dit_chan_nho_4", subcategory: "veSole" },
         { text: "Đầu 4 và Đít chẵn < 4 - Về so le Mới", category: "dau_4_dit_chan_nho_4", subcategory: "veSoleMoi" },
+    { text: "Đầu 4 và Đít chẵn < 4 - Tiến-Lùi So Le (>=4)", category: "dau_4_dit_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 4 và Đít chẵn < 4 - Lùi-Tiến So Le (>=4)", category: "dau_4_dit_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đầu 4 và Đít lẻ > 5 - Về liên tiếp", category: "dau_4_dit_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đầu 4 và Đít lẻ > 5 - Về so le", category: "dau_4_dit_le_lon_5", subcategory: "veSole" },
         { text: "Đầu 4 và Đít lẻ > 5 - Về so le Mới", category: "dau_4_dit_le_lon_5", subcategory: "veSoleMoi" },
+    { text: "Đầu 4 và Đít lẻ > 5 - Tiến-Lùi So Le (>=4)", category: "dau_4_dit_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 4 và Đít lẻ > 5 - Lùi-Tiến So Le (>=4)", category: "dau_4_dit_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đầu 4 và Đít lẻ < 5 - Về liên tiếp", category: "dau_4_dit_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đầu 4 và Đít lẻ < 5 - Về so le", category: "dau_4_dit_le_nho_5", subcategory: "veSole" },
         { text: "Đầu 4 và Đít lẻ < 5 - Về so le Mới", category: "dau_4_dit_le_nho_5", subcategory: "veSoleMoi" },
+    { text: "Đầu 4 và Đít lẻ < 5 - Tiến-Lùi So Le (>=4)", category: "dau_4_dit_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 4 và Đít lẻ < 5 - Lùi-Tiến So Le (>=4)", category: "dau_4_dit_le_nho_5", subcategory: "luiTienSoLe" },
         { text: "Đầu 5 và Đít chẵn > 4 - Về liên tiếp", category: "dau_5_dit_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đầu 5 và Đít chẵn > 4 - Về so le", category: "dau_5_dit_chan_lon_4", subcategory: "veSole" },
         { text: "Đầu 5 và Đít chẵn > 4 - Về so le Mới", category: "dau_5_dit_chan_lon_4", subcategory: "veSoleMoi" },
+    { text: "Đầu 5 và Đít chẵn > 4 - Tiến-Lùi So Le (>=4)", category: "dau_5_dit_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 5 và Đít chẵn > 4 - Lùi-Tiến So Le (>=4)", category: "dau_5_dit_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đầu 5 và Đít chẵn < 4 - Về liên tiếp", category: "dau_5_dit_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đầu 5 và Đít chẵn < 4 - Về so le", category: "dau_5_dit_chan_nho_4", subcategory: "veSole" },
         { text: "Đầu 5 và Đít chẵn < 4 - Về so le Mới", category: "dau_5_dit_chan_nho_4", subcategory: "veSoleMoi" },
+    { text: "Đầu 5 và Đít chẵn < 4 - Tiến-Lùi So Le (>=4)", category: "dau_5_dit_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 5 và Đít chẵn < 4 - Lùi-Tiến So Le (>=4)", category: "dau_5_dit_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đầu 5 và Đít lẻ > 5 - Về liên tiếp", category: "dau_5_dit_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đầu 5 và Đít lẻ > 5 - Về so le", category: "dau_5_dit_le_lon_5", subcategory: "veSole" },
         { text: "Đầu 5 và Đít lẻ > 5 - Về so le Mới", category: "dau_5_dit_le_lon_5", subcategory: "veSoleMoi" },
+    { text: "Đầu 5 và Đít lẻ > 5 - Tiến-Lùi So Le (>=4)", category: "dau_5_dit_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 5 và Đít lẻ > 5 - Lùi-Tiến So Le (>=4)", category: "dau_5_dit_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đầu 5 và Đít lẻ < 5 - Về liên tiếp", category: "dau_5_dit_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đầu 5 và Đít lẻ < 5 - Về so le", category: "dau_5_dit_le_nho_5", subcategory: "veSole" },
         { text: "Đầu 5 và Đít lẻ < 5 - Về so le Mới", category: "dau_5_dit_le_nho_5", subcategory: "veSoleMoi" },
+    { text: "Đầu 5 và Đít lẻ < 5 - Tiến-Lùi So Le (>=4)", category: "dau_5_dit_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đầu 5 và Đít lẻ < 5 - Lùi-Tiến So Le (>=4)", category: "dau_5_dit_le_nho_5", subcategory: "luiTienSoLe" },
         { text: "Đít 4 và Đầu chẵn > 4 - Về liên tiếp", category: "dit_4_dau_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đít 4 và Đầu chẵn > 4 - Về so le", category: "dit_4_dau_chan_lon_4", subcategory: "veSole" },
         { text: "Đít 4 và Đầu chẵn > 4 - Về so le Mới", category: "dit_4_dau_chan_lon_4", subcategory: "veSoleMoi" },
+    { text: "Đít 4 và Đầu chẵn > 4 - Tiến-Lùi So Le (>=4)", category: "dit_4_dau_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đít 4 và Đầu chẵn > 4 - Lùi-Tiến So Le (>=4)", category: "dit_4_dau_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đít 4 và Đầu chẵn < 4 - Về liên tiếp", category: "dit_4_dau_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đít 4 và Đầu chẵn < 4 - Về so le", category: "dit_4_dau_chan_nho_4", subcategory: "veSole" },
         { text: "Đít 4 và Đầu chẵn < 4 - Về so le Mới", category: "dit_4_dau_chan_nho_4", subcategory: "veSoleMoi" },
+    { text: "Đít 4 và Đầu chẵn < 4 - Tiến-Lùi So Le (>=4)", category: "dit_4_dau_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đít 4 và Đầu chẵn < 4 - Lùi-Tiến So Le (>=4)", category: "dit_4_dau_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đít 4 và Đầu lẻ > 5 - Về liên tiếp", category: "dit_4_dau_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đít 4 và Đầu lẻ > 5 - Về so le", category: "dit_4_dau_le_lon_5", subcategory: "veSole" },
         { text: "Đít 4 và Đầu lẻ > 5 - Về so le Mới", category: "dit_4_dau_le_lon_5", subcategory: "veSoleMoi" },
+    { text: "Đít 4 và Đầu lẻ > 5 - Tiến-Lùi So Le (>=4)", category: "dit_4_dau_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đít 4 và Đầu lẻ > 5 - Lùi-Tiến So Le (>=4)", category: "dit_4_dau_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đít 4 và Đầu lẻ < 5 - Về liên tiếp", category: "dit_4_dau_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đít 4 và Đầu lẻ < 5 - Về so le", category: "dit_4_dau_le_nho_5", subcategory: "veSole" },
         { text: "Đít 4 và Đầu lẻ < 5 - Về so le Mới", category: "dit_4_dau_le_nho_5", subcategory: "veSoleMoi" },
+    { text: "Đít 4 và Đầu lẻ < 5 - Tiến-Lùi So Le (>=4)", category: "dit_4_dau_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đít 4 và Đầu lẻ < 5 - Lùi-Tiến So Le (>=4)", category: "dit_4_dau_le_nho_5", subcategory: "luiTienSoLe" },
         { text: "Đít 5 và Đầu chẵn > 4 - Về liên tiếp", category: "dit_5_dau_chan_lon_4", subcategory: "veLienTiep" },
         { text: "Đít 5 và Đầu chẵn > 4 - Về so le", category: "dit_5_dau_chan_lon_4", subcategory: "veSole" },
         { text: "Đít 5 và Đầu chẵn > 4 - Về so le Mới", category: "dit_5_dau_chan_lon_4", subcategory: "veSoleMoi" },
+    { text: "Đít 5 và Đầu chẵn > 4 - Tiến-Lùi So Le (>=4)", category: "dit_5_dau_chan_lon_4", subcategory: "tienLuiSoLe" },
+    { text: "Đít 5 và Đầu chẵn > 4 - Lùi-Tiến So Le (>=4)", category: "dit_5_dau_chan_lon_4", subcategory: "luiTienSoLe" },
         { text: "Đít 5 và Đầu chẵn < 4 - Về liên tiếp", category: "dit_5_dau_chan_nho_4", subcategory: "veLienTiep" },
         { text: "Đít 5 và Đầu chẵn < 4 - Về so le", category: "dit_5_dau_chan_nho_4", subcategory: "veSole" },
         { text: "Đít 5 và Đầu chẵn < 4 - Về so le Mới", category: "dit_5_dau_chan_nho_4", subcategory: "veSoleMoi" },
+    { text: "Đít 5 và Đầu chẵn < 4 - Tiến-Lùi So Le (>=4)", category: "dit_5_dau_chan_nho_4", subcategory: "tienLuiSoLe" },
+    { text: "Đít 5 và Đầu chẵn < 4 - Lùi-Tiến So Le (>=4)", category: "dit_5_dau_chan_nho_4", subcategory: "luiTienSoLe" },
         { text: "Đít 5 và Đầu lẻ > 5 - Về liên tiếp", category: "dit_5_dau_le_lon_5", subcategory: "veLienTiep" },
         { text: "Đít 5 và Đầu lẻ > 5 - Về so le", category: "dit_5_dau_le_lon_5", subcategory: "veSole" },
         { text: "Đít 5 và Đầu lẻ > 5 - Về so le Mới", category: "dit_5_dau_le_lon_5", subcategory: "veSoleMoi" },
+    { text: "Đít 5 và Đầu lẻ > 5 - Tiến-Lùi So Le (>=4)", category: "dit_5_dau_le_lon_5", subcategory: "tienLuiSoLe" },
+    { text: "Đít 5 và Đầu lẻ > 5 - Lùi-Tiến So Le (>=4)", category: "dit_5_dau_le_lon_5", subcategory: "luiTienSoLe" },
         { text: "Đít 5 và Đầu lẻ < 5 - Về liên tiếp", category: "dit_5_dau_le_nho_5", subcategory: "veLienTiep" },
         { text: "Đít 5 và Đầu lẻ < 5 - Về so le", category: "dit_5_dau_le_nho_5", subcategory: "veSole" },
         { text: "Đít 5 và Đầu lẻ < 5 - Về so le Mới", category: "dit_5_dau_le_nho_5", subcategory: "veSoleMoi" },
+    { text: "Đít 5 và Đầu lẻ < 5 - Tiến-Lùi So Le (>=4)", category: "dit_5_dau_le_nho_5", subcategory: "tienLuiSoLe" },
+    { text: "Đít 5 và Đầu lẻ < 5 - Lùi-Tiến So Le (>=4)", category: "dit_5_dau_le_nho_5", subcategory: "luiTienSoLe" },
         // ---- KẾT THÚC 48 DẠNG PHỨC TẠP ----
     ],
     "Thống kê Tổng Truyền Thống": [
@@ -507,10 +575,6 @@ const STATS_OPTIONS = {
         { text: "Tổng TT Chẵn - Lùi-Tiến So Le (>=4)", category: "tong_tt_chan", subcategory: "luiTienSoLe" },
         { text: "Tổng TT Lẻ - Tiến-Lùi So Le (>=4)", category: "tong_tt_le", subcategory: "tienLuiSoLe" },
         { text: "Tổng TT Lẻ - Lùi-Tiến So Le (>=4)", category: "tong_tt_le", subcategory: "luiTienSoLe" },
-        { text: "Tổng TT Nhỏ - Tiến-Lùi So Le (>=4)", category: "tong_tt_nho", subcategory: "tienLuiSoLe" },
-        { text: "Tổng TT Nhỏ - Lùi-Tiến So Le (>=4)", category: "tong_tt_nho", subcategory: "luiTienSoLe" },
-        { text: "Tổng TT Lớn - Tiến-Lùi So Le (>=4)", category: "tong_tt_lon", subcategory: "tienLuiSoLe" },
-        { text: "Tổng TT Lớn - Lùi-Tiến So Le (>=4)", category: "tong_tt_lon", subcategory: "luiTienSoLe" },
         // Tổng 1
         { text: "Cùng Tổng 1 - Về liên tiếp", category: "tong_tt_1", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 1 - Về so le", category: "tong_tt_1", subcategory: "veSole" },
@@ -519,6 +583,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 1 - Tiến Đều", category: "tong_tt_1", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 1 - Lùi liên tiếp", category: "tong_tt_1", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 1 - Lùi Đều", category: "tong_tt_1", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 1 - Tiến-Lùi So Le (>=4)", category: "tong_tt_1", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 1 - Lùi-Tiến So Le (>=4)", category: "tong_tt_1", subcategory: "luiTienSoLe" },
         // Tổng 2
         { text: "Cùng Tổng 2 - Về liên tiếp", category: "tong_tt_2", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 2 - Về so le", category: "tong_tt_2", subcategory: "veSole" },
@@ -527,6 +593,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 2 - Tiến Đều", category: "tong_tt_2", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 2 - Lùi liên tiếp", category: "tong_tt_2", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 2 - Lùi Đều", category: "tong_tt_2", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 2 - Tiến-Lùi So Le (>=4)", category: "tong_tt_2", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 2 - Lùi-Tiến So Le (>=4)", category: "tong_tt_2", subcategory: "luiTienSoLe" },
         // Tổng 3
         { text: "Cùng Tổng 3 - Về liên tiếp", category: "tong_tt_3", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 3 - Về so le", category: "tong_tt_3", subcategory: "veSole" },
@@ -535,6 +603,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 3 - Tiến Đều", category: "tong_tt_3", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 3 - Lùi liên tiếp", category: "tong_tt_3", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 3 - Lùi Đều", category: "tong_tt_3", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 3 - Tiến-Lùi So Le (>=4)", category: "tong_tt_3", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 3 - Lùi-Tiến So Le (>=4)", category: "tong_tt_3", subcategory: "luiTienSoLe" },
         // Tổng 4
         { text: "Cùng Tổng 4 - Về liên tiếp", category: "tong_tt_4", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 4 - Về so le", category: "tong_tt_4", subcategory: "veSole" },
@@ -543,6 +613,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 4 - Tiến Đều", category: "tong_tt_4", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 4 - Lùi liên tiếp", category: "tong_tt_4", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 4 - Lùi Đều", category: "tong_tt_4", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 4 - Tiến-Lùi So Le (>=4)", category: "tong_tt_4", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 4 - Lùi-Tiến So Le (>=4)", category: "tong_tt_4", subcategory: "luiTienSoLe" },
         // Tổng 5
         { text: "Cùng Tổng 5 - Về liên tiếp", category: "tong_tt_5", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 5 - Về so le", category: "tong_tt_5", subcategory: "veSole" },
@@ -551,6 +623,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 5 - Tiến Đều", category: "tong_tt_5", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 5 - Lùi liên tiếp", category: "tong_tt_5", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 5 - Lùi Đều", category: "tong_tt_5", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 5 - Tiến-Lùi So Le (>=4)", category: "tong_tt_5", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 5 - Lùi-Tiến So Le (>=4)", category: "tong_tt_5", subcategory: "luiTienSoLe" },
         // Tổng 6
         { text: "Cùng Tổng 6 - Về liên tiếp", category: "tong_tt_6", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 6 - Về so le", category: "tong_tt_6", subcategory: "veSole" },
@@ -559,6 +633,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 6 - Tiến Đều", category: "tong_tt_6", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 6 - Lùi liên tiếp", category: "tong_tt_6", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 6 - Lùi Đều", category: "tong_tt_6", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 6 - Tiến-Lùi So Le (>=4)", category: "tong_tt_6", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 6 - Lùi-Tiến So Le (>=4)", category: "tong_tt_6", subcategory: "luiTienSoLe" },
         // Tổng 7
         { text: "Cùng Tổng 7 - Về liên tiếp", category: "tong_tt_7", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 7 - Về so le", category: "tong_tt_7", subcategory: "veSole" },
@@ -567,6 +643,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 7 - Tiến Đều", category: "tong_tt_7", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 7 - Lùi liên tiếp", category: "tong_tt_7", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 7 - Lùi Đều", category: "tong_tt_7", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 7 - Tiến-Lùi So Le (>=4)", category: "tong_tt_7", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 7 - Lùi-Tiến So Le (>=4)", category: "tong_tt_7", subcategory: "luiTienSoLe" },
         // Tổng 8
         { text: "Cùng Tổng 8 - Về liên tiếp", category: "tong_tt_8", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 8 - Về so le", category: "tong_tt_8", subcategory: "veSole" },
@@ -575,6 +653,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 8 - Tiến Đều", category: "tong_tt_8", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 8 - Lùi liên tiếp", category: "tong_tt_8", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 8 - Lùi Đều", category: "tong_tt_8", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 8 - Tiến-Lùi So Le (>=4)", category: "tong_tt_8", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 8 - Lùi-Tiến So Le (>=4)", category: "tong_tt_8", subcategory: "luiTienSoLe" },
         // Tổng 9
         { text: "Cùng Tổng 9 - Về liên tiếp", category: "tong_tt_9", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 9 - Về so le", category: "tong_tt_9", subcategory: "veSole" },
@@ -583,6 +663,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 9 - Tiến Đều", category: "tong_tt_9", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 9 - Lùi liên tiếp", category: "tong_tt_9", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 9 - Lùi Đều", category: "tong_tt_9", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 9 - Tiến-Lùi So Le (>=4)", category: "tong_tt_9", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 9 - Lùi-Tiến So Le (>=4)", category: "tong_tt_9", subcategory: "luiTienSoLe" },
         // Tổng 10
         { text: "Cùng Tổng 10 - Về liên tiếp", category: "tong_tt_10", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 10 - Về so le", category: "tong_tt_10", subcategory: "veSole" },
@@ -591,6 +673,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 10 - Tiến Đều", category: "tong_tt_10", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 10 - Lùi liên tiếp", category: "tong_tt_10", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 10 - Lùi Đều", category: "tong_tt_10", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 10 - Tiến-Lùi So Le (>=4)", category: "tong_tt_10", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 10 - Lùi-Tiến So Le (>=4)", category: "tong_tt_10", subcategory: "luiTienSoLe" },
 
         { text: "Các Tổng TT - Về liên tiếp", category: "tong_tt_cac_tong", subcategory: "veLienTiep" },
         { text: "Các Tổng TT - Về so le", category: "tong_tt_cac_tong", subcategory: "veSole" },
@@ -599,6 +683,8 @@ const STATS_OPTIONS = {
         { text: "Các Tổng TT - Tiến Đều", category: "tong_tt_cac_tong", subcategory: "tienDeuLienTiep" },
         { text: "Các Tổng TT - Lùi liên tiếp", category: "tong_tt_cac_tong", subcategory: "luiLienTiep" },
         { text: "Các Tổng TT - Lùi Đều", category: "tong_tt_cac_tong", subcategory: "luiDeuLienTiep" },
+    { text: "Các Tổng TT - Tiến-Lùi So Le (>=4)", category: "tong_tt_cac_tong", subcategory: "tienLuiSoLe" },
+    { text: "Các Tổng TT - Lùi-Tiến So Le (>=4)", category: "tong_tt_cac_tong", subcategory: "luiTienSoLe" },
 
         // Nhóm 1: TONG_TT_1_3
         { text: "Dạng Tổng (1-3) - Về liên tiếp", category: "tong_tt_1_3", subcategory: "veLienTiep" },
@@ -608,6 +694,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (1-3) - Tiến Đều", category: "tong_tt_1_3", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (1-3) - Lùi liên tiếp", category: "tong_tt_1_3", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (1-3) - Lùi Đều", category: "tong_tt_1_3", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (1 - Tiến-Lùi So Le (>=4)", category: "tong_tt_1_3", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (1 - Lùi-Tiến So Le (>=4)", category: "tong_tt_1_3", subcategory: "luiTienSoLe" },
 
         // Nhóm 2: TONG_TT_2_4
         { text: "Dạng Tổng (2-4) - Về liên tiếp", category: "tong_tt_2_4", subcategory: "veLienTiep" },
@@ -617,6 +705,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (2-4) - Tiến Đều", category: "tong_tt_2_4", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (2-4) - Lùi liên tiếp", category: "tong_tt_2_4", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (2-4) - Lùi Đều", category: "tong_tt_2_4", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (2 - Tiến-Lùi So Le (>=4)", category: "tong_tt_2_4", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (2 - Lùi-Tiến So Le (>=4)", category: "tong_tt_2_4", subcategory: "luiTienSoLe" },
 
         // Nhóm 3: TONG_TT_3_5
         { text: "Dạng Tổng (3-5) - Về liên tiếp", category: "tong_tt_3_5", subcategory: "veLienTiep" },
@@ -626,6 +716,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (3-5) - Tiến Đều", category: "tong_tt_3_5", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (3-5) - Lùi liên tiếp", category: "tong_tt_3_5", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (3-5) - Lùi Đều", category: "tong_tt_3_5", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (3 - Tiến-Lùi So Le (>=4)", category: "tong_tt_3_5", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (3 - Lùi-Tiến So Le (>=4)", category: "tong_tt_3_5", subcategory: "luiTienSoLe" },
 
         // Nhóm 4: TONG_TT_4_6
         { text: "Dạng Tổng (4-6) - Về liên tiếp", category: "tong_tt_4_6", subcategory: "veLienTiep" },
@@ -635,6 +727,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (4-6) - Tiến Đều", category: "tong_tt_4_6", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (4-6) - Lùi liên tiếp", category: "tong_tt_4_6", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (4-6) - Lùi Đều", category: "tong_tt_4_6", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (4 - Tiến-Lùi So Le (>=4)", category: "tong_tt_4_6", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (4 - Lùi-Tiến So Le (>=4)", category: "tong_tt_4_6", subcategory: "luiTienSoLe" },
 
         // Nhóm 5: TONG_TT_5_7
         { text: "Dạng Tổng (5-7) - Về liên tiếp", category: "tong_tt_5_7", subcategory: "veLienTiep" },
@@ -644,6 +738,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (5-7) - Tiến Đều", category: "tong_tt_5_7", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (5-7) - Lùi liên tiếp", category: "tong_tt_5_7", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (5-7) - Lùi Đều", category: "tong_tt_5_7", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (5 - Tiến-Lùi So Le (>=4)", category: "tong_tt_5_7", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (5 - Lùi-Tiến So Le (>=4)", category: "tong_tt_5_7", subcategory: "luiTienSoLe" },
 
         // Nhóm 6: TONG_TT_6_8
         { text: "Dạng Tổng (6-8) - Về liên tiếp", category: "tong_tt_6_8", subcategory: "veLienTiep" },
@@ -653,6 +749,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (6-8) - Tiến Đều", category: "tong_tt_6_8", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (6-8) - Lùi liên tiếp", category: "tong_tt_6_8", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (6-8) - Lùi Đều", category: "tong_tt_6_8", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (6 - Tiến-Lùi So Le (>=4)", category: "tong_tt_6_8", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (6 - Lùi-Tiến So Le (>=4)", category: "tong_tt_6_8", subcategory: "luiTienSoLe" },
 
         // Nhóm 7: TONG_TT_7_9
         { text: "Dạng Tổng (7-9) - Về liên tiếp", category: "tong_tt_7_9", subcategory: "veLienTiep" },
@@ -662,6 +760,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (7-9) - Tiến Đều", category: "tong_tt_7_9", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (7-9) - Lùi liên tiếp", category: "tong_tt_7_9", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (7-9) - Lùi Đều", category: "tong_tt_7_9", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (7 - Tiến-Lùi So Le (>=4)", category: "tong_tt_7_9", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (7 - Lùi-Tiến So Le (>=4)", category: "tong_tt_7_9", subcategory: "luiTienSoLe" },
 
         // Nhóm 8: TONG_TT_8_10
         { text: "Dạng Tổng (8-10) - Về liên tiếp", category: "tong_tt_8_10", subcategory: "veLienTiep" },
@@ -671,6 +771,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (8-10) - Tiến Đều", category: "tong_tt_8_10", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (8-10) - Lùi liên tiếp", category: "tong_tt_8_10", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (8-10) - Lùi Đều", category: "tong_tt_8_10", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (8 - Tiến-Lùi So Le (>=4)", category: "tong_tt_8_10", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (8 - Lùi-Tiến So Le (>=4)", category: "tong_tt_8_10", subcategory: "luiTienSoLe" },
 
         // Nhóm 9: TONG_TT_9_1
         { text: "Dạng Tổng (9,10,1) - Về liên tiếp", category: "tong_tt_9_1", subcategory: "veLienTiep" },
@@ -680,6 +782,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (9,10,1) - Tiến Đều", category: "tong_tt_9_1", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (9,10,1) - Lùi liên tiếp", category: "tong_tt_9_1", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (9,10,1) - Lùi Đều", category: "tong_tt_9_1", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (9,10,1) - Tiến-Lùi So Le (>=4)", category: "tong_tt_9_1", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (9,10,1) - Lùi-Tiến So Le (>=4)", category: "tong_tt_9_1", subcategory: "luiTienSoLe" },
 
         // Nhóm 10: TONG_TT_10_1_2
         { text: "Dạng Tổng (10,1,2) - Về liên tiếp", category: "tong_tt_10_2", subcategory: "veLienTiep" },
@@ -689,6 +793,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (10,1,2) - Tiến Đều", category: "tong_tt_10_2", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (10,1,2) - Lùi liên tiếp", category: "tong_tt_10_2", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (10,1,2) - Lùi Đều", category: "tong_tt_10_2", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (10,1,2) - Tiến-Lùi So Le (>=4)", category: "tong_tt_10_2", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (10,1,2) - Lùi-Tiến So Le (>=4)", category: "tong_tt_10_2", subcategory: "luiTienSoLe" },
 
         // Tổng Chẵn
         { text: "Dạng Tổng Chẵn - Về liên tiếp", category: "tong_tt_chan", subcategory: "veLienTiep" },
@@ -715,6 +821,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng TT Chẵn-Chẵn - Tiến Đều", category: "tong_tt_chan_chan", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng TT Chẵn-Chẵn - Lùi liên tiếp", category: "tong_tt_chan_chan", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng TT Chẵn-Chẵn - Lùi Đều", category: "tong_tt_chan_chan", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng TT Chẵn - Tiến-Lùi So Le (>=4)", category: "tong_tt_chan_chan", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng TT Chẵn - Lùi-Tiến So Le (>=4)", category: "tong_tt_chan_chan", subcategory: "luiTienSoLe" },
 
         // Tổng TT - Dạng Chẵn-Lẻ (Tổng 1,3,5,7,9)
         { text: "Dạng Tổng TT Chẵn-Lẻ - Về liên tiếp", category: "tong_tt_chan_le", subcategory: "veLienTiep" },
@@ -723,9 +831,16 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng TT Chẵn-Lẻ - Tiến liên tiếp", category: "tong_tt_chan_le", subcategory: "tienLienTiep" },
         { text: "Dạng Tổng TT Chẵn-Lẻ - Tiến Đều", category: "tong_tt_chan_le", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng TT Chẵn-Lẻ - Lùi liên tiếp", category: "tong_tt_chan_le", subcategory: "luiLienTiep" },
-        { text: "Dạng Tổng TT Chẵn-Lẻ - Lùi Đều", category: "tong_tt_chan_le", subcategory: "luiDeuLienTiep" }
+        { text: "Dạng Tổng TT Chẵn-Lẻ - Lùi Đều", category: "tong_tt_chan_le", subcategory: "luiDeuLienTiep" },
+ { text: "Dạng Tổng TT Chẵn - Tiến-Lùi So Le (>=4)", category: "tong_tt_chan_le", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng TT Chẵn - Lùi-Tiến So Le (>=4)", category: "tong_tt_chan_le", subcategory: "luiTienSoLe" },
     ],
     "Thống kê Tổng Mới": [
+        // --- TIẾN-LÙI SO LE cho Tổng Mới (dạng tổng hợp quan trọng) ---
+        { text: "Tổng Mới Chẵn - Tiến-Lùi So Le (>=4)", category: "tong_moi_chan", subcategory: "tienLuiSoLe" },
+        { text: "Tổng Mới Chẵn - Lùi-Tiến So Le (>=4)", category: "tong_moi_chan", subcategory: "luiTienSoLe" },
+        { text: "Tổng Mới Lẻ - Tiến-Lùi So Le (>=4)", category: "tong_moi_le", subcategory: "tienLuiSoLe" },
+        { text: "Tổng Mới Lẻ - Lùi-Tiến So Le (>=4)", category: "tong_moi_le", subcategory: "luiTienSoLe" },
         // Tổng 0
         { text: "Cùng Tổng 0 - Về liên tiếp", category: "tong_moi_0", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 0 - Về so le", category: "tong_moi_0", subcategory: "veSole" },
@@ -734,6 +849,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 0 - Tiến Đều", category: "tong_moi_0", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 0 - Lùi liên tiếp", category: "tong_moi_0", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 0 - Lùi Đều", category: "tong_moi_0", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 0 - Tiến-Lùi So Le (>=4)", category: "tong_moi_0", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 0 - Lùi-Tiến So Le (>=4)", category: "tong_moi_0", subcategory: "luiTienSoLe" },
         // Tổng 1
         { text: "Cùng Tổng 1 - Về liên tiếp", category: "tong_moi_1", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 1 - Về so le", category: "tong_moi_1", subcategory: "veSole" },
@@ -742,6 +859,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 1 - Tiến Đều", category: "tong_moi_1", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 1 - Lùi liên tiếp", category: "tong_moi_1", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 1 - Lùi Đều", category: "tong_moi_1", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 1 - Tiến-Lùi So Le (>=4)", category: "tong_moi_1", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 1 - Lùi-Tiến So Le (>=4)", category: "tong_moi_1", subcategory: "luiTienSoLe" },
         // Tổng 2
         { text: "Cùng Tổng 2 - Về liên tiếp", category: "tong_moi_2", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 2 - Về so le", category: "tong_moi_2", subcategory: "veSole" },
@@ -750,6 +869,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 2 - Tiến Đều", category: "tong_moi_2", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 2 - Lùi liên tiếp", category: "tong_moi_2", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 2 - Lùi Đều", category: "tong_moi_2", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 2 - Tiến-Lùi So Le (>=4)", category: "tong_moi_2", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 2 - Lùi-Tiến So Le (>=4)", category: "tong_moi_2", subcategory: "luiTienSoLe" },
         // Tổng 3
         { text: "Cùng Tổng 3 - Về liên tiếp", category: "tong_moi_3", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 3 - Về so le", category: "tong_moi_3", subcategory: "veSole" },
@@ -758,6 +879,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 3 - Tiến Đều", category: "tong_moi_3", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 3 - Lùi liên tiếp", category: "tong_moi_3", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 3 - Lùi Đều", category: "tong_moi_3", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 3 - Tiến-Lùi So Le (>=4)", category: "tong_moi_3", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 3 - Lùi-Tiến So Le (>=4)", category: "tong_moi_3", subcategory: "luiTienSoLe" },
         // Tổng 4
         { text: "Cùng Tổng 4 - Về liên tiếp", category: "tong_moi_4", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 4 - Về so le", category: "tong_moi_4", subcategory: "veSole" },
@@ -766,6 +889,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 4 - Tiến Đều", category: "tong_moi_4", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 4 - Lùi liên tiếp", category: "tong_moi_4", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 4 - Lùi Đều", category: "tong_moi_4", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 4 - Tiến-Lùi So Le (>=4)", category: "tong_moi_4", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 4 - Lùi-Tiến So Le (>=4)", category: "tong_moi_4", subcategory: "luiTienSoLe" },
         // Tổng 5
         { text: "Cùng Tổng 5 - Về liên tiếp", category: "tong_moi_5", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 5 - Về so le", category: "tong_moi_5", subcategory: "veSole" },
@@ -774,6 +899,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 5 - Tiến Đều", category: "tong_moi_5", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 5 - Lùi liên tiếp", category: "tong_moi_5", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 5 - Lùi Đều", category: "tong_moi_5", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 5 - Tiến-Lùi So Le (>=4)", category: "tong_moi_5", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 5 - Lùi-Tiến So Le (>=4)", category: "tong_moi_5", subcategory: "luiTienSoLe" },
         // Tổng 6
         { text: "Cùng Tổng 6 - Về liên tiếp", category: "tong_moi_6", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 6 - Về so le", category: "tong_moi_6", subcategory: "veSole" },
@@ -782,6 +909,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 6 - Tiến Đều", category: "tong_moi_6", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 6 - Lùi liên tiếp", category: "tong_moi_6", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 6 - Lùi Đều", category: "tong_moi_6", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 6 - Tiến-Lùi So Le (>=4)", category: "tong_moi_6", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 6 - Lùi-Tiến So Le (>=4)", category: "tong_moi_6", subcategory: "luiTienSoLe" },
         // Tổng 7
         { text: "Cùng Tổng 7 - Về liên tiếp", category: "tong_moi_7", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 7 - Về so le", category: "tong_moi_7", subcategory: "veSole" },
@@ -790,6 +919,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 7 - Tiến Đều", category: "tong_moi_7", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 7 - Lùi liên tiếp", category: "tong_moi_7", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 7 - Lùi Đều", category: "tong_moi_7", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 7 - Tiến-Lùi So Le (>=4)", category: "tong_moi_7", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 7 - Lùi-Tiến So Le (>=4)", category: "tong_moi_7", subcategory: "luiTienSoLe" },
         // Tổng 8
         { text: "Cùng Tổng 8 - Về liên tiếp", category: "tong_moi_8", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 8 - Về so le", category: "tong_moi_8", subcategory: "veSole" },
@@ -798,6 +929,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 8 - Tiến Đều", category: "tong_moi_8", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 8 - Lùi liên tiếp", category: "tong_moi_8", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 8 - Lùi Đều", category: "tong_moi_8", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 8 - Tiến-Lùi So Le (>=4)", category: "tong_moi_8", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 8 - Lùi-Tiến So Le (>=4)", category: "tong_moi_8", subcategory: "luiTienSoLe" },
         // Tổng 9
         { text: "Cùng Tổng 9 - Về liên tiếp", category: "tong_moi_9", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 9 - Về so le", category: "tong_moi_9", subcategory: "veSole" },
@@ -806,6 +939,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 9 - Tiến Đều", category: "tong_moi_9", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 9 - Lùi liên tiếp", category: "tong_moi_9", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 9 - Lùi Đều", category: "tong_moi_9", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 9 - Tiến-Lùi So Le (>=4)", category: "tong_moi_9", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 9 - Lùi-Tiến So Le (>=4)", category: "tong_moi_9", subcategory: "luiTienSoLe" },
         // Tổng 10
         { text: "Cùng Tổng 10 - Về liên tiếp", category: "tong_moi_10", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 10 - Về so le", category: "tong_moi_10", subcategory: "veSole" },
@@ -814,6 +949,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 10 - Tiến Đều", category: "tong_moi_10", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 10 - Lùi liên tiếp", category: "tong_moi_10", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 10 - Lùi Đều", category: "tong_moi_10", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 10 - Tiến-Lùi So Le (>=4)", category: "tong_moi_10", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 10 - Lùi-Tiến So Le (>=4)", category: "tong_moi_10", subcategory: "luiTienSoLe" },
         // Tổng 11
         { text: "Cùng Tổng 11 - Về liên tiếp", category: "tong_moi_11", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 11 - Về so le", category: "tong_moi_11", subcategory: "veSole" },
@@ -822,6 +959,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 11 - Tiến Đều", category: "tong_moi_11", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 11 - Lùi liên tiếp", category: "tong_moi_11", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 11 - Lùi Đều", category: "tong_moi_11", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 11 - Tiến-Lùi So Le (>=4)", category: "tong_moi_11", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 11 - Lùi-Tiến So Le (>=4)", category: "tong_moi_11", subcategory: "luiTienSoLe" },
         // Tổng 12
         { text: "Cùng Tổng 12 - Về liên tiếp", category: "tong_moi_12", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 12 - Về so le", category: "tong_moi_12", subcategory: "veSole" },
@@ -830,6 +969,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 12 - Tiến Đều", category: "tong_moi_12", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 12 - Lùi liên tiếp", category: "tong_moi_12", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 12 - Lùi Đều", category: "tong_moi_12", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 12 - Tiến-Lùi So Le (>=4)", category: "tong_moi_12", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 12 - Lùi-Tiến So Le (>=4)", category: "tong_moi_12", subcategory: "luiTienSoLe" },
         // Tổng 13
         { text: "Cùng Tổng 13 - Về liên tiếp", category: "tong_moi_13", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 13 - Về so le", category: "tong_moi_13", subcategory: "veSole" },
@@ -838,6 +979,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 13 - Tiến Đều", category: "tong_moi_13", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 13 - Lùi liên tiếp", category: "tong_moi_13", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 13 - Lùi Đều", category: "tong_moi_13", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 13 - Tiến-Lùi So Le (>=4)", category: "tong_moi_13", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 13 - Lùi-Tiến So Le (>=4)", category: "tong_moi_13", subcategory: "luiTienSoLe" },
         // Tổng 14
         { text: "Cùng Tổng 14 - Về liên tiếp", category: "tong_moi_14", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 14 - Về so le", category: "tong_moi_14", subcategory: "veSole" },
@@ -846,6 +989,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 14 - Tiến Đều", category: "tong_moi_14", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 14 - Lùi liên tiếp", category: "tong_moi_14", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 14 - Lùi Đều", category: "tong_moi_14", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 14 - Tiến-Lùi So Le (>=4)", category: "tong_moi_14", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 14 - Lùi-Tiến So Le (>=4)", category: "tong_moi_14", subcategory: "luiTienSoLe" },
         // Tổng 15
         { text: "Cùng Tổng 15 - Về liên tiếp", category: "tong_moi_15", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 15 - Về so le", category: "tong_moi_15", subcategory: "veSole" },
@@ -854,6 +999,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 15 - Tiến Đều", category: "tong_moi_15", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 15 - Lùi liên tiếp", category: "tong_moi_15", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 15 - Lùi Đều", category: "tong_moi_15", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 15 - Tiến-Lùi So Le (>=4)", category: "tong_moi_15", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 15 - Lùi-Tiến So Le (>=4)", category: "tong_moi_15", subcategory: "luiTienSoLe" },
         // Tổng 16
         { text: "Cùng Tổng 16 - Về liên tiếp", category: "tong_moi_16", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 16 - Về so le", category: "tong_moi_16", subcategory: "veSole" },
@@ -862,6 +1009,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 16 - Tiến Đều", category: "tong_moi_16", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 16 - Lùi liên tiếp", category: "tong_moi_16", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 16 - Lùi Đều", category: "tong_moi_16", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 16 - Tiến-Lùi So Le (>=4)", category: "tong_moi_16", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 16 - Lùi-Tiến So Le (>=4)", category: "tong_moi_16", subcategory: "luiTienSoLe" },
         // Tổng 17
         { text: "Cùng Tổng 17 - Về liên tiếp", category: "tong_moi_17", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 17 - Về so le", category: "tong_moi_17", subcategory: "veSole" },
@@ -870,6 +1019,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 17 - Tiến Đều", category: "tong_moi_17", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 17 - Lùi liên tiếp", category: "tong_moi_17", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 17 - Lùi Đều", category: "tong_moi_17", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 17 - Tiến-Lùi So Le (>=4)", category: "tong_moi_17", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 17 - Lùi-Tiến So Le (>=4)", category: "tong_moi_17", subcategory: "luiTienSoLe" },
         // Tổng 18
         { text: "Cùng Tổng 18 - Về liên tiếp", category: "tong_moi_18", subcategory: "veLienTiep" },
         { text: "Cùng Tổng 18 - Về so le", category: "tong_moi_18", subcategory: "veSole" },
@@ -878,6 +1029,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Tổng 18 - Tiến Đều", category: "tong_moi_18", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Tổng 18 - Lùi liên tiếp", category: "tong_moi_18", subcategory: "luiLienTiep" },
         { text: "Cùng Tổng 18 - Lùi Đều", category: "tong_moi_18", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Tổng 18 - Tiến-Lùi So Le (>=4)", category: "tong_moi_18", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Tổng 18 - Lùi-Tiến So Le (>=4)", category: "tong_moi_18", subcategory: "luiTienSoLe" },
 
         { text: "Các Tổng Mới - Về liên tiếp", category: "tong_moi_cac_tong", subcategory: "veLienTiep" },
         { text: "Các Tổng Mới - Về so le", category: "tong_moi_cac_tong", subcategory: "veSole" },
@@ -886,6 +1039,8 @@ const STATS_OPTIONS = {
         { text: "Các Tổng Mới - Tiến Đều", category: "tong_moi_cac_tong", subcategory: "tienDeuLienTiep" },
         { text: "Các Tổng Mới - Lùi liên tiếp", category: "tong_moi_cac_tong", subcategory: "luiLienTiep" },
         { text: "Các Tổng Mới - Lùi Đều", category: "tong_moi_cac_tong", subcategory: "luiDeuLienTiep" },
+    { text: "Các Tổng Mới - Tiến-Lùi So Le (>=4)", category: "tong_moi_cac_tong", subcategory: "tienLuiSoLe" },
+    { text: "Các Tổng Mới - Lùi-Tiến So Le (>=4)", category: "tong_moi_cac_tong", subcategory: "luiTienSoLe" },
 
         // Nhóm 1: TONG_MOI_0_2
         { text: "Dạng Tổng (0,1,2) - Về liên tiếp", category: "tong_moi_0_2", subcategory: "veLienTiep" },
@@ -895,6 +1050,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (0,1,2) - Tiến Đều", category: "tong_moi_0_2", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (0,1,2) - Lùi liên tiếp", category: "tong_moi_0_2", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (0,1,2) - Lùi Đều", category: "tong_moi_0_2", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (0,1,2) - Tiến-Lùi So Le (>=4)", category: "tong_moi_0_2", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (0,1,2) - Lùi-Tiến So Le (>=4)", category: "tong_moi_0_2", subcategory: "luiTienSoLe" },
 
         // Nhóm 2: TONG_MOI_1_3
         { text: "Dạng Tổng (1,2,3) - Về liên tiếp", category: "tong_moi_1_3", subcategory: "veLienTiep" },
@@ -904,6 +1061,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (1,2,3) - Tiến Đều", category: "tong_moi_1_3", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (1,2,3) - Lùi liên tiếp", category: "tong_moi_1_3", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (1,2,3) - Lùi Đều", category: "tong_moi_1_3", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (1,2,3) - Tiến-Lùi So Le (>=4)", category: "tong_moi_1_3", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (1,2,3) - Lùi-Tiến So Le (>=4)", category: "tong_moi_1_3", subcategory: "luiTienSoLe" },
 
         // Nhóm 3: TONG_MOI_2_4
         { text: "Dạng Tổng (2,3,4) - Về liên tiếp", category: "tong_moi_2_4", subcategory: "veLienTiep" },
@@ -913,6 +1072,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (2,3,4) - Tiến Đều", category: "tong_moi_2_4", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (2,3,4) - Lùi liên tiếp", category: "tong_moi_2_4", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (2,3,4) - Lùi Đều", category: "tong_moi_2_4", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (2,3,4) - Tiến-Lùi So Le (>=4)", category: "tong_moi_2_4", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (2,3,4) - Lùi-Tiến So Le (>=4)", category: "tong_moi_2_4", subcategory: "luiTienSoLe" },
 
         // Nhóm 4: TONG_MOI_3_5
         { text: "Dạng Tổng (3,4,5) - Về liên tiếp", category: "tong_moi_3_5", subcategory: "veLienTiep" },
@@ -922,6 +1083,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (3,4,5) - Tiến Đều", category: "tong_moi_3_5", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (3,4,5) - Lùi liên tiếp", category: "tong_moi_3_5", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (3,4,5) - Lùi Đều", category: "tong_moi_3_5", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (3,4,5) - Tiến-Lùi So Le (>=4)", category: "tong_moi_3_5", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (3,4,5) - Lùi-Tiến So Le (>=4)", category: "tong_moi_3_5", subcategory: "luiTienSoLe" },
 
         // Nhóm 5: TONG_MOI_4_6
         { text: "Dạng Tổng (4,5,6) - Về liên tiếp", category: "tong_moi_4_6", subcategory: "veLienTiep" },
@@ -931,6 +1094,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (4,5,6) - Tiến Đều", category: "tong_moi_4_6", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (4,5,6) - Lùi liên tiếp", category: "tong_moi_4_6", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (4,5,6) - Lùi Đều", category: "tong_moi_4_6", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (4,5,6) - Tiến-Lùi So Le (>=4)", category: "tong_moi_4_6", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (4,5,6) - Lùi-Tiến So Le (>=4)", category: "tong_moi_4_6", subcategory: "luiTienSoLe" },
 
         // Nhóm 6: TONG_MOI_5_7
         { text: "Dạng Tổng (5,6,7) - Về liên tiếp", category: "tong_moi_5_7", subcategory: "veLienTiep" },
@@ -940,6 +1105,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (5,6,7) - Tiến Đều", category: "tong_moi_5_7", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (5,6,7) - Lùi liên tiếp", category: "tong_moi_5_7", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (5,6,7) - Lùi Đều", category: "tong_moi_5_7", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (5,6,7) - Tiến-Lùi So Le (>=4)", category: "tong_moi_5_7", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (5,6,7) - Lùi-Tiến So Le (>=4)", category: "tong_moi_5_7", subcategory: "luiTienSoLe" },
 
         // Nhóm 7: TONG_MOI_6_8
         { text: "Dạng Tổng (6,7,8) - Về liên tiếp", category: "tong_moi_6_8", subcategory: "veLienTiep" },
@@ -949,6 +1116,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (6,7,8) - Tiến Đều", category: "tong_moi_6_8", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (6,7,8) - Lùi liên tiếp", category: "tong_moi_6_8", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (6,7,8) - Lùi Đều", category: "tong_moi_6_8", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (6,7,8) - Tiến-Lùi So Le (>=4)", category: "tong_moi_6_8", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (6,7,8) - Lùi-Tiến So Le (>=4)", category: "tong_moi_6_8", subcategory: "luiTienSoLe" },
 
         // Nhóm 8: TONG_MOI_7_9
         { text: "Dạng Tổng (7,8,9) - Về liên tiếp", category: "tong_moi_7_9", subcategory: "veLienTiep" },
@@ -958,6 +1127,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (7,8,9) - Tiến Đều", category: "tong_moi_7_9", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (7,8,9) - Lùi liên tiếp", category: "tong_moi_7_9", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (7,8,9) - Lùi Đều", category: "tong_moi_7_9", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (7,8,9) - Tiến-Lùi So Le (>=4)", category: "tong_moi_7_9", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (7,8,9) - Lùi-Tiến So Le (>=4)", category: "tong_moi_7_9", subcategory: "luiTienSoLe" },
 
         // Nhóm 9: TONG_MOI_8_10
         { text: "Dạng Tổng (8,9,10) - Về liên tiếp", category: "tong_moi_8_10", subcategory: "veLienTiep" },
@@ -967,6 +1138,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (8,9,10) - Tiến Đều", category: "tong_moi_8_10", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (8,9,10) - Lùi liên tiếp", category: "tong_moi_8_10", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (8,9,10) - Lùi Đều", category: "tong_moi_8_10", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (8,9,10) - Tiến-Lùi So Le (>=4)", category: "tong_moi_8_10", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (8,9,10) - Lùi-Tiến So Le (>=4)", category: "tong_moi_8_10", subcategory: "luiTienSoLe" },
 
         // Nhóm 10: TONG_MOI_9_11
         { text: "Dạng Tổng (9,10,11) - Về liên tiếp", category: "tong_moi_9_11", subcategory: "veLienTiep" },
@@ -976,6 +1149,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (9,10,11) - Tiến Đều", category: "tong_moi_9_11", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (9,10,11) - Lùi liên tiếp", category: "tong_moi_9_11", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (9,10,11) - Lùi Đều", category: "tong_moi_9_11", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (9,10,11) - Tiến-Lùi So Le (>=4)", category: "tong_moi_9_11", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (9,10,11) - Lùi-Tiến So Le (>=4)", category: "tong_moi_9_11", subcategory: "luiTienSoLe" },
 
         // Nhóm 11: TONG_MOI_10_12
         { text: "Dạng Tổng (10,11,12) - Về liên tiếp", category: "tong_moi_10_12", subcategory: "veLienTiep" },
@@ -985,6 +1160,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (10,11,12) - Tiến Đều", category: "tong_moi_10_12", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (10,11,12) - Lùi liên tiếp", category: "tong_moi_10_12", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (10,11,12) - Lùi Đều", category: "tong_moi_10_12", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (10,11,12) - Tiến-Lùi So Le (>=4)", category: "tong_moi_10_12", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (10,11,12) - Lùi-Tiến So Le (>=4)", category: "tong_moi_10_12", subcategory: "luiTienSoLe" },
 
         // Nhóm 12: TONG_MOI_11_13
         { text: "Dạng Tổng (11,12,13) - Về liên tiếp", category: "tong_moi_11_13", subcategory: "veLienTiep" },
@@ -994,6 +1171,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (11,12,13) - Tiến Đều", category: "tong_moi_11_13", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (11,12,13) - Lùi liên tiếp", category: "tong_moi_11_13", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (11,12,13) - Lùi Đều", category: "tong_moi_11_13", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (11,12,13) - Tiến-Lùi So Le (>=4)", category: "tong_moi_11_13", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (11,12,13) - Lùi-Tiến So Le (>=4)", category: "tong_moi_11_13", subcategory: "luiTienSoLe" },
 
         // Nhóm 13: TONG_MOI_12_14
         { text: "Dạng Tổng (12,13,14) - Về liên tiếp", category: "tong_moi_12_14", subcategory: "veLienTiep" },
@@ -1003,6 +1182,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (12,13,14) - Tiến Đều", category: "tong_moi_12_14", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (12,13,14) - Lùi liên tiếp", category: "tong_moi_12_14", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (12,13,14) - Lùi Đều", category: "tong_moi_12_14", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (12,13,14) - Tiến-Lùi So Le (>=4)", category: "tong_moi_12_14", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (12,13,14) - Lùi-Tiến So Le (>=4)", category: "tong_moi_12_14", subcategory: "luiTienSoLe" },
 
         // Nhóm 14: TONG_MOI_13_15
         { text: "Dạng Tổng (13,14,15) - Về liên tiếp", category: "tong_moi_13_15", subcategory: "veLienTiep" },
@@ -1012,6 +1193,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (13,14,15) - Tiến Đều", category: "tong_moi_13_15", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (13,14,15) - Lùi liên tiếp", category: "tong_moi_13_15", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (13,14,15) - Lùi Đều", category: "tong_moi_13_15", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (13,14,15) - Tiến-Lùi So Le (>=4)", category: "tong_moi_13_15", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (13,14,15) - Lùi-Tiến So Le (>=4)", category: "tong_moi_13_15", subcategory: "luiTienSoLe" },
 
         // Nhóm 15: TONG_MOI_14_16
         { text: "Dạng Tổng (14,15,16) - Về liên tiếp", category: "tong_moi_14_16", subcategory: "veLienTiep" },
@@ -1021,6 +1204,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (14,15,16) - Tiến Đều", category: "tong_moi_14_16", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (14,15,16) - Lùi liên tiếp", category: "tong_moi_14_16", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (14,15,16) - Lùi Đều", category: "tong_moi_14_16", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (14,15,16) - Tiến-Lùi So Le (>=4)", category: "tong_moi_14_16", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (14,15,16) - Lùi-Tiến So Le (>=4)", category: "tong_moi_14_16", subcategory: "luiTienSoLe" },
 
         // Nhóm 16: TONG_MOI_15_17
         { text: "Dạng Tổng (15,16,17) - Về liên tiếp", category: "tong_moi_15_17", subcategory: "veLienTiep" },
@@ -1030,6 +1215,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (15,16,17) - Tiến Đều", category: "tong_moi_15_17", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (15,16,17) - Lùi liên tiếp", category: "tong_moi_15_17", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (15,16,17) - Lùi Đều", category: "tong_moi_15_17", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (15,16,17) - Tiến-Lùi So Le (>=4)", category: "tong_moi_15_17", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (15,16,17) - Lùi-Tiến So Le (>=4)", category: "tong_moi_15_17", subcategory: "luiTienSoLe" },
 
         // Nhóm 17: TONG_MOI_16_18
         { text: "Dạng Tổng (16,17,18) - Về liên tiếp", category: "tong_moi_16_18", subcategory: "veLienTiep" },
@@ -1039,6 +1226,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (16,17,18) - Tiến Đều", category: "tong_moi_16_18", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (16,17,18) - Lùi liên tiếp", category: "tong_moi_16_18", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (16,17,18) - Lùi Đều", category: "tong_moi_16_18", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (16,17,18) - Tiến-Lùi So Le (>=4)", category: "tong_moi_16_18", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (16,17,18) - Lùi-Tiến So Le (>=4)", category: "tong_moi_16_18", subcategory: "luiTienSoLe" },
 
         // Nhóm 18: TONG_MOI_17_0
         { text: "Dạng Tổng (17,18,0) - Về liên tiếp", category: "tong_moi_17_0", subcategory: "veLienTiep" },
@@ -1048,6 +1237,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (17,18,0) - Tiến Đều", category: "tong_moi_17_0", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (17,18,0) - Lùi liên tiếp", category: "tong_moi_17_0", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (17,18,0) - Lùi Đều", category: "tong_moi_17_0", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (17,18,0) - Tiến-Lùi So Le (>=4)", category: "tong_moi_17_0", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (17,18,0) - Lùi-Tiến So Le (>=4)", category: "tong_moi_17_0", subcategory: "luiTienSoLe" },
 
         // Nhóm 19: TONG_MOI_18_1
         { text: "Dạng Tổng (18,0,1) - Về liên tiếp", category: "tong_moi_18_1", subcategory: "veLienTiep" },
@@ -1057,6 +1248,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Tổng (18,0,1) - Tiến Đều", category: "tong_moi_18_1", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Tổng (18,0,1) - Lùi liên tiếp", category: "tong_moi_18_1", subcategory: "luiLienTiep" },
         { text: "Dạng Tổng (18,0,1) - Lùi Đều", category: "tong_moi_18_1", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Tổng (18,0,1) - Tiến-Lùi So Le (>=4)", category: "tong_moi_18_1", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Tổng (18,0,1) - Lùi-Tiến So Le (>=4)", category: "tong_moi_18_1", subcategory: "luiTienSoLe" },
         // Tổng Mới - Tổng Chẵn
         { text: "Dạng Tổng Mới Chẵn - Về liên tiếp", category: "tong_moi_chan", subcategory: "veLienTiep" },
         { text: "Dạng Tổng Mới Chẵn - Về so le", category: "tong_moi_chan", subcategory: "veSole" },
@@ -1112,10 +1305,6 @@ const STATS_OPTIONS = {
         { text: "Tổng Mới Chẵn - Lùi-Tiến So Le (>=4)", category: "tong_moi_chan", subcategory: "luiTienSoLe" },
         { text: "Tổng Mới Lẻ - Tiến-Lùi So Le (>=4)", category: "tong_moi_le", subcategory: "tienLuiSoLe" },
         { text: "Tổng Mới Lẻ - Lùi-Tiến So Le (>=4)", category: "tong_moi_le", subcategory: "luiTienSoLe" },
-        { text: "Tổng Mới Nhỏ - Tiến-Lùi So Le (>=4)", category: "tong_moi_nho", subcategory: "tienLuiSoLe" },
-        { text: "Tổng Mới Nhỏ - Lùi-Tiến So Le (>=4)", category: "tong_moi_nho", subcategory: "luiTienSoLe" },
-        { text: "Tổng Mới Lớn - Tiến-Lùi So Le (>=4)", category: "tong_moi_lon", subcategory: "tienLuiSoLe" },
-        { text: "Tổng Mới Lớn - Lùi-Tiến So Le (>=4)", category: "tong_moi_lon", subcategory: "luiTienSoLe" },
         { text: "Tổng Mới Chẵn-Chẵn - Tiến-Lùi So Le (>=4)", category: "tong_moi_chan_chan", subcategory: "tienLuiSoLe" },
         { text: "Tổng Mới Chẵn-Chẵn - Lùi-Tiến So Le (>=4)", category: "tong_moi_chan_chan", subcategory: "luiTienSoLe" },
         { text: "Tổng Mới Chẵn-Lẻ - Tiến-Lùi So Le (>=4)", category: "tong_moi_chan_le", subcategory: "tienLuiSoLe" },
@@ -1145,6 +1334,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 0 (Kép) - Tiến Đều", category: "hieu_0", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 0 (Kép) - Lùi liên tiếp", category: "hieu_0", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 0 (Kép) - Lùi Đều", category: "hieu_0", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 0 (Kép) - Tiến-Lùi So Le (>=4)", category: "hieu_0", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 0 (Kép) - Lùi-Tiến So Le (>=4)", category: "hieu_0", subcategory: "luiTienSoLe" },
         // Hiệu 1
         { text: "Cùng Hiệu 1 - Về liên tiếp", category: "hieu_1", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 1 - Về so le", category: "hieu_1", subcategory: "veSole" },
@@ -1153,6 +1344,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 1 - Tiến Đều", category: "hieu_1", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 1 - Lùi liên tiếp", category: "hieu_1", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 1 - Lùi Đều", category: "hieu_1", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 1 - Tiến-Lùi So Le (>=4)", category: "hieu_1", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 1 - Lùi-Tiến So Le (>=4)", category: "hieu_1", subcategory: "luiTienSoLe" },
         // Hiệu 2
         { text: "Cùng Hiệu 2 - Về liên tiếp", category: "hieu_2", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 2 - Về so le", category: "hieu_2", subcategory: "veSole" },
@@ -1161,6 +1354,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 2 - Tiến Đều", category: "hieu_2", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 2 - Lùi liên tiếp", category: "hieu_2", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 2 - Lùi Đều", category: "hieu_2", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 2 - Tiến-Lùi So Le (>=4)", category: "hieu_2", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 2 - Lùi-Tiến So Le (>=4)", category: "hieu_2", subcategory: "luiTienSoLe" },
         // Hiệu 3
         { text: "Cùng Hiệu 3 - Về liên tiếp", category: "hieu_3", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 3 - Về so le", category: "hieu_3", subcategory: "veSole" },
@@ -1169,6 +1364,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 3 - Tiến Đều", category: "hieu_3", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 3 - Lùi liên tiếp", category: "hieu_3", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 3 - Lùi Đều", category: "hieu_3", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 3 - Tiến-Lùi So Le (>=4)", category: "hieu_3", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 3 - Lùi-Tiến So Le (>=4)", category: "hieu_3", subcategory: "luiTienSoLe" },
         // Hiệu 4
         { text: "Cùng Hiệu 4 - Về liên tiếp", category: "hieu_4", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 4 - Về so le", category: "hieu_4", subcategory: "veSole" },
@@ -1177,6 +1374,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 4 - Tiến Đều", category: "hieu_4", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 4 - Lùi liên tiếp", category: "hieu_4", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 4 - Lùi Đều", category: "hieu_4", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 4 - Tiến-Lùi So Le (>=4)", category: "hieu_4", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 4 - Lùi-Tiến So Le (>=4)", category: "hieu_4", subcategory: "luiTienSoLe" },
         // Hiệu 5
         { text: "Cùng Hiệu 5 (Kép lệch) - Về liên tiếp", category: "hieu_5", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 5 (Kép lệch) - Về so le", category: "hieu_5", subcategory: "veSole" },
@@ -1185,6 +1384,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 5 (Kép lệch) - Tiến Đều", category: "hieu_5", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 5 (Kép lệch) - Lùi liên tiếp", category: "hieu_5", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 5 (Kép lệch) - Lùi Đều", category: "hieu_5", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 5 (Kép lệch) - Tiến-Lùi So Le (>=4)", category: "hieu_5", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 5 (Kép lệch) - Lùi-Tiến So Le (>=4)", category: "hieu_5", subcategory: "luiTienSoLe" },
         // Hiệu 6
         { text: "Cùng Hiệu 6 - Về liên tiếp", category: "hieu_6", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 6 - Về so le", category: "hieu_6", subcategory: "veSole" },
@@ -1193,6 +1394,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 6 - Tiến Đều", category: "hieu_6", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 6 - Lùi liên tiếp", category: "hieu_6", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 6 - Lùi Đều", category: "hieu_6", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 6 - Tiến-Lùi So Le (>=4)", category: "hieu_6", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 6 - Lùi-Tiến So Le (>=4)", category: "hieu_6", subcategory: "luiTienSoLe" },
         // Hiệu 7
         { text: "Cùng Hiệu 7 - Về liên tiếp", category: "hieu_7", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 7 - Về so le", category: "hieu_7", subcategory: "veSole" },
@@ -1201,6 +1404,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 7 - Tiến Đều", category: "hieu_7", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 7 - Lùi liên tiếp", category: "hieu_7", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 7 - Lùi Đều", category: "hieu_7", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 7 - Tiến-Lùi So Le (>=4)", category: "hieu_7", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 7 - Lùi-Tiến So Le (>=4)", category: "hieu_7", subcategory: "luiTienSoLe" },
         // Hiệu 8
         { text: "Cùng Hiệu 8 - Về liên tiếp", category: "hieu_8", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 8 - Về so le", category: "hieu_8", subcategory: "veSole" },
@@ -1209,6 +1414,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 8 - Tiến Đều", category: "hieu_8", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 8 - Lùi liên tiếp", category: "hieu_8", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 8 - Lùi Đều", category: "hieu_8", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 8 - Tiến-Lùi So Le (>=4)", category: "hieu_8", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 8 - Lùi-Tiến So Le (>=4)", category: "hieu_8", subcategory: "luiTienSoLe" },
         // Hiệu 9
         { text: "Cùng Hiệu 9 - Về liên tiếp", category: "hieu_9", subcategory: "veLienTiep" },
         { text: "Cùng Hiệu 9 - Về so le", category: "hieu_9", subcategory: "veSole" },
@@ -1217,6 +1424,8 @@ const STATS_OPTIONS = {
         { text: "Cùng Hiệu 9 - Tiến Đều", category: "hieu_9", subcategory: "tienDeuLienTiep" },
         { text: "Cùng Hiệu 9 - Lùi liên tiếp", category: "hieu_9", subcategory: "luiLienTiep" },
         { text: "Cùng Hiệu 9 - Lùi Đều", category: "hieu_9", subcategory: "luiDeuLienTiep" },
+    { text: "Cùng Hiệu 9 - Tiến-Lùi So Le (>=4)", category: "hieu_9", subcategory: "tienLuiSoLe" },
+    { text: "Cùng Hiệu 9 - Lùi-Tiến So Le (>=4)", category: "hieu_9", subcategory: "luiTienSoLe" },
 
         // Hiệu Chẵn
         { text: "Dạng Hiệu Chẵn - Về liên tiếp", category: "hieu_chan", subcategory: "veLienTiep" },
@@ -1226,6 +1435,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu Chẵn - Tiến Đều", category: "hieu_chan", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu Chẵn - Lùi liên tiếp", category: "hieu_chan", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu Chẵn - Lùi Đều", category: "hieu_chan", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu Chẵn - Tiến-Lùi So Le (>=4)", category: "hieu_chan", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu Chẵn - Lùi-Tiến So Le (>=4)", category: "hieu_chan", subcategory: "luiTienSoLe" },
         // Hiệu Lẻ
         { text: "Dạng Hiệu Lẻ - Về liên tiếp", category: "hieu_le", subcategory: "veLienTiep" },
         { text: "Dạng Hiệu Lẻ - Về so le", category: "hieu_le", subcategory: "veSole" },
@@ -1234,6 +1445,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu Lẻ - Tiến Đều", category: "hieu_le", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu Lẻ - Lùi liên tiếp", category: "hieu_le", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu Lẻ - Lùi Đều", category: "hieu_le", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu Lẻ - Tiến-Lùi So Le (>=4)", category: "hieu_le", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu Lẻ - Lùi-Tiến So Le (>=4)", category: "hieu_le", subcategory: "luiTienSoLe" },
 
         // Nhóm 1: HIEU_0_2
         { text: "Dạng Hiệu (0-2) - Về liên tiếp", category: "hieu_0_2", subcategory: "veLienTiep" },
@@ -1243,6 +1456,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (0-2) - Tiến Đều", category: "hieu_0_2", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (0-2) - Lùi liên tiếp", category: "hieu_0_2", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (0-2) - Lùi Đều", category: "hieu_0_2", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (0 - Tiến-Lùi So Le (>=4)", category: "hieu_0_2", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (0 - Lùi-Tiến So Le (>=4)", category: "hieu_0_2", subcategory: "luiTienSoLe" },
 
         // Nhóm 2: HIEU_1_3
         { text: "Dạng Hiệu (1-3) - Về liên tiếp", category: "hieu_1_3", subcategory: "veLienTiep" },
@@ -1252,6 +1467,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (1-3) - Tiến Đều", category: "hieu_1_3", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (1-3) - Lùi liên tiếp", category: "hieu_1_3", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (1-3) - Lùi Đều", category: "hieu_1_3", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (1 - Tiến-Lùi So Le (>=4)", category: "hieu_1_3", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (1 - Lùi-Tiến So Le (>=4)", category: "hieu_1_3", subcategory: "luiTienSoLe" },
 
         // Nhóm 3: HIEU_2_4
         { text: "Dạng Hiệu (2-4) - Về liên tiếp", category: "hieu_2_4", subcategory: "veLienTiep" },
@@ -1261,6 +1478,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (2-4) - Tiến Đều", category: "hieu_2_4", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (2-4) - Lùi liên tiếp", category: "hieu_2_4", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (2-4) - Lùi Đều", category: "hieu_2_4", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (2 - Tiến-Lùi So Le (>=4)", category: "hieu_2_4", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (2 - Lùi-Tiến So Le (>=4)", category: "hieu_2_4", subcategory: "luiTienSoLe" },
 
         // Nhóm 4: HIEU_3_5
         { text: "Dạng Hiệu (3-5) - Về liên tiếp", category: "hieu_3_5", subcategory: "veLienTiep" },
@@ -1270,6 +1489,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (3-5) - Tiến Đều", category: "hieu_3_5", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (3-5) - Lùi liên tiếp", category: "hieu_3_5", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (3-5) - Lùi Đều", category: "hieu_3_5", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (3 - Tiến-Lùi So Le (>=4)", category: "hieu_3_5", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (3 - Lùi-Tiến So Le (>=4)", category: "hieu_3_5", subcategory: "luiTienSoLe" },
 
         // Nhóm 5: HIEU_4_6
         { text: "Dạng Hiệu (4-6) - Về liên tiếp", category: "hieu_4_6", subcategory: "veLienTiep" },
@@ -1279,6 +1500,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (4-6) - Tiến Đều", category: "hieu_4_6", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (4-6) - Lùi liên tiếp", category: "hieu_4_6", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (4-6) - Lùi Đều", category: "hieu_4_6", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (4 - Tiến-Lùi So Le (>=4)", category: "hieu_4_6", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (4 - Lùi-Tiến So Le (>=4)", category: "hieu_4_6", subcategory: "luiTienSoLe" },
 
         // Nhóm 6: HIEU_5_7
         { text: "Dạng Hiệu (5-7) - Về liên tiếp", category: "hieu_5_7", subcategory: "veLienTiep" },
@@ -1288,6 +1511,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (5-7) - Tiến Đều", category: "hieu_5_7", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (5-7) - Lùi liên tiếp", category: "hieu_5_7", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (5-7) - Lùi Đều", category: "hieu_5_7", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (5 - Tiến-Lùi So Le (>=4)", category: "hieu_5_7", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (5 - Lùi-Tiến So Le (>=4)", category: "hieu_5_7", subcategory: "luiTienSoLe" },
 
         // Nhóm 7: HIEU_6_8
         { text: "Dạng Hiệu (6-8) - Về liên tiếp", category: "hieu_6_8", subcategory: "veLienTiep" },
@@ -1297,6 +1522,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (6-8) - Tiến Đều", category: "hieu_6_8", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (6-8) - Lùi liên tiếp", category: "hieu_6_8", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (6-8) - Lùi Đều", category: "hieu_6_8", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (6 - Tiến-Lùi So Le (>=4)", category: "hieu_6_8", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (6 - Lùi-Tiến So Le (>=4)", category: "hieu_6_8", subcategory: "luiTienSoLe" },
 
         // Nhóm 8: HIEU_7_9
         { text: "Dạng Hiệu (7-9) - Về liên tiếp", category: "hieu_7_9", subcategory: "veLienTiep" },
@@ -1306,6 +1533,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (7-9) - Tiến Đều", category: "hieu_7_9", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (7-9) - Lùi liên tiếp", category: "hieu_7_9", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (7-9) - Lùi Đều", category: "hieu_7_9", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (7 - Tiến-Lùi So Le (>=4)", category: "hieu_7_9", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (7 - Lùi-Tiến So Le (>=4)", category: "hieu_7_9", subcategory: "luiTienSoLe" },
 
         // Nhóm 9: HIEU_8_0
         { text: "Dạng Hiệu (8,9,0) - Về liên tiếp", category: "hieu_8_0", subcategory: "veLienTiep" },
@@ -1315,6 +1544,8 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (8,9,0) - Tiến Đều", category: "hieu_8_0", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (8,9,0) - Lùi liên tiếp", category: "hieu_8_0", subcategory: "luiLienTiep" },
         { text: "Dạng Hiệu (8,9,0) - Lùi Đều", category: "hieu_8_0", subcategory: "luiDeuLienTiep" },
+    { text: "Dạng Hiệu (8,9,0) - Tiến-Lùi So Le (>=4)", category: "hieu_8_0", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (8,9,0) - Lùi-Tiến So Le (>=4)", category: "hieu_8_0", subcategory: "luiTienSoLe" },
 
         // Nhóm 10: HIEU_9_1
         { text: "Dạng Hiệu (9,0,1) - Về liên tiếp", category: "hieu_9_1", subcategory: "veLienTiep" },
@@ -1323,7 +1554,9 @@ const STATS_OPTIONS = {
         { text: "Dạng Hiệu (9,0,1) - Tiến liên tiếp", category: "hieu_9_1", subcategory: "tienLienTiep" },
         { text: "Dạng Hiệu (9,0,1) - Tiến Đều", category: "hieu_9_1", subcategory: "tienDeuLienTiep" },
         { text: "Dạng Hiệu (9,0,1) - Lùi liên tiếp", category: "hieu_9_1", subcategory: "luiLienTiep" },
-        { text: "Dạng Hiệu (9,0,1) - Lùi Đều", category: "hieu_9_1", subcategory: "luiDeuLienTiep" }
+        { text: "Dạng Hiệu (9,0,1) - Lùi Đều", category: "hieu_9_1", subcategory: "luiDeuLienTiep" },
+ { text: "Dạng Hiệu (9,0,1) - Tiến-Lùi So Le (>=4)", category: "hieu_9_1", subcategory: "tienLuiSoLe" },
+    { text: "Dạng Hiệu (9,0,1) - Lùi-Tiến So Le (>=4)", category: "hieu_9_1", subcategory: "luiTienSoLe" },
     ],
 };
 /**
@@ -1368,6 +1601,22 @@ function populateHeadTailOptions() {
 // [MỚI] Gọi hàm này ngay lập tức để cập nhật STATS_OPTIONS
 populateHeadTailOptions();
 const BASE_URL = window.location.origin;
+
+
+for (const groupName in STATS_OPTIONS) {
+    if (groupName.includes('Tổng') || groupName.includes('Hiệu')) {
+        STATS_OPTIONS[groupName] = STATS_OPTIONS[groupName].filter(option => {
+            const cat = option.category || '';
+            const desc = option.text || '';
+            if (cat.includes('tong') || cat.includes('hieu')) {
+                if (cat.includes('lon') || cat.includes('nho') || desc.includes('Lớn') || desc.includes('Nhỏ')) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+}
 
 const ORDERED_STATS_KEYS = [];
 for (const groupName in STATS_OPTIONS) {

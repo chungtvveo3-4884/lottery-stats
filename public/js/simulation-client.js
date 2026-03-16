@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
             advanced: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
             hybrid: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
             combined: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 },
-            smart: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 }
+            exclusionPlus: { totalBet: 0, totalWin: 0, winDays: 0, loseDays: 0, skipDays: 0 }
         };
 
         let tableHtml = `<table class="w-full text-xs text-left">
@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let advancedHtml = renderMethodCell(item, 'advanced', 'purple', stats.advanced);
             let hybridHtml = renderMethodCell(item, 'hybrid', 'orange', stats.hybrid);
             let combinedHtml = renderMethodCell(item, 'combined', 'pink', stats.combined);
-            let smartHtml = renderMethodCell(item, 'smart', 'yellow', stats.smart);
+            let exclusionPlusHtml = renderMethodCell(item, 'exclusionPlus', 'yellow', stats.exclusionPlus);
 
             tableHtml += `<tr class="border-b hover:bg-gray-50">
                 <td class="p-1 font-medium">${date}</td>
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${advancedHtml}
                 ${hybridHtml}
                 ${combinedHtml}
-                ${smartHtml}
+                ${exclusionPlusHtml}
             </tr>`;
         }
         tableHtml += `</tbody></table>`;
@@ -276,8 +276,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderMethodCell(item, method, color, totals) {
-        const resultKey = method === 'exclusion' ? 'result' : `result${method.charAt(0).toUpperCase() + method.slice(1)}`;
-        const danhKey = method === 'exclusion' ? 'danh' : `danh${method.charAt(0).toUpperCase() + method.slice(1)}`;
+        // Map method key sang field name trong data
+        // 'smart' hoặc 'exclusionPlus' đều map sang danhSmart/resultSmart
+        const fieldMethod = (method === 'exclusionPlus') ? 'smart' : method;
+        const danhKey = fieldMethod === 'exclusion' ? 'danh'
+            : `danh${fieldMethod.charAt(0).toUpperCase() + fieldMethod.slice(1)}`;
+        const resultKey = fieldMethod === 'exclusion' ? 'result'
+            : `result${fieldMethod.charAt(0).toUpperCase() + fieldMethod.slice(1)}`;
 
         const result = item[resultKey];
         const danh = item[danhKey];
@@ -332,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             { key: 'advanced', name: '🔬 Advanced', color: 'purple' },
             { key: 'hybrid', name: '🤖 Hybrid AI', color: 'orange' },
             { key: 'combined', name: '🔗 Combined', color: 'pink' },
-            { key: 'smart', name: '⚡ Exclusion +', color: 'yellow' }
+            { key: 'exclusionPlus', name: '⚡ Exclusion +', color: 'yellow' }
         ];
 
         let summaryHtml = `<div class="mt-4 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">`;

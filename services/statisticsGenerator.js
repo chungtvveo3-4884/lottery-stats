@@ -429,27 +429,26 @@ function findAlternatingTypeStreaks(data, dateMap, { condition, description }) {
     };
 
     for (let i = 0; i < data.length - 2; i++) {
-        // Strict: Day A matches, Day B does NOT match
-        if (!condition(data[i]) || condition(data[i + 1])) continue;
+        if (!condition(data[i])) continue;
 
         let streak = [data[i]];
         let currentIndex = i;
         while (currentIndex < data.length - 2) {
             const nextIndex = currentIndex + 2;
-            // Strict: Day B (currentIndex+1) does NOT match, Day C (nextIndex) matches
-            if (data[currentIndex + 1] && data[nextIndex] &&
-                isConsecutive(data[currentIndex].date, data[currentIndex + 1].date) &&
-                isConsecutive(data[currentIndex + 1].date, data[nextIndex].date) &&
-                !condition(data[currentIndex + 1]) && // Strict check
-                condition(data[nextIndex])) {
-                streak.push(data[nextIndex]);
+            const dayB = data[currentIndex + 1];
+            const dayC = data[nextIndex];
+            // Loose: Only check if Day C matches. Day B is ignored
+            if (dayB && dayC &&
+                isConsecutive(data[currentIndex].date, dayB.date) &&
+                isConsecutive(dayB.date, dayC.date) &&
+                condition(dayC)) {
+                streak.push(dayC);
                 currentIndex = nextIndex;
             } else {
                 break;
             }
         }
 
-        // Chỉ chấp nhận chuỗi có >= 2 phần tử VÀ số ngày là số lẻ
         if (streak.length >= 2) {
             const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
             if (span % 2 === 1) { // Số lẻ
@@ -475,7 +474,8 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
     };
 
     for (let i = 0; i < data.length - 2; i++) {
-        if (!numberMap.has(data[i].value)) continue;
+        // Strict: Day A matches, Day B does NOT match
+        if (!numberMap.has(data[i].value) || numberMap.has(data[i + 1].value)) continue;
 
         let streak = [data[i]];
         let currentIndex = i;
@@ -483,11 +483,12 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
             const nextIndex = currentIndex + 2;
             const dayB = data[currentIndex + 1];
             const dayC = data[nextIndex];
-            // Loose: Only check if Day C matches. Day B is ignored (can be anything)
+            // Strict: Day B does NOT match, Day C matches
             if (dayB && dayC &&
                 isConsecutive(data[currentIndex].date, dayB.date) &&
                 isConsecutive(dayB.date, dayC.date) &&
-                numberMap.has(dayC.value)) { // Loose check
+                !numberMap.has(dayB.value) &&
+                numberMap.has(dayC.value)) {
                 streak.push(dayC);
                 currentIndex = nextIndex;
             } else {
@@ -495,7 +496,6 @@ function findAlternatingTypeStreaksNew(data, dateMap, numberMap) {
             }
         }
 
-        // Chỉ chấp nhận chuỗi có >= 2 phần tử VÀ số ngày là số lẻ
         if (streak.length >= 2) {
             const span = getDaySpan(streak[0].date, streak[streak.length - 1].date);
             if (span % 2 === 1) { // Số lẻ

@@ -7,6 +7,7 @@ const SUM_DIFFERENCE_STATS_PATH = path.join(__dirname, '..', 'data', 'statistics
 const RAW_DATA_PATH = path.join(__dirname, '..', 'data', 'xsmb-2-digits.json');
 
 let cachedStats = null;
+let cachedQuickStats = null;
 let latestDate = null;
 
 /**
@@ -47,6 +48,8 @@ async function getStatsData() {
 function clearCache() {
     console.log('[CACHE] Xóa cache thống kê...');
     cachedStats = null;
+    cachedQuickStats = null;
+    if (typeof cachedQuickStatsHistory !== 'undefined') cachedQuickStatsHistory = null;
     latestDate = null;
 };
 
@@ -137,6 +140,17 @@ async function getFilteredStreaks(category, subcategory, filters = {}) {
         finalStreaks = finalStreaks.filter(s => s.length == filters.minLength);
     }
 
+    try {
+        const { predictNextInSequence } = require('../controllers/suggestionsController');
+        finalStreaks = finalStreaks.map(streak => {
+            const statObj = { current: { values: streak.values.map(String) } };
+            const nums = predictNextInSequence(statObj, category, subcategory || '', true); // true = isHistory
+            return { ...streak, patternNumbers: nums };
+        });
+    } catch (e) {
+        console.error('Error attaching patternNumbers in getFilteredStreaks:', e);
+    }
+
     return {
         description: statsData.description,
         streaks: finalStreaks
@@ -148,6 +162,8 @@ async function getFilteredStreaks(category, subcategory, filters = {}) {
  * Lấy dữ liệu cho phần Thống kê kỷ lục
  */
 async function getQuickStats() {
+    if (cachedQuickStats) return cachedQuickStats;
+
     const allStats = await getStatsData();
     const quickStats = {};
     latestDate = await getLatestDate();
@@ -175,8 +191,8 @@ async function getQuickStats() {
         // Xác định chuỗi hiện tại (đang diễn ra)
         let current = null;
         if (latestDate) {
-            const isSoLe = key.toLowerCase().includes('sole') && !key.includes('tienLuiSoLe') && !key.includes('luiTienSoLe');
-            const isTienLuiSoLe = key.includes('tienLuiSoLe') || key.includes('luiTienSoLe');
+            const isSoLe = key.toLowerCase().includes('sole') && !key.toLowerCase().includes('tienluisole') && !key.toLowerCase().includes('luitiensole');
+            const isTienLuiSoLe = key.toLowerCase().includes('tienluisole') || key.toLowerCase().includes('luitiensole');
 
             if (isSoLe) {
                 // Với so le: Chỉ lấy chuỗi có endDate = latestDate - 1 (ngày hôm qua)
@@ -186,19 +202,44 @@ async function getQuickStats() {
 
                 const streak = categoryData.streaks.find(s => s.endDate === yesterdayStr);
                 if (streak) {
-                    // CRITICAL FIX: Deep copy fullSequence to avoid modifying the cached object
-                    current = {
-                        ...streak,
-                        fullSequence: streak.fullSequence ? [...streak.fullSequence] : []
-                    };
+                    // Check if it's "So le Mới" (Strict). If so, latestLotteryDay MUST NOT match the condition.
+                    const isSoLeMoi = key.toLowerCase().includes('solemoi') || key.toLowerCase().includes('sole_moi');
+                    let isValid = true;
 
-                    // Thêm ngày hôm nay vào fullSequence (để hiển thị, nhưng KHÔNG dùng cho dự đoán)
-                    if (latestLotteryDay && latestLotteryDay.special) {
-                        current.fullSequence.push({
-                            date: latestDate,
-                            value: String(latestLotteryDay.special).padStart(2, '0'),
-                            isLatest: true // Đánh dấu là ngày mới nhất (KHÔNG thuộc chuỗi)
-                        });
+                    if (isSoLeMoi && latestLotteryDay && latestLotteryDay.special) {
+                        try {
+                            const { predictNextInSequence } = require('../controllers/suggestionsController');
+                            const [categoryName, subcategoryStr] = key.split(':');
+                            const matchNumbers = predictNextInSequence({ current: streak }, categoryName, subcategoryStr || '');
+                            if (matchNumbers && matchNumbers.length > 0) {
+                                // getNumbersFromCategory might return integers or strings
+                                const stringNumbers = matchNumbers.map(n => String(n).padStart(2, '0'));
+                                const specialNum = String(latestLotteryDay.special).padStart(2, '0');
+                                if (stringNumbers.includes(specialNum)) {
+                                    // Ngày xen kẽ bị trùng kết quả -> Bị GÃY CHUỖI So le mới
+                                    isValid = false;
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Lỗi khi validate So le mới:', e);
+                        }
+                    }
+
+                    if (isValid) {
+                        // CRITICAL FIX: Deep copy fullSequence to avoid modifying the cached object
+                        current = {
+                            ...streak,
+                            fullSequence: streak.fullSequence ? [...streak.fullSequence] : []
+                        };
+
+                        // Thêm ngày hôm nay vào fullSequence (để hiển thị, nhưng KHÔNG dùng cho dự đoán)
+                        if (latestLotteryDay && latestLotteryDay.special) {
+                            current.fullSequence.push({
+                                date: latestDate,
+                                value: String(latestLotteryDay.special).padStart(2, '0'),
+                                isLatest: true // Đánh dấu là ngày mới nhất (KHÔNG thuộc chuỗi)
+                            });
+                        }
                     }
                 }
             } else if (isTienLuiSoLe) {
@@ -244,7 +285,7 @@ async function getQuickStats() {
 
         // Detect if this is a "so le" pattern
         const isSoLePattern = (key.toLowerCase().includes('sole') || key.toLowerCase().includes('solemoi')) &&
-            !key.includes('tienLuiSoLe') && !key.includes('luiTienSoLe');
+            !key.toLowerCase().includes('tienluisole') && !key.toLowerCase().includes('luitiensole');
 
         // Helper function to calculate stats for a set of streaks
         // currentStreakInfo: the ongoing current streak (if any) to exclude from calculations
@@ -473,7 +514,7 @@ async function getQuickStats() {
         const lotteryService = require('./lotteryService');
         const totalYears = lotteryService.getTotalYears();
 
-        const isTienLuiSoLePattern = key.includes('tienLuiSoLe') || key.includes('luiTienSoLe');
+        const isTienLuiSoLePattern = key.toLowerCase().includes('tienluisole') || key.toLowerCase().includes('luitiensole');
         let startLen = 2;
         let increment = 1;
 
@@ -534,6 +575,20 @@ async function getQuickStats() {
                         }
                     }
                 }
+            }
+        }
+        // [MỚI] Dùng logic predictNextInSequence để lấy pattern numbers chuẩn (chạy sau khi mọi current đã hình thành)
+        if (quickStats[key] && quickStats[key].current) {
+            try {
+                const { predictNextInSequence } = require('../controllers/suggestionsController');
+                const [categoryName, subcategoryStr] = key.split(':');
+                const statObj = { current: quickStats[key].current };
+                const nums = predictNextInSequence(statObj, categoryName, subcategoryStr || '');
+                if (nums && nums.length > 0) {
+                    quickStats[key].current.patternNumbers = nums;
+                }
+            } catch (e) {
+                console.error('Lỗi khi lấy danh sách số cho pattern', key, e);
             }
         }
     };
@@ -631,6 +686,91 @@ async function getLatestLotteryResult() {
     }
 }
 
+
+/**
+ * Lấy lịch sử 7 ngày gần nhất của 'Chuỗi đang diễn ra'
+ * Tối ưu hóa: Trả về trực tiếp nếu có cache
+ */
+let cachedQuickStatsHistory = null;
+async function getQuickStatsHistory() {
+    if (cachedQuickStatsHistory) return cachedQuickStatsHistory;
+
+    const lotteryServiceForHistory = require('../services/lotteryService');
+    const { computeQuickStatsForDate } = require('../services/historicalExclusionService');
+
+    // Đảm bảo load rawData
+    await lotteryServiceForHistory.loadRawData();
+    const rawData = lotteryServiceForHistory.getRawData();
+    if (!rawData || rawData.length === 0) return [];
+
+    let historyCount = 7;
+    const historyDates = rawData.slice(-Math.min(historyCount, rawData.length)).map(entry => {
+        const d = new Date(entry.date);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    });
+    // historyDates đang xếp từ quá khứ đến hiện tại (ngày mới nhất cuối cùng)
+    // lật lại để ngày mới nhất đứng đầu
+    historyDates.reverse();
+
+    const totalYears = lotteryServiceForHistory.getTotalYears();
+    const historyResults = [];
+
+    // Tính toán quickStats cho từng ngày trong 7 ngày
+    for (const targetDateStr of historyDates) {
+        // computeQuickStatsForDate yêu cầu targetDateStr là ngày nó dự đoán (sau ngày có kết quả 1 ngày)
+        // VD: ngày kết quả là 8/3, targetDateStr phải là 9/3
+        // Nên ta cần dịch targetDateStr lên 1 ngày để nó lấy chuỗi của ngày hiện tại
+        const dateObj = parseDate(targetDateStr);
+        if (dateObj) {
+            dateObj.setDate(dateObj.getDate() + 1);
+            const shiftedTargetDateStr = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+
+            const statsAtThatDay = computeQuickStatsForDate(shiftedTargetDateStr, totalYears);
+
+            // Format lại dữ liệu cho nhẹ, chỉ lấy danh sách các chuỗi ĐANG DIỄN RA
+            const activeStreaks = [];
+            for (const key in statsAtThatDay) {
+                if (key === '_meta') continue;
+                if (statsAtThatDay[key] && statsAtThatDay[key].current) {
+                    const currentObj = statsAtThatDay[key].current;
+                    const recordLength = statsAtThatDay[key].computedMaxStreak || (statsAtThatDay[key].longest && statsAtThatDay[key].longest.length > 0 ? statsAtThatDay[key].longest[0].length : 0);
+
+                    // Thêm logic patternNumbers như trang hiện tại
+                    try {
+                        const { predictNextInSequence } = require('../controllers/suggestionsController');
+                        const [categoryName, subcategoryStr] = key.split(':');
+                        const nums = predictNextInSequence({ current: currentObj }, categoryName, subcategoryStr || '');
+                        if (nums && nums.length > 0) {
+                            currentObj.patternNumbers = nums;
+                        }
+                    } catch (e) { }
+
+                    activeStreaks.push({
+                        ...currentObj,
+                        key: key,
+                        description: statsAtThatDay[key].description,
+                        recordLength: recordLength,
+                        isSuperRecord: statsAtThatDay[key].isSuperMaxThreshold || false,
+                        originalRecord: statsAtThatDay[key].longest && statsAtThatDay[key].longest.length > 0 ? statsAtThatDay[key].longest[0].length : 0,
+                        gapStats: statsAtThatDay[key].gapStats,
+                        exactGapStats: statsAtThatDay[key].exactGapStats,
+                        extensionGapStats: statsAtThatDay[key].extensionGapStats
+                    });
+                }
+            }
+
+            historyResults.push({
+                date: targetDateStr,
+                streaks: activeStreaks
+            });
+        }
+    }
+
+    cachedQuickStatsHistory = historyResults;
+    return historyResults;
+}
+
+
 module.exports = {
     getStatsData,
     getFilteredStreaks,
@@ -641,5 +781,6 @@ module.exports = {
     getRecentResults,
     getLatestLotteryResult, // <-- ĐÃ THÊM VÀO EXPORT
     getStreakStats, // Thêm dòng này
-    getLatestDate // Add this line
+    getLatestDate, // Add this line
+    getQuickStatsHistory,
 };
